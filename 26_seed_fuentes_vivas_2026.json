@@ -1,0 +1,129 @@
+{
+  "sources": [
+    {
+      "source_key": "sat_isr_articulo_9",
+      "source_name": "SAT - Ley del ISR, Articulo 9",
+      "category": "fiscal",
+      "source_url": "https://wwwmat.sat.gob.mx/articulo/93578/articulo-9",
+      "refresh_frequency": "yearly",
+      "parser_type": "manual_review",
+      "requires_human_approval": true,
+      "parameters": [
+        {
+          "parameter_key": "isr_persona_moral_rate",
+          "expected_value_numeric": 0.30,
+          "unit": "rate",
+          "valid_year": 2026
+        }
+      ]
+    },
+    {
+      "source_key": "sat_iva_general",
+      "source_name": "SAT - Ley del IVA y acreditamiento",
+      "category": "fiscal",
+      "source_url": "https://wwwmat.sat.gob.mx/articulo/38511/criterio-9/iva/nv",
+      "refresh_frequency": "yearly",
+      "parser_type": "manual_review",
+      "requires_human_approval": true,
+      "parameters": [
+        {
+          "parameter_key": "iva_general_rate",
+          "expected_value_numeric": 0.16,
+          "unit": "rate",
+          "valid_year": 2026
+        }
+      ]
+    },
+    {
+      "source_key": "inegi_uma_2026",
+      "source_name": "INEGI - UMA 2026",
+      "category": "labor",
+      "source_url": "https://www.inegi.org.mx/contenidos/saladeprensa/boletines/2026/uma/uma2026.pdf",
+      "refresh_frequency": "yearly",
+      "parser_type": "pdf_manual",
+      "requires_human_approval": true,
+      "parameters": [
+        {
+          "parameter_key": "uma_daily_2026",
+          "expected_value_numeric": 117.31,
+          "unit": "MXN",
+          "valid_from": "2026-02-01"
+        },
+        {
+          "parameter_key": "uma_monthly_2026",
+          "expected_value_numeric": 3566.22,
+          "unit": "MXN",
+          "valid_from": "2026-02-01"
+        },
+        {
+          "parameter_key": "uma_annual_2026",
+          "expected_value_numeric": 42794.64,
+          "unit": "MXN",
+          "valid_from": "2026-02-01"
+        }
+      ]
+    },
+    {
+      "source_key": "sefin_zacatecas_isn",
+      "source_name": "SEFIN Zacatecas - Impuesto Sobre Nominas",
+      "category": "fiscal_state",
+      "source_url": "https://sefin.zacatecas.gob.mx/wp-content/uploads/2025/12/LEY-DE-HACIENDA-DEL-ESTADO-DE-ZACATECAS.pdf",
+      "refresh_frequency": "yearly",
+      "parser_type": "pdf_manual",
+      "requires_human_approval": true,
+      "parameters": [
+        {
+          "parameter_key": "zacatecas_isn_rate",
+          "expected_value_numeric": 0.035,
+          "unit": "rate",
+          "valid_year": 2026
+        },
+        {
+          "parameter_key": "zacatecas_uaz_additional_rate",
+          "expected_value_numeric": 0.10,
+          "unit": "rate_on_state_tax",
+          "valid_year": 2026
+        }
+      ]
+    },
+    {
+      "source_key": "zenodo_public_jira",
+      "source_name": "Zenodo - Public Jira Dataset",
+      "category": "dataset",
+      "source_url": "https://zenodo.org/records/15719919",
+      "refresh_frequency": "quarterly",
+      "parser_type": "manual_review",
+      "requires_human_approval": true,
+      "doi": "10.5281/zenodo.15719919"
+    },
+    {
+      "source_key": "zenodo_josse",
+      "source_name": "Zenodo - JOSSE",
+      "category": "dataset",
+      "source_url": "https://zenodo.org/records/7022735",
+      "refresh_frequency": "yearly",
+      "parser_type": "manual_review",
+      "requires_human_approval": true,
+      "doi": "10.5281/zenodo.7022735"
+    },
+    {
+      "source_key": "zenodo_seera",
+      "source_name": "Zenodo - SEERA Software Cost Estimation Dataset",
+      "category": "dataset",
+      "source_url": "https://zenodo.org/records/4066438/latest",
+      "refresh_frequency": "yearly",
+      "parser_type": "manual_review",
+      "requires_human_approval": true,
+      "doi": "10.5281/zenodo.4312777"
+    },
+    {
+      "source_key": "datos_gob_mx_contratacion",
+      "source_name": "datos.gob.mx - Procedimientos de contratacion",
+      "category": "procurement",
+      "source_url": "https://www.datos.gob.mx/dataset/procedimientos_contratacion",
+      "refresh_frequency": "quarterly",
+      "parser_type": "csv",
+      "requires_human_approval": true
+    }
+  ]
+}

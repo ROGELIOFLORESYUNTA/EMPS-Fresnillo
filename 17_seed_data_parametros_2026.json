@@ -1,0 +1,250 @@
+{
+  "year": 2026,
+  "country": "Mexico",
+  "state": "Zacatecas",
+  "validation": {
+    "verified_on": "2026-05-01",
+    "verified_by": "research-driven validation against DOF/INEGI/CONASAMI/SEFIN",
+    "policy": "Aplicar valores oficiales unívocos; proponer aprobación si hay ambigüedad."
+  },
+  "parameters": [
+    {
+      "key": "IVA_GENERAL",
+      "value": 0.16,
+      "unit": "rate",
+      "source": "LIVA Articulo 1 (vigente 2026); Reforma Fiscal 2026 - DOF 07-nov-2025",
+      "source_url": "https://www.diputados.gob.mx/LeyesBiblio/pdf/LIVA.pdf",
+      "effective_from": "2026-01-01",
+      "notes": "Tasa general 16% sin cambios. Reforma 2026 ajusta retenciones (plataformas digitales 8% PM / 16% extranjeros, FinTech 16% sobre intereses) y agrega productos de gestion menstrual a tasa 0%. No afecta la tasa general aplicable al prototipo."
+    },
+    {
+      "key": "ISR_PERSONA_MORAL",
+      "value": 0.30,
+      "unit": "rate",
+      "source": "LISR Articulo 9 (vigente 2026)",
+      "source_url": "https://www.diputados.gob.mx/LeyesBiblio/pdf/LISR.pdf",
+      "effective_from": "2026-01-01",
+      "notes": "Tasa sobre resultado fiscal del ejercicio (utilidad fiscal menos perdidas de ejercicios anteriores). Sin cambios desde 2014; confirmado vigente para 2026."
+    },
+    {
+      "key": "UMA_DIARIA",
+      "value": 117.31,
+      "unit": "MXN",
+      "source": "INEGI Comunicado de Prensa 1/26 (DOF 09-ene-2026)",
+      "source_url": "https://www.dof.gob.mx/nota_detalle.php?codigo=5778072&fecha=09/01/2026",
+      "effective_from": "2026-02-01",
+      "previous_value": 113.14,
+      "annual_change_pct": 3.69,
+      "notes": "Vigente desde el 1 de febrero de 2026 (no enero). Para registros entre 1-31 ene 2026 aplica la UMA 2025."
+    },
+    {
+      "key": "UMA_MENSUAL",
+      "value": 3566.22,
+      "unit": "MXN",
+      "source": "INEGI Comunicado de Prensa 1/26 (DOF 09-ene-2026)",
+      "source_url": "https://www.dof.gob.mx/nota_detalle.php?codigo=5778072&fecha=09/01/2026",
+      "effective_from": "2026-02-01"
+    },
+    {
+      "key": "UMA_ANUAL",
+      "value": 42794.64,
+      "unit": "MXN",
+      "source": "INEGI Comunicado de Prensa 1/26 (DOF 09-ene-2026)",
+      "source_url": "https://www.dof.gob.mx/nota_detalle.php?codigo=5778072&fecha=09/01/2026",
+      "effective_from": "2026-02-01"
+    },
+    {
+      "key": "SALARIO_MINIMO_GENERAL_DIARIO",
+      "value": 315.04,
+      "unit": "MXN",
+      "source": "CONASAMI - DOF 09-dic-2025 (vigente desde 01-ene-2026)",
+      "source_url": "https://www.dof.gob.mx/nota_detalle.php?codigo=5775534&fecha=09/12/2025",
+      "effective_from": "2026-01-01",
+      "annual_change_pct": 13.0,
+      "notes": "Incremento compuesto: MIR (Monto Independiente de Recuperación) +$17.01 + ajuste 6.5%."
+    },
+    {
+      "key": "SALARIO_MINIMO_GENERAL_MENSUAL",
+      "value": 9582.47,
+      "unit": "MXN",
+      "source": "CONASAMI - DOF 09-dic-2025",
+      "source_url": "https://www.dof.gob.mx/nota_detalle.php?codigo=5775534&fecha=09/12/2025",
+      "effective_from": "2026-01-01",
+      "notes": "Anualizado: diario x 365 / 12."
+    },
+    {
+      "key": "SALARIO_MINIMO_FRONTERA_DIARIO",
+      "value": 440.87,
+      "unit": "MXN",
+      "source": "CONASAMI - DOF 09-dic-2025 (vigente desde 01-ene-2026)",
+      "source_url": "https://www.dof.gob.mx/nota_detalle.php?codigo=5775534&fecha=09/12/2025",
+      "effective_from": "2026-01-01",
+      "annual_change_pct": 5.0,
+      "notes": "Aplica solo en Zona Libre de la Frontera Norte (ZLFN); Fresnillo, Zacatecas NO está en ZLFN."
+    },
+    {
+      "key": "SALARIO_MINIMO_FRONTERA_MENSUAL",
+      "value": 13409.80,
+      "unit": "MXN",
+      "source": "CONASAMI - DOF 09-dic-2025",
+      "source_url": "https://www.dof.gob.mx/nota_detalle.php?codigo=5775534&fecha=09/12/2025",
+      "effective_from": "2026-01-01"
+    },
+    {
+      "key": "ISN_ZACATECAS",
+      "value": 0.035,
+      "unit": "rate",
+      "source": "Ley de Hacienda del Estado de Zacatecas, Cap. VI, Arts. 37-44; Ley de Ingresos del Estado de Zacatecas 2026 Art. 1 Fracc. 1.5 punto No. 5",
+      "source_url": "https://sefin.zacatecas.gob.mx/wp-content/uploads/2025/01/IMPUESTO-SOBRE-NOMINAS.pdf",
+      "effective_from": "2025-01-01",
+      "notes": "Tasa 3.5% vigente desde 2025 sin cambios para 2026 (confirmado en LIA Zacatecas 2026). Causa: erogaciones por remuneraciones al trabajo personal. Plazo de pago: primeros 17 dias del mes siguiente."
+    },
+    {
+      "key": "IMPUESTO_UAZ",
+      "value": 0.10,
+      "unit": "rate",
+      "source": "SEFIN Zacatecas - Adicional 10% Impuesto UAZ; Ley de Ingresos del Estado 2026 (rubro 1.8.2)",
+      "source_url": "https://sefin.zacatecas.gob.mx/wp-content/uploads/2025/01/IMPUESTO-SOBRE-NOMINAS.pdf",
+      "effective_from": "2025-01-01",
+      "notes": "Sobretasa del 10% sobre el ISN destinada a la Universidad Autonoma de Zacatecas. Se calcula sobre el ISN ya determinado, no sobre la base de erogaciones. Confirmado en LIA Zacatecas 2026 como rubro 1.8.2 (ingreso estimado $311,849,327)."
+    },
+
+    { "key": "IMSS_EYM_ESPECIE_CUOTA_FIJA_PATRON", "value": 0.204, "unit": "rate", "base": "UMA_DIARIA", "source": "LSS Art. 106 fracc. I", "effective_from": "2026-01-01", "notes": "20.4% de la UMA diaria por dia cotizado, 100% patronal, sin contraparte obrera." },
+    { "key": "IMSS_EYM_ESPECIE_EXCEDENTE_PATRON", "value": 0.011, "unit": "rate", "base": "SBC_EXCEDENTE_3_UMA", "source": "LSS Art. 106 fracc. II", "effective_from": "2026-01-01", "notes": "1.1% sobre el excedente del SBC respecto a 3 UMAs diarias." },
+    { "key": "IMSS_EYM_ESPECIE_EXCEDENTE_OBRERO", "value": 0.004, "unit": "rate", "base": "SBC_EXCEDENTE_3_UMA", "source": "LSS Art. 106 fracc. II", "effective_from": "2026-01-01", "notes": "0.4% sobre el excedente del SBC respecto a 3 UMAs diarias." },
+    { "key": "IMSS_EYM_DINERO_PATRON", "value": 0.007, "unit": "rate", "base": "SBC", "source": "LSS Art. 107", "effective_from": "2026-01-01" },
+    { "key": "IMSS_EYM_DINERO_OBRERO", "value": 0.0025, "unit": "rate", "base": "SBC", "source": "LSS Art. 107", "effective_from": "2026-01-01" },
+    { "key": "IMSS_EYM_PENSIONADOS_PATRON", "value": 0.0105, "unit": "rate", "base": "SBC", "source": "LSS Art. 25 LSS", "effective_from": "2026-01-01", "notes": "Gastos medicos para pensionados y beneficiarios." },
+    { "key": "IMSS_EYM_PENSIONADOS_OBRERO", "value": 0.00375, "unit": "rate", "base": "SBC", "source": "LSS Art. 25 LSS", "effective_from": "2026-01-01" },
+
+    { "key": "IMSS_RIESGO_TRABAJO_CLASE_I", "value": 0.0054355, "unit": "rate", "base": "SBC", "source": "LSS Art. 73; Reglamento RACERF Art. 196", "effective_from": "2026-01-01", "notes": "Prima media oficinas/riesgo bajo. 100% patronal. Se ajusta anualmente con siniestralidad real (Art. 74 LSS)." },
+    { "key": "IMSS_RIESGO_TRABAJO_CLASE_II", "value": 0.01130658, "unit": "rate", "base": "SBC", "source": "LSS Art. 73", "effective_from": "2026-01-01" },
+    { "key": "IMSS_RIESGO_TRABAJO_CLASE_III", "value": 0.0259844, "unit": "rate", "base": "SBC", "source": "LSS Art. 73", "effective_from": "2026-01-01" },
+    { "key": "IMSS_RIESGO_TRABAJO_CLASE_IV", "value": 0.0465325, "unit": "rate", "base": "SBC", "source": "LSS Art. 73", "effective_from": "2026-01-01" },
+    { "key": "IMSS_RIESGO_TRABAJO_CLASE_V", "value": 0.0758875, "unit": "rate", "base": "SBC", "source": "LSS Art. 73", "effective_from": "2026-01-01" },
+
+    { "key": "IMSS_INVALIDEZ_VIDA_PATRON", "value": 0.0175, "unit": "rate", "base": "SBC", "source": "LSS Art. 147", "effective_from": "2026-01-01" },
+    { "key": "IMSS_INVALIDEZ_VIDA_OBRERO", "value": 0.00625, "unit": "rate", "base": "SBC", "source": "LSS Art. 147", "effective_from": "2026-01-01", "notes": "Total IV = 2.375% del SBC (1.75% patron + 0.625% obrero)." },
+
+    { "key": "IMSS_GUARDERIAS_PATRON", "value": 0.01, "unit": "rate", "base": "SBC", "source": "LSS Art. 211", "effective_from": "2026-01-01", "notes": "100% patronal. Cubre tambien Prestaciones Sociales." },
+
+    { "key": "IMSS_RETIRO_PATRON", "value": 0.02, "unit": "rate", "base": "SBC", "source": "LSS Art. 168 fracc. I", "effective_from": "2026-01-01", "notes": "100% patronal. Pago bimestral." },
+
+    { "key": "IMSS_CV_OBRERO", "value": 0.01125, "unit": "rate", "base": "SBC", "source": "LSS Art. 168 fracc. II (Reforma Pensiones 2020)", "effective_from": "2026-01-01", "notes": "Cesantia en Edad Avanzada y Vejez. Obrero fijo 1.125%; patronal progresivo 2023-2030 segun SBC en UMAs (ver tabla CEAV_PATRON_2026)." },
+    { "key": "IMSS_CEAV_PATRON_2026", "value": null, "unit": "table", "base": "SBC_EN_UMAS", "source": "LSS Art. 168 fracc. II tabla escalonada (4to ajuste 2026)", "effective_from": "2026-01-01",
+      "table": {
+        "hasta_1.00_UMA": 0.0315,
+        "1.01_a_1.50_UMA": 0.03676,
+        "1.51_a_2.00_UMA": 0.04851,
+        "2.01_a_2.50_UMA": 0.05556,
+        "2.51_a_3.00_UMA": 0.06026,
+        "3.01_a_3.50_UMA": 0.06361,
+        "3.51_a_4.00_UMA": 0.06613,
+        "4.01_UMA_o_mas": 0.07513
+      },
+      "notes": "Cuota patronal CEAV escalonada por nivel de SBC en UMAs. Vigente para 2026 (cuarto ajuste anual progresivo). Sigue subiendo hasta 2030 cuando alcanzara su tope reforma."
+    },
+
+    { "key": "INFONAVIT_PATRON", "value": 0.05, "unit": "rate", "base": "SBC", "source": "Ley INFONAVIT Art. 29 fracc. II", "effective_from": "2026-01-01", "notes": "5% del SBC. 100% patronal. Pago bimestral junto con RCV." },
+
+    { "key": "LFT_AGUINALDO_DIAS_MIN", "value": 15, "unit": "dias_salario", "source": "LFT Art. 87", "effective_from": "2026-01-01", "notes": "Minimo 15 dias de salario. Pago antes del 20 de diciembre." },
+    { "key": "LFT_PRIMA_VACACIONAL_MIN", "value": 0.25, "unit": "rate", "source": "LFT Art. 80", "effective_from": "2026-01-01", "notes": "Minimo 25% sobre el salario de los dias de vacaciones." },
+    { "key": "LFT_VACACIONES_DIAS_2026", "value": null, "unit": "table_antiguedad", "source": "LFT Arts. 76 y 78 (Reforma Vacaciones Dignas DOF 27-dic-2022, vigente 01-ene-2023)", "effective_from": "2023-01-01",
+      "table": {
+        "anio_1": 12,
+        "anio_2": 14,
+        "anio_3": 16,
+        "anio_4": 18,
+        "anio_5": 20,
+        "anios_6_10": 22,
+        "anios_11_15": 24,
+        "anios_16_20": 26,
+        "anios_21_25": 28,
+        "anios_26_30": 30,
+        "anios_31_mas": 32
+      },
+      "notes": "Reforma Vacaciones Dignas: dias laborables minimos por antiguedad. +2 dias por cada quinquenio adicional despues del 5to anio."
+    },
+    { "key": "LFT_PTU_PORCENTAJE", "value": 0.10, "unit": "rate", "source": "LFT Art. 117 / Constitucion Art. 123 frac. IX", "effective_from": "2021-04-23", "notes": "10% de la utilidad fiscal anual. Tope (Reforma Outsourcing 2021): 3 meses de salario o promedio PTU ultimos 3 anios, lo que sea mayor (Art. 127 frac. VIII)." }
+  ],
+  "development_mode_factors": {
+    "_semantica": "Multiplicadores sobre technical_effort. Suma esperada = 1.0 para traditional/ai_assisted/hybrid/low_code. bytecoding_prompts suma = 1.10 intencionalmente: el hardening es trabajo adicional de verificacion que se acumula sobre la base, no la sustituye. El motor debe assertar la suma esperada en cada calculo.",
+    "_codigos_addendum": "Renombrados Fase D.2 conforme addendum_22 (dev_mode_catalog): assisted->ai_assisted, bytecoding->bytecoding_prompts, +low_code (nuevo).",
+    "_expected_sums": { "traditional": 1.00, "ai_assisted": 1.00, "bytecoding_prompts": 1.10, "low_code": 1.00, "hybrid": 1.00 },
+    "traditional": { "coding": 0.45, "review": 0.10, "testing": 0.20, "documentation": 0.10, "deployment": 0.05, "management": 0.10 },
+    "ai_assisted": { "coding": 0.35, "review": 0.18, "testing": 0.22, "documentation": 0.10, "deployment": 0.05, "management": 0.10 },
+    "bytecoding_prompts": { "coding": 0.25, "review": 0.28, "testing": 0.27, "documentation": 0.10, "deployment": 0.05, "hardening": 0.15 },
+    "low_code": { "coding": 0.20, "review": 0.25, "testing": 0.30, "documentation": 0.10, "deployment": 0.05, "management": 0.10 },
+    "hybrid": { "coding": 0.32, "review": 0.20, "testing": 0.24, "documentation": 0.10, "deployment": 0.05, "management": 0.09 }
+  },
+
+  "development_mode_velocity": {
+    "_semantica": "Modela la VELOCIDAD CALENDARIO (no las horas-persona). velocity_factor multiplica la capacidad efectiva del equipo por semana; valores >1.0 implican que las herramientas/practicas del modo aceleran la entrega aunque las horas-persona totales puedan ser similares o mayores. prototype_speedup mide que tan rapido se llega a un PROTOTIPO ejecutable respecto al modo tradicional.",
+    "_baseline": "traditional",
+    "_calibracion_2026_05_02": "Calibrado con evidencia empirica 2025-2026: METR RCT, GitHub Copilot survey (55% mas rapido tareas rutina, 9.6 a 2.4 dias en PRs), AIMultiple research (vibe coding 2-5x prototipo greenfield, 10x posible en condiciones ideales), Hacker News y Reddit consensus. Los factores son medianas; varia mucho por contexto. Casos individuales reportan hasta 10x (8 meses tradicional -> 3 semanas bytecoding) en proyectos greenfield con alcance claro.",
+    "_advertencia": "El multiplicador NO aplica universal. Es mas alto en greenfield/MVPs/CRUD simples. En proyectos legacy o con tecnologias fuera del entrenamiento del modelo, la productividad puede ser 0-15% mejor o incluso NEGATIVA por hallucinations y rework.",
+    "_fuentes": [
+      "https://news.microsoft.com/source/features/ai/vibe-coding-and-other-ways-ai-is-changing-who-can-build-apps-and-how/",
+      "https://research.aimultiple.com/vibe-coding/",
+      "https://medium.com/@addyosmani/vibe-coding-is-not-the-same-as-ai-assisted-engineering-3f81088d5b98",
+      "https://news.ycombinator.com/item?id=43448432"
+    ],
+    "_uso_motor": "weeks = total_effort_hours / (team_weekly_capacity_hours * velocity_factor); prototype_weeks = (technical_effort * coding_factor) / (team_weekly_capacity * velocity_factor * prototype_speedup)",
+    "traditional": {
+      "velocity_factor": 1.00,
+      "prototype_speedup": 1.00,
+      "hardening_overhead": 0.00,
+      "effort_efficiency": 1.00,
+      "notes": "Linea base. Codificacion manual; tiempo prototipo y tiempo a calidad final son similares.",
+      "evidencia": "Punto de referencia. Cada modo se mide contra este."
+    },
+    "ai_assisted": {
+      "velocity_factor": 1.55,
+      "prototype_speedup": 2.50,
+      "hardening_overhead": 0.05,
+      "effort_efficiency": 0.78,
+      "notes": "Asistencia generativa reduce ~22% las horas-persona y acelera ~55% el calendario (lo segundo es mas alto porque la IA permite trabajo en paralelo y reduce esperas).",
+      "evidencia": "GitHub Copilot survey 2026: tareas 55% mas rapidas, PR de 9.6 a 2.4 dias, McKinsey Feb 2026: 46% reduccion tareas rutina (tiempo). En horas-persona el ahorro es menor (78% del esfuerzo tradicional)."
+    },
+    "bytecoding_prompts": {
+      "velocity_factor": 3.00,
+      "prototype_speedup": 7.00,
+      "hardening_overhead": 0.20,
+      "prototype_quality_factor": 0.55,
+      "effort_efficiency": 0.65,
+      "notes": "IA genera ~70-90% del codigo, humano verifica/endurece. Reduce ~35% horas-persona globales (el +20% de hardening esta incluido). Calendario ~3x mas rapido por trabajo en paralelo. Prototipo 7x mas rapido (caso 8 meses -> 3 semanas).",
+      "evidencia": "Anthropic dic-2025: 70-90% del codigo en Anthropic generado por Claude Code. AIMultiple/HackerNews: '10x posible en greenfield', 'weeks to days'. Bain sept-2025: ahorro real 'unremarkable' en empresas tradicionales = factor moderado para promedio."
+    },
+    "low_code": {
+      "velocity_factor": 3.50,
+      "prototype_speedup": 8.00,
+      "hardening_overhead": 0.25,
+      "effort_efficiency": 0.50,
+      "notes": "Plataformas (Power Apps, Bubble, Retool, Mendix). Reduce ~50% horas-persona en CRUD simple. Sobrecosto por vendor lock-in, licenciamiento, integraciones limitadas.",
+      "evidencia": "Forrester/Gartner: low-code 5-10x mas rapido para apps de productividad interna. 60-70% de proyectos requieren refactor o codigo custom para integraciones complejas."
+    },
+    "hybrid": {
+      "velocity_factor": 1.90,
+      "prototype_speedup": 3.50,
+      "hardening_overhead": 0.10,
+      "effort_efficiency": 0.72,
+      "notes": "Manual para componentes criticos (auth, datos sensibles, negocio), asistido/bytecoding para boilerplate (CRUD, tests, docs). Reduce ~28% horas-persona, calendario ~2x mas rapido.",
+      "evidencia": "HackerNews/Medium consenso: 'The best setup is hybrid: AI for speed, humans for quality'. Red Hat Developer 2026."
+    }
+  },
+
+  "scenario_factors": {
+    "_semantica": "Factores aplicados al esfuerzo total para generar los 3 escenarios. El factor conservador puede subir hasta 1.80 segun acumulacion de incertidumbres (ver formula en 07_motor_formulas.md seccion 3).",
+    "optimistic": 0.85,
+    "probable": 1.00,
+    "conservative_min": 1.25,
+    "conservative_max": 1.80
+  },
+
+  "default_carga_patronal_estimada": {
+    "_semantica": "Factor agregado aplicado sobre el salario bruto cuando el proveedor no desglose IMSS/INFONAVIT/ISN. Se usa solo en modo 'estimado'.",
+    "value": 0.40,
+    "rango": [0.37, 0.43],
+    "notes": "Aproxima IMSS+INFONAVIT+ISN+UAZ+provisiones LFT para perfil tipico de software (Clase I, SBC ~2 UMA)."
+  }
+}

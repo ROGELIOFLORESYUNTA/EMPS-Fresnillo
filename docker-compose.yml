@@ -1,0 +1,76 @@
+# EMPS-Fresnillo - docker-compose
+#
+# Modo 1 (default, recomendado para revisores): SQLite local
+#   docker compose up
+#
+# Modo 2 (VPS, recomendado para produccion): PostgreSQL
+#   docker compose --profile postgres up
+#
+# Acceso: http://localhost:3000
+
+services:
+  emps:
+    build: .
+    image: emps-fresnillo:latest
+    container_name: emps-fresnillo
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=file:/app/data/dev.db
+      - DEFAULT_COUNTRY=Mexico
+      - DEFAULT_STATE=Zacatecas
+      - DEFAULT_FISCAL_YEAR=2026
+      - NEXT_PUBLIC_APP_NAME=EMPS-Fresnillo
+      - NEXT_PUBLIC_APP_VERSION=0.1.0
+    volumes:
+      - emps_data:/app/data
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/projects"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  # Modo Postgres (opcional). Activar con: docker compose --profile postgres up
+  emps-pg:
+    build: .
+    image: emps-fresnillo:latest
+    container_name: emps-fresnillo-pg
+    profiles: ["postgres"]
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://emps:emps_pass@postgres:5432/emps?schema=public
+      - DEFAULT_COUNTRY=Mexico
+      - DEFAULT_STATE=Zacatecas
+      - DEFAULT_FISCAL_YEAR=2026
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: emps-postgres
+    profiles: ["postgres"]
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: emps
+      POSTGRES_USER: emps
+      POSTGRES_PASSWORD: emps_pass
+    volumes:
+      - emps_pg_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U emps -d emps"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  emps_data:
+  emps_pg_data:
