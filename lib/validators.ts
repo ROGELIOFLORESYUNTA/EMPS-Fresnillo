@@ -95,6 +95,55 @@ export const changeRequestCreateSchema = z.object({
 });
 
 export const changeRequestUpdateSchema = changeRequestCreateSchema.partial().extend({
-  decision: z.enum(["pendiente", "aceptado", "rechazado", "incluido"]).optional(),
+  decision: z.enum(["pendiente", "aceptado", "rechazado", "incluido", "diferido", "requires_clarification"]).optional(),
   decidedBy: z.string().optional(),
+});
+
+// ============================================================
+// Control de cambios v6 (Addendum 30_addendum_api_control_cambios.md)
+// ============================================================
+
+export const affectedArtifactsSchema = z.object({
+  uiScreens: z.number().int().min(0).default(0),
+  apiEndpoints: z.number().int().min(0).default(0),
+  businessRules: z.number().int().min(0).default(0),
+  databaseTables: z.number().int().min(0).default(0),
+  reports: z.number().int().min(0).default(0),
+  rolesPermissions: z.number().int().min(0).default(0),
+  externalIntegrations: z.number().int().min(0).default(0),
+  dataMigrationObjects: z.number().int().min(0).default(0),
+  automatedTests: z.number().int().min(0).default(0),
+  manualTestScenarios: z.number().int().min(0).default(0),
+  documentsOrTrainingItems: z.number().int().min(0).default(0),
+});
+
+export const changeImpactInputSchema = z.object({
+  originalText: z.string().min(10, "El texto original del cliente debe tener al menos 10 caracteres."),
+  currentPhase: z.enum([
+    "before_baseline",
+    "after_baseline",
+    "in_development",
+    "after_integration",
+    "after_testing",
+    "after_acceptance",
+    "in_production",
+  ]),
+  requestedType: z
+    .enum(["correccion", "garantia", "ajuste_menor", "mejora", "nuevo_alcance", "cambio_estructural"])
+    .optional(),
+  clarityLevel: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)]),
+  urgencyLevel: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)]),
+  developmentMode: z.enum(["traditional", "ai_assisted", "hybrid", "bytecoding_prompts", "low_code"]),
+  affectedArtifacts: affectedArtifactsSchema,
+  securityImpact: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]),
+  dataImpact: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]),
+  integrationImpact: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]),
+  testingRequired: z.boolean().default(false),
+  clientAvailabilityRisk: z.number().min(0).max(0.5).default(0.15),
+});
+
+export const changeImpactDecisionSchema = z.object({
+  status: z.enum(["approved", "rejected", "deferred", "requires_clarification", "scope_increase"]),
+  comment: z.string().optional(),
+  decidedBy: z.string().min(2),
 });

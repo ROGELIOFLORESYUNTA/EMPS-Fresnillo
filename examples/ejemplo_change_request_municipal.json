@@ -1,0 +1,25 @@
+{
+  "originalText": "Quieren agregar un botón para que el director autorice el trámite y salga en el reporte mensual.",
+  "currentPhase": "after_testing",
+  "clarityLevel": 3,
+  "urgencyLevel": 4,
+  "developmentMode": "hybrid",
+  "affectedArtifacts": {
+    "uiScreens": 1,
+    "apiEndpoints": 1,
+    "businessRules": 2,
+    "databaseTables": 1,
+    "reports": 1,
+    "rolesPermissions": 1,
+    "externalIntegrations": 0,
+    "dataMigrationObjects": 0,
+    "automatedTests": 3,
+    "manualTestScenarios": 4,
+    "documentsOrTrainingItems": 1
+  },
+  "securityImpact": 1,
+  "dataImpact": 1,
+  "integrationImpact": 0,
+  "testingRequired": true,
+  "clientAvailabilityRisk": 0.15
+}

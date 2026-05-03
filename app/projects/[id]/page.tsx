@@ -484,12 +484,18 @@ export default async function ProjectDetailPage({
         const firstMaxIdx = incomes.indexOf(maxIncome);
         const lastMaxIdx = incomes.lastIndexOf(maxIncome);
         const worstAccIdx = project.cashflow.reduce((bestIdx, m, idx) => Number(m.accumulatedFlow) < Number(project.cashflow[bestIdx].accumulatedFlow) ? idx : bestIdx, 0);
+        const cashflowMonths = project.cashflow.length;
+        const intermediatePayments = project.cashflow.filter((m, i) => i !== firstMaxIdx && i !== lastMaxIdx && Number(m.income) > 0).length;
+        const totalPayments = project.cashflow.filter((m) => Number(m.income) > 0).length;
+        const selectedWeeks = selectedEstimate?.weeksTotal ? Number(selectedEstimate.weeksTotal) : null;
+        const selectedMonthsFromWeeks = selectedWeeks ? selectedWeeks / 4.33 : null;
+        const cashflowVsEstimateMismatch = selectedMonthsFromWeeks !== null && Math.abs(selectedMonthsFromWeeks - cashflowMonths) > 1.0;
         function conceptoDelMes(idx: number, income: number) {
-          if (income === 0) return { label: "Sin cobro", className: "text-muted-foreground" };
-          if (idx === firstMaxIdx && idx !== lastMaxIdx) return { label: "Anticipo", className: "text-blue-700 font-medium" };
-          if (idx === lastMaxIdx && lastMaxIdx !== firstMaxIdx) return { label: "Finiquito", className: "text-emerald-700 font-medium" };
-          if (idx === firstMaxIdx && idx === lastMaxIdx) return { label: "Pago único", className: "text-emerald-700 font-medium" };
-          return { label: "Pago mensual", className: "text-foreground" };
+          if (income === 0) return { label: "Sin cobro", className: "text-muted-foreground", icon: "—" };
+          if (idx === firstMaxIdx && idx !== lastMaxIdx) return { label: "Anticipo (cobro)", className: "text-blue-700 font-medium", icon: "↓" };
+          if (idx === lastMaxIdx && lastMaxIdx !== firstMaxIdx) return { label: "Pago final (cobro)", className: "text-emerald-700 font-medium", icon: "↓" };
+          if (idx === firstMaxIdx && idx === lastMaxIdx) return { label: "Pago único (cobro)", className: "text-emerald-700 font-medium", icon: "↓" };
+          return { label: "Pago parcial (cobro)", className: "text-foreground", icon: "↓" };
         }
         return (
         <Card>
@@ -503,7 +509,20 @@ export default async function ProjectDetailPage({
               </InfoTip>
             </CardTitle>
             <CardDescription>
-              Cómo entra y sale el dinero del proveedor mes a mes. Los <strong>ingresos</strong> son los pagos del cliente (anticipo + pagos mensuales + finiquito). Las <strong>salidas</strong> son nómina del equipo, impuestos, herramientas y administración.
+              Cómo entra y sale el dinero del proveedor mes a mes. Los <strong>cobros al cliente</strong> son ingresos (todos en verde con flecha ↓ porque son dinero que ENTRA al proveedor). Las <strong>salidas</strong> son nómina del equipo, impuestos, herramientas y administración.
+              <br />
+              <span className="block mt-1">
+                <strong className="text-foreground">Estructura de pagos de este proyecto:</strong> {totalPayments} cobros en total — 1 anticipo al arrancar, {intermediatePayments} {intermediatePayments === 1 ? "pago parcial intermedio" : "pagos parciales intermedios"} y 1 pago final al cerrar. Distribuidos en <strong>{cashflowMonths} meses</strong>.
+                <InfoTip title="¿Por qué está en meses y no en semanas? ¿Por qué pagos parciales mensuales?">
+                  <p>El flujo de efectivo se modela en MESES porque los ciclos de nómina, impuestos (IMSS, ISN), facturación y rentas administrativas son mensuales. Las {selectedWeeks ? `${selectedWeeks.toFixed(1)} semanas` : "semanas"} de calendario del modo se convierten a meses dividiendo entre 4.33.</p>
+                  <p>Los <strong>pagos parciales</strong> entre el anticipo y el pago final se asumen <strong>mensuales</strong> por defecto del modelo. Esto refleja la práctica común en contratos municipales (estimación mensual contra avance, art. 54 LOPSRM). Si tu contrato real es a 3 pagos totales (anticipo + 1 intermedio + finiquito) o anticipo + finiquito, eso se configura en el wizard de estimación con los porcentajes.</p>
+                </InfoTip>
+              </span>
+              {cashflowVsEstimateMismatch && selectedMonthsFromWeeks !== null && (
+                <span className="block mt-2 p-2 rounded border border-amber-300 bg-amber-50 text-amber-900 text-xs">
+                  ⚠ <strong>El cashflow no coincide con la duración de este modo:</strong> el modo {modeLabels[selectedMode]} tarda ~{selectedMonthsFromWeeks.toFixed(1)} meses según la estimación, pero esta tabla está calculada para {cashflowMonths} meses. El cashflow se generó una sola vez con la duración del wizard. Para sincronizarlo, recalcula el proyecto eligiendo este modo.
+                </span>
+              )}
               <br />
               <strong className="text-foreground">Bache de caja máximo: {formatMXN(Number(project.cashflow[0].workingCapitalRequired))}</strong> {worstAccumulated && (
                 <>(aparece en el mes <strong>{worstAccumulated.monthNumber}</strong>, marcado abajo). Es el saldo más profundo en negativo: lo que el proveedor debe tener en banco antes de arrancar.</>
@@ -519,14 +538,14 @@ export default async function ProjectDetailPage({
                     <span className="inline-flex items-center">
                       Concepto
                       <InfoTip title="¿Cómo se etiqueta cada mes?">
-                        <p>El sistema mira el monto de cobro al cliente de cada mes y aplica esta lógica:</p>
+                        <p>Todas las filas con flecha <strong>↓</strong> son <strong>cobros que el proveedor recibe del cliente</strong> (dinero que entra). El sistema mira el monto y asigna:</p>
                         <ul className="list-disc ml-4 space-y-0.5">
-                          <li><strong>Anticipo</strong>: el primer mes con el cobro más alto del proyecto. Es el primer pago grande del cliente al arrancar.</li>
-                          <li><strong>Finiquito</strong>: el último mes con el cobro más alto del proyecto. Es el pago final del cliente al cerrar.</li>
-                          <li><strong>Pago mensual</strong>: meses intermedios donde el cliente paga una cantidad menor contra avance.</li>
-                          <li><strong>Sin cobro</strong>: meses donde no hay ingreso del cliente (el proveedor solo paga sin cobrar).</li>
+                          <li><strong>Anticipo (cobro)</strong>: el primer mes con el cobro más alto. Es el pago inicial al arrancar.</li>
+                          <li><strong>Pago final (cobro)</strong>: el último mes con el cobro más alto. Es el pago de cierre cuando se entrega — aquí lo nombramos "Pago final" en lugar de "Finiquito" porque finiquito en español también significa liquidación al trabajador, y el pago aquí es del CLIENTE al PROVEEDOR.</li>
+                          <li><strong>Pago parcial (cobro)</strong>: meses intermedios donde el cliente paga contra avance. Se asume mensual por defecto del modelo (práctica común en contratos municipales). Si tu contrato es a 2 pagos totales, ajusta los % en el wizard.</li>
+                          <li><strong>Sin cobro</strong>: meses sin ingreso del cliente. El proveedor solo paga (nómina, impuestos, etc.).</li>
                         </ul>
-                        <p>En este proyecto el patrón es {firstMaxIdx === lastMaxIdx ? "un solo pago grande" : "anticipo grande → pagos mensuales menores → finiquito grande"}, por eso las etiquetas quedan en esa posición.</p>
+                        <p>En este proyecto el patrón es {firstMaxIdx === lastMaxIdx ? "un solo pago grande" : `anticipo + ${intermediatePayments} pago${intermediatePayments === 1 ? "" : "s"} parcial${intermediatePayments === 1 ? "" : "es"} + pago final`}, por eso las etiquetas quedan en esa posición.</p>
                       </InfoTip>
                     </span>
                   </TableHead>
@@ -546,8 +565,19 @@ export default async function ProjectDetailPage({
                   return (
                   <TableRow key={m.id} className={isBacheRow ? "bg-orange-50" : ""}>
                     <TableCell>Mes {m.monthNumber}</TableCell>
-                    <TableCell className={concepto.className}>{concepto.label}</TableCell>
-                    <TableCell className="text-right text-green-700">{Number(m.income) > 0 ? formatMXN(Number(m.income)) : "—"}</TableCell>
+                    <TableCell className={concepto.className}>
+                      <span className="inline-flex items-center gap-1">
+                        {concepto.icon !== "—" && <span aria-hidden className="text-green-600">{concepto.icon}</span>}
+                        <span>{concepto.label}</span>
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {Number(m.income) > 0 ? (
+                        <span className="text-green-700 font-medium">+{formatMXN(Number(m.income))}</span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
                     <TableCell className="text-right text-muted-foreground">{formatMXN(-Number(m.payrollOutflow))}</TableCell>
                     <TableCell className="text-right text-muted-foreground">{formatMXN(-Number(m.taxOutflow))}</TableCell>
                     <TableCell className="text-right text-muted-foreground">{formatMXN(-Number(m.toolsOutflow))}</TableCell>

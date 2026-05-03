@@ -13,3 +13,8 @@ export * from "./risk";
 export * from "./metrics";
 export * from "./lft-risk";
 export { loadFiscalRatesFromSeed } from "./seedAdapter";
+
+// Control de cambios v6 (Addendum 26-34)
+export * from "./change-types";
+export { computeChangeImpact, ARTIFACT_WEIGHTS, CLARITY_FACTOR as CHANGE_CLARITY_FACTOR, PHASE_FACTOR as CHANGE_PHASE_FACTOR, MODE_FACTOR as CHANGE_MODE_FACTOR, CONTINGENCY_BY_TYPE as CHANGE_CONTINGENCY_BY_TYPE, HIGH_RISK_MODE_FLOOR } from "./change-impact";
+export { buildClarificationQuestions } from "./change-questions";

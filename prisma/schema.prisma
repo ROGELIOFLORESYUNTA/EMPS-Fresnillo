@@ -238,25 +238,92 @@ model ChangeRequest {
   requesterId          String?
   requesterName        String   // por si no es usuario del sistema
   description          String
-  type                 String   // correccion|garantia|ajuste_menor|mejora|nuevo_alcance
+  type                 String   // correccion|garantia|ajuste_menor|mejora|nuevo_alcance|cambio_estructural
   reason               String?
   timeImpactHours      Decimal?
   costImpact           Decimal?
   testingImpact        String?
   trainingImpact       String?
   documentationImpact  String?
-  decision             String   @default("pendiente") // pendiente|aceptado|rechazado|incluido
+  decision             String   @default("pendiente") // pendiente|aceptado|rechazado|incluido|diferido|requires_clarification
   decidedBy            String?
   decidedAt            DateTime?
+  // Addendum v6 — campos opcionales del SDS 28
+  phaseAtRequest       String?
+  clientOriginalText   String?
+  approvedBy           String?
+  approvalDate         DateTime?
+  baselineVersion      Int?
+  isWarrantyClaim      Boolean  @default(false)
+  isScopeIncrease      Boolean  @default(false)
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
-  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  module    Module? @relation(fields: [moduleId], references: [id])
-  requester User?   @relation("ChangeRequester", fields: [requesterId], references: [id])
+  project    Project                  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  module     Module?                  @relation(fields: [moduleId], references: [id])
+  requester  User?                    @relation("ChangeRequester", fields: [requesterId], references: [id])
+  assessment ChangeImpactAssessment?
 
   @@index([projectId])
   @@index([decision])
+}
+
+// ============================================================
+// EVALUACION DE IMPACTO DE CAMBIO (Addendum v6)
+// Fuente: 27_addendum_sds_motor_control_cambios.md, 28_addendum_datos_prisma_control_cambios.md
+// Calculo en lib/engine/change-impact.ts
+// ============================================================
+
+model ChangeImpactAssessment {
+  id                         String   @id @default(cuid())
+  projectId                  String
+  changeRequestId            String?  @unique
+  estimateId                 String?
+
+  originalText               String
+  suggestedType              String
+  finalType                  String?
+  currentPhase               String
+  developmentMode            String
+
+  clarityLevel               Int
+  urgencyLevel               Int
+  affectedArtifactsJson      String
+
+  artifactPoints             Decimal
+  clarityFactor              Decimal
+  phaseFactor                Decimal
+  modeFactor                 Decimal
+  riskFactor                 Decimal
+  contingencyRate            Decimal
+
+  optimisticHours            Decimal
+  probableHours              Decimal
+  conservativeHours          Decimal
+  estimatedCost              Decimal
+  calendarImpactDays         Int
+
+  riskLevel                  String
+  requiresNewBaseline        Boolean  @default(false)
+  requiresFormalApproval     Boolean  @default(false)
+  decisionStatus             String   @default("requires_review")
+  decisionComment            String?
+  decidedBy                  String?
+  decidedAt                  DateTime?
+
+  explanationJson            String
+  questionsToClarifyJson     String
+  parametersSnapshot         String
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+
+  changeRequest ChangeRequest? @relation(fields: [changeRequestId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([changeRequestId])
+  @@index([currentPhase])
+  @@index([developmentMode])
+  @@index([decisionStatus])
 }
 
 // ============================================================

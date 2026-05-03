@@ -1,0 +1,51 @@
+{
+  "version": "2026-05-control-cambios-v6",
+  "effectiveFrom": "2026-05-03",
+  "parameters": {
+    "CHANGE_PHASE_FACTOR": {
+      "before_baseline": 0.7,
+      "after_baseline": 1.0,
+      "in_development": 1.35,
+      "after_integration": 1.7,
+      "after_testing": 2.2,
+      "after_acceptance": 2.6,
+      "in_production": 3.0
+    },
+    "CHANGE_MODE_FACTOR": {
+      "traditional": 1.0,
+      "ai_assisted": 0.88,
+      "hybrid": 0.78,
+      "bytecoding_prompts": 0.68,
+      "low_code": 0.62
+    },
+    "CHANGE_MODE_MIN_FACTOR_HIGH_RISK": 0.9,
+    "CHANGE_CLARITY_FACTOR": {
+      "1": 1.6,
+      "2": 1.35,
+      "3": 1.15,
+      "4": 1.05,
+      "5": 1.0
+    },
+    "CHANGE_CONTINGENCY_RATE": {
+      "correccion": 0.05,
+      "garantia": 0.05,
+      "ajuste_menor": 0.08,
+      "mejora": 0.12,
+      "nuevo_alcance": 0.15,
+      "cambio_estructural": 0.2
+    },
+    "CHANGE_ARTIFACT_WEIGHTS": {
+      "uiScreens": 6,
+      "apiEndpoints": 8,
+      "businessRules": 10,
+      "databaseTables": 14,
+      "reports": 10,
+      "rolesPermissions": 12,
+      "externalIntegrations": 24,
+      "dataMigrationObjects": 18,
+      "automatedTests": 4,
+      "manualTestScenarios": 3,
+      "documentsOrTrainingItems": 2
+    }
+  }
+}
