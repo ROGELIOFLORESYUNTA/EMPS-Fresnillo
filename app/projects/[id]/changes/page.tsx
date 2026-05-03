@@ -11,8 +11,15 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { api, apiPost, apiPut } from "@/lib/api-client";
 import { formatMXN } from "@/lib/utils";
-import { Plus, Check, X } from "lucide-react";
+import { Plus, Check, X, Calculator } from "lucide-react";
 import { Breadcrumbs } from "@/components/breadcrumbs";
+import {
+  computeChangeCost,
+  PHASE_LABELS,
+  DEFAULT_CONTINGENCY,
+  DEFAULT_MIN_COST_MXN,
+  type ProjectPhase,
+} from "@/lib/engine/change-cost";
 
 interface ChangeRow {
   id: string;
@@ -48,6 +55,16 @@ export default function ChangesPage({ params }: { params: Promise<{ id: string }
     timeImpactHours: 0,
     costImpact: 0,
     testingImpact: "",
+  });
+  const [hourlyRate, setHourlyRate] = useState(500);
+  const [phase, setPhase] = useState<ProjectPhase>("mitad");
+  const [contingencyPct, setContingencyPct] = useState(DEFAULT_CONTINGENCY * 100);
+  const suggestion = computeChangeCost({
+    hours: form.timeImpactHours,
+    hourlyRate,
+    phase,
+    contingency: contingencyPct / 100,
+    minimum: DEFAULT_MIN_COST_MXN,
   });
 
   useEffect(() => {
@@ -124,15 +141,56 @@ export default function ChangesPage({ params }: { params: Promise<{ id: string }
                 <Label>Causa / Justificación</Label>
                 <Textarea value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} placeholder="¿Por qué se solicita este cambio?" rows={2} />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid md:grid-cols-3 gap-4">
                 <div className="grid gap-2">
                   <Label>Impacto en horas (estimado)</Label>
                   <Input type="number" min={0} step={1} value={form.timeImpactHours} onChange={(e) => setForm({ ...form, timeImpactHours: +e.target.value })} />
                 </div>
                 <div className="grid gap-2">
-                  <Label>Impacto en costo (MXN)</Label>
-                  <Input type="number" min={0} step={1000} value={form.costImpact} onChange={(e) => setForm({ ...form, costImpact: +e.target.value })} />
+                  <Label>Tarifa por hora (MXN)</Label>
+                  <Input type="number" min={0} step={50} value={hourlyRate} onChange={(e) => setHourlyRate(+e.target.value)} />
+                  <p className="text-xs text-muted-foreground">Costo promedio del equipo por hora.</p>
                 </div>
+                <div className="grid gap-2">
+                  <Label>Fase del proyecto</Label>
+                  <Select value={phase} onChange={(e) => setPhase(e.target.value as ProjectPhase)}>
+                    <option value="inicio">{PHASE_LABELS.inicio}</option>
+                    <option value="mitad">{PHASE_LABELS.mitad}</option>
+                    <option value="avanzado">{PHASE_LABELS.avanzado}</option>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">Cambios tardíos cuestan más (curva de Boehm / PMBOK 7).</p>
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-3 gap-4 items-end">
+                <div className="grid gap-2 md:col-span-1">
+                  <Label>Contingencia (%)</Label>
+                  <Input type="number" min={0} max={50} step={1} value={contingencyPct} onChange={(e) => setContingencyPct(+e.target.value)} />
+                  <p className="text-xs text-muted-foreground">Reserva para imprevistos. PMBOK: 10–15% típico.</p>
+                </div>
+                <div className="md:col-span-2 rounded-md border bg-muted/40 p-3 text-sm">
+                  <p className="font-medium flex items-center gap-1 mb-2">
+                    <Calculator className="w-4 h-4" /> Costo sugerido
+                  </p>
+                  <ul className="space-y-1 text-xs text-muted-foreground">
+                    <li>Horas × tarifa: <span className="font-mono">{formatMXN(suggestion.baseCost)}</span></li>
+                    <li>× factor de fase ({suggestion.phaseFactor.toFixed(1)}): <span className="font-mono">{formatMXN(suggestion.adjustedByPhase)}</span></li>
+                    <li>+ contingencia ({(suggestion.contingencyRate * 100).toFixed(0)}%): <span className="font-mono">{formatMXN(suggestion.contingencyAmount)}</span></li>
+                    {suggestion.hitMinimum && <li className="text-amber-700">Aplicó costo mínimo de {formatMXN(DEFAULT_MIN_COST_MXN)}.</li>}
+                  </ul>
+                  <div className="flex items-center justify-between mt-2 pt-2 border-t">
+                    <span className="text-base font-semibold">{formatMXN(suggestion.suggestedTotal)}</span>
+                    <Button type="button" size="sm" variant="outline" onClick={() => setForm((f) => ({ ...f, costImpact: Math.round(suggestion.suggestedTotal) }))}>
+                      Usar este costo
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-2">
+                <Label>Costo final (MXN)</Label>
+                <Input type="number" min={0} step={1000} value={form.costImpact} onChange={(e) => setForm({ ...form, costImpact: +e.target.value })} />
+                <p className="text-xs text-muted-foreground">Puedes ajustarlo manualmente. Si dejas 0 con horas {">"} 0, lo recomendable es pulsar &quot;Usar este costo&quot;.</p>
               </div>
               <div className="grid gap-2">
                 <Label>Impacto en pruebas</Label>

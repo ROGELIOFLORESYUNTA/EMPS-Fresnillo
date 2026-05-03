@@ -437,3 +437,35 @@ describe("Aliases de modos de desarrollo", () => {
     expect(() => normalizeMode("invalid_mode")).toThrow();
   });
 });
+
+describe("Cotizacion de change requests (curva de Boehm / PMBOK 7)", () => {
+  it("aplica factor 1.0 en fase inicio", async () => {
+    const { computeChangeCost } = await import("@/lib/engine/change-cost");
+    const r = computeChangeCost({ hours: 10, hourlyRate: 500, phase: "inicio", contingency: 0, minimum: 0 });
+    expect(r.baseCost).toBe(5000);
+    expect(r.phaseFactor).toBe(1.0);
+    expect(r.suggestedTotal).toBe(5000);
+  });
+
+  it("aplica factor 1.5 en fase mitad", async () => {
+    const { computeChangeCost } = await import("@/lib/engine/change-cost");
+    const r = computeChangeCost({ hours: 10, hourlyRate: 500, phase: "mitad", contingency: 0, minimum: 0 });
+    expect(r.adjustedByPhase).toBe(7500);
+    expect(r.suggestedTotal).toBe(7500);
+  });
+
+  it("aplica factor 2.5 en fase avanzado y suma contingencia 15%", async () => {
+    const { computeChangeCost } = await import("@/lib/engine/change-cost");
+    const r = computeChangeCost({ hours: 10, hourlyRate: 500, phase: "avanzado", contingency: 0.15, minimum: 0 });
+    expect(r.adjustedByPhase).toBe(12500);
+    expect(r.contingencyAmount).toBeCloseTo(1875, 2);
+    expect(r.suggestedTotal).toBeCloseTo(14375, 2);
+  });
+
+  it("respeta el costo minimo cuando el calculo queda muy bajo", async () => {
+    const { computeChangeCost } = await import("@/lib/engine/change-cost");
+    const r = computeChangeCost({ hours: 1, hourlyRate: 200, phase: "inicio", contingency: 0.15, minimum: 5000 });
+    expect(r.suggestedTotal).toBe(5000);
+    expect(r.hitMinimum).toBe(true);
+  });
+});
