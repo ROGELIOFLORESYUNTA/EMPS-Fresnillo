@@ -111,7 +111,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
               <CardContent className="space-y-2 text-sm">
                 <p>El proveedor requiere capital de trabajo de <strong>{formatMXN(wcap)}</strong> antes de cobrar el primer entregable. Si el proveedor no lo declara, podría dejar el proyecto sin liquidez.</p>
                 {project.modules.some((m) => m.sensitiveData) && (
-                  <p>Hay módulos con datos personales/sensibles. Asegurar cláusulas LFPDPPP y plan de seguridad antes de firmar.</p>
+                  <p>Hay módulos con datos personales o sensibles. Antes de firmar, asegurar cláusulas conforme a la Ley General de Protección de Datos Personales en Posesión de Sujetos Obligados (LGPDPPSO, aplicable al Ayuntamiento) y a la Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP, aplicable al proveedor), más plan de seguridad documentado.</p>
                 )}
                 {probable && Number(probable.margin) < 0.15 && (
                   <p>Margen objetivo del proveedor &lt;15%. Revisar si la cotización cubre nómina, impuestos y mantenimiento.</p>
@@ -279,7 +279,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
                 <li>Versión de estimación: v{latestVersion}</li>
                 <li>Cambios registrados: {project.changes.length}</li>
                 <li>Comparación de escenarios: {latest.length} estimaciones</li>
-                <li>Parámetros snapshot: ✅ (RNF-03 auditabilidad)</li>
+                <li>Parámetros snapshot: ✅ (cada estimación guarda copia de los parámetros usados para auditoría)</li>
                 <li>Resultado real pendiente de capturar al cierre del proyecto</li>
               </ul>
             </CardContent>

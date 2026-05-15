@@ -53,7 +53,7 @@ export default async function UsersPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2"><Shield className="w-4 h-4" />Roles del sistema</CardTitle>
-          <CardDescription>Cada rol determina qué puede ver y modificar (RNF-04 seguridad).</CardDescription>
+          <CardDescription>Cada rol determina qué puede ver y modificar dentro del sistema.</CardDescription>
         </CardHeader>
         <CardContent className="grid md:grid-cols-2 gap-3">
           {Object.entries(ROLE_INFO).map(([role, info]) => (

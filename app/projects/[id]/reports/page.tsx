@@ -75,7 +75,7 @@ export default async function ReportsHubPage({ params }: { params: Promise<{ id:
         <CardContent className="py-4 text-sm text-muted-foreground">
           <strong className="text-foreground">Importante:</strong> los reportes son estimaciones preliminares. La determinación oficial fiscal/laboral
           requiere revisión profesional según régimen, deducciones, prestaciones, SBC, clase de riesgo IMSS y movimientos afiliatorios. Cada reporte
-          incluye los parámetros usados para auditoría (RNF-03).
+          incluye los parámetros usados al momento del cálculo para auditoría posterior.
         </CardContent>
       </Card>
     </div>

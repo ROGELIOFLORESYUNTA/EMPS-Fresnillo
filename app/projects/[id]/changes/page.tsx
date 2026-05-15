@@ -158,7 +158,7 @@ export default function ChangesPage({ params }: { params: Promise<{ id: string }
                     <option value="mitad">{PHASE_LABELS.mitad}</option>
                     <option value="avanzado">{PHASE_LABELS.avanzado}</option>
                   </Select>
-                  <p className="text-xs text-muted-foreground">Cambios tardíos cuestan más (curva de Boehm / PMBOK 7).</p>
+                  <p className="text-xs text-muted-foreground">Cambios tardíos cuestan más (curva de costo del cambio de Boehm, estándar del Project Management Institute).</p>
                 </div>
               </div>
 
@@ -166,7 +166,7 @@ export default function ChangesPage({ params }: { params: Promise<{ id: string }
                 <div className="grid gap-2 md:col-span-1">
                   <Label>Contingencia (%)</Label>
                   <Input type="number" min={0} max={50} step={1} value={contingencyPct} onChange={(e) => setContingencyPct(+e.target.value)} />
-                  <p className="text-xs text-muted-foreground">Reserva para imprevistos. PMBOK: 10–15% típico.</p>
+                  <p className="text-xs text-muted-foreground">Reserva para imprevistos. La práctica internacional (Project Management Institute) recomienda 10 a 15% típico, hasta 25% en proyectos complejos.</p>
                 </div>
                 <div className="md:col-span-2 rounded-md border bg-muted/40 p-3 text-sm">
                   <p className="font-medium flex items-center gap-1 mb-2">

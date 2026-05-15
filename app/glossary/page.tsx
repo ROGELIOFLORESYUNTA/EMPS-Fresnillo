@@ -42,6 +42,12 @@ const TERMS: Array<{ term: string; category: string; definition: string; source?
   { term: "factor conservador", category: "Riesgo", definition: "Multiplicador del escenario conservador (1.25-1.80) que crece con: claridad <3, integraciones >2, datos sensibles, probabilidad cambios >0.3, baja disponibilidad del cliente.", source: "07_motor_formulas.md §3" },
   { term: "Cambio de alcance", category: "Cambios", definition: "Tipos: corrección · garantía · ajuste menor · mejora · nuevo alcance. Cada uno con impacto en tiempo, costo, pruebas, capacitación y documentación.", source: "07_motor_formulas.md §8" },
   { term: "Riesgo agregado", category: "Riesgo", definition: "Suma de 5 dimensiones (técnico + requerimientos + fiscal + flujo de efectivo + cambios). Tope 5.0. Niveles: bajo <1.5, medio <3.0, alto <4.0, crítico ≥4.0.", source: "07_motor_formulas.md §9" },
+
+  // Privacidad y datos personales
+  { term: "LGPDPPSO", category: "Privacidad", definition: "Ley General de Protección de Datos Personales en Posesión de Sujetos Obligados. Es la ley que aplica al Ayuntamiento (y a cualquier entidad pública) cuando trata datos personales de ciudadanos. Exige aviso de privacidad, derechos ARCO, medidas de seguridad y bitácora.", source: "DOF 26-ene-2017" },
+  { term: "LFPDPPP", category: "Privacidad", definition: "Ley Federal de Protección de Datos Personales en Posesión de los Particulares. Aplica al proveedor de software como empresa privada cuando trata datos de empleados, clientes o terceros. Exige aviso de privacidad, consentimiento y medidas de seguridad.", source: "DOF 05-jul-2010" },
+  { term: "Datos personales sensibles", category: "Privacidad", definition: "Datos cuya afectación al titular puede causar discriminación o riesgo grave: salud, origen racial, ideología, religión, vida sexual, datos biométricos. Requieren consentimiento expreso y por escrito.", source: "LFPDPPP Art. 3 fracc. VI / LGPDPPSO Art. 3 fracc. X" },
+  { term: "Derechos ARCO", category: "Privacidad", definition: "Acceso, Rectificación, Cancelación y Oposición. Son los 4 derechos del titular sobre sus datos personales que tanto el Ayuntamiento como el proveedor deben garantizar mediante un procedimiento documentado.", source: "LFPDPPP Cap. IV / LGPDPPSO Cap. III" },
 ];
 
 const CATEGORIES = Array.from(new Set(TERMS.map((t) => t.category)));
@@ -52,7 +58,7 @@ export default function GlossaryPage() {
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2"><BookOpen className="w-6 h-6" />Glosario</h1>
         <p className="text-muted-foreground">
-          {TERMS.length} términos en {CATEGORIES.length} categorías. Diseñado para usuarios no técnicos (RNF-01).
+          {TERMS.length} términos en {CATEGORIES.length} categorías. Está pensado para personas que operan el sistema sin formación técnica ni contable.
         </p>
       </div>
 

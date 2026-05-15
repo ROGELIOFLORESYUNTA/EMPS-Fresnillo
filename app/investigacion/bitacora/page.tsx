@@ -34,7 +34,7 @@ export default async function AuditPage() {
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2"><History className="w-6 h-6" />Bitácora del sistema</h1>
         <p className="text-muted-foreground">
-          {logs.length} eventos recientes registrados (RNF-03 auditabilidad). Cada cambio queda guardado con fecha, usuario y snapshot.
+          {logs.length} eventos recientes. Cada cambio queda guardado con fecha, usuario y copia del estado antes y después, para auditoría académica y reproducibilidad.
         </p>
       </div>
 
