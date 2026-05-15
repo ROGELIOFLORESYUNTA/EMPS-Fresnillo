@@ -143,14 +143,9 @@ export default async function ProjectDetailPage({
             Las cifras hablan desde tu lado: lo que cobras, lo que pagas y el dinero que tienes que adelantar antes de que el cliente ({project.client}) te liquide. Los reportes redactan los mismos números para las otras audiencias.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button asChild size="sm" variant="outline">
-            <Link href={`/projects/${id}/reports/municipal`}>Ver versión para Ayuntamiento</Link>
-          </Button>
-          <Button asChild size="sm" variant="outline">
-            <Link href={`/projects/${id}/reports/research`}>Ver versión académica</Link>
-          </Button>
-        </div>
+        <Button asChild size="sm" variant="outline">
+          <Link href={`/projects/${id}/reports/municipal`}>Ver versión para Ayuntamiento</Link>
+        </Button>
       </div>
 
       {/* Checklist de progreso */}

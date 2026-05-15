@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileText, Building2, Briefcase, GraduationCap, Printer } from "lucide-react";
+import { FileText, Building2, Briefcase, Printer } from "lucide-react";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 
 export default async function ReportsHubPage({ params }: { params: Promise<{ id: string }> }) {
@@ -28,13 +28,6 @@ export default async function ReportsHubPage({ params }: { params: Promise<{ id:
       description: "Costo real del equipo, capital de trabajo, impuestos estimados, margen, precio mínimo sostenible, recomendación de anticipo y mantenimiento.",
       icon: <Briefcase className="w-6 h-6" />,
       audience: "Proveedor de software",
-    },
-    {
-      key: "research",
-      title: "Reporte académico",
-      description: "Variables capturadas, escenarios comparados (5 modos × 3 escenarios), diferencias, evidencia para validar/ajustar la hipótesis.",
-      icon: <GraduationCap className="w-6 h-6" />,
-      audience: "Investigación UAZ",
     },
   ];
 

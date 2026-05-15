@@ -18,15 +18,9 @@ const NAV_USUARIO = [
   { href: "/glossary", label: "Glosario" },
 ] as const;
 
-const NAV_ADMIN = [
+const NAV_OPERATIVO = [
   { href: "/admin/parametros", label: "Editor de parámetros" },
   { href: "/admin/calibracion", label: "Calibración del motor" },
-  { href: "/admin/datasets", label: "Datasets" },
-  { href: "/admin/fuentes-vivas", label: "Fuentes vivas" },
-  { href: "/admin/modelos-ml", label: "Modelos ML" },
-  { href: "/comparator", label: "Comparador técnico" },
-  { href: "/audit", label: "Bitácora" },
-  { href: "/users", label: "Usuarios y roles" },
 ] as const;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -76,9 +70,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm font-semibold mb-2">Pantallas administrativas</p>
+                  <p className="text-sm font-semibold mb-2">Configuración avanzada</p>
                   <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm">
-                    {NAV_ADMIN.map((item) => (
+                    {NAV_OPERATIVO.map((item) => (
                       <Link
                         key={item.href}
                         href={item.href}
@@ -90,9 +84,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   </div>
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground mt-6 pt-4 border-t">
-                Las estimaciones son preliminares. La determinación oficial fiscal y laboral requiere revisión profesional contable, fiscal y legal.
-              </p>
+              <div className="mt-6 pt-4 border-t flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs text-muted-foreground flex-1 min-w-[280px]">
+                  Las estimaciones son preliminares. La determinación oficial fiscal y laboral requiere revisión profesional contable, fiscal y legal.
+                </p>
+                <Link
+                  href="/investigacion"
+                  className="text-[10px] text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+                >
+                  Investigación
+                </Link>
+              </div>
             </div>
           </footer>
         </div>

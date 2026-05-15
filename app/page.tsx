@@ -3,11 +3,11 @@ import { prisma } from "@/lib/db";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, FolderOpen, Plus, Settings, BookOpen, FileText, AlertCircle, Database, Activity, BrainCircuit, History, Users, TrendingUp } from "lucide-react";
+import { ArrowRight, FolderOpen, Plus, Settings, BookOpen, FileText, AlertCircle } from "lucide-react";
 import { formatMXN } from "@/lib/utils";
 
 export default async function HomePage() {
-  const [projects, totalProjects, paramsCount, pendingChanges, pendingReviews, datasetsCount, liveSourcesCount, mlModelsCount, usersCount] = await Promise.all([
+  const [projects, totalProjects, paramsCount, pendingChanges] = await Promise.all([
     prisma.project.findMany({
       orderBy: { updatedAt: "desc" },
       take: 6,
@@ -23,11 +23,6 @@ export default async function HomePage() {
     prisma.project.count(),
     prisma.parameter.count(),
     prisma.changeRequest.count({ where: { decision: "pendiente" } }),
-    prisma.parameterChangeReview.count({ where: { decision: "pending" } }),
-    prisma.estimationDatasetSource.count(),
-    prisma.liveSourceRegistry.count({ where: { active: true } }),
-    prisma.mLModelRegistry.count(),
-    prisma.user.count(),
   ]);
 
   return (
@@ -63,23 +58,16 @@ export default async function HomePage() {
       </section>
 
       {/* Alertas si hay pendientes */}
-      {(pendingChanges > 0 || pendingReviews > 0) && (
+      {pendingChanges > 0 && (
         <section className="border-l-4 border-orange-400 bg-orange-50/50 rounded-md p-4">
           <h2 className="font-semibold flex items-center gap-2 mb-2">
             <AlertCircle className="w-5 h-5 text-orange-600" />
             Pendientes de atención
           </h2>
           <div className="text-sm space-y-1">
-            {pendingChanges > 0 && (
-              <p>· <strong>{pendingChanges}</strong> cambios de proyectos sin decisión.
-                <Link href="/projects" className="text-primary hover:underline ml-1">Revisar</Link>
-              </p>
-            )}
-            {pendingReviews > 0 && (
-              <p>· <strong>{pendingReviews}</strong> cambios de parámetros fiscales pendientes de aprobar.
-                <Link href="/admin/fuentes-vivas" className="text-primary hover:underline ml-1">Revisar</Link>
-              </p>
-            )}
+            <p>· <strong>{pendingChanges}</strong> cambios de proyectos sin decisión.
+              <Link href="/projects" className="text-primary hover:underline ml-1">Revisar</Link>
+            </p>
           </div>
         </section>
       )}
@@ -135,46 +123,11 @@ export default async function HomePage() {
         )}
       </section>
 
-      {/* Capa científica del sistema (addendum) */}
+      {/* Ayuda */}
       <section>
-        <h2 className="text-xl font-semibold mb-1">Capa científica e investigación</h2>
-        <p className="text-sm text-muted-foreground mb-4">Datasets, fuentes vivas y aprendizaje automático para validar la hipótesis con datos reales.</p>
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-3">
-          <SecondaryCard
-            href="/admin/datasets"
-            icon={<Database className="w-5 h-5" />}
-            title="Datasets"
-            description="Public Jira, JOSSE, SEERA, casos locales para calibración"
-            badge={String(datasetsCount)}
-          />
-          <SecondaryCard
-            href="/admin/fuentes-vivas"
-            icon={<Activity className="w-5 h-5" />}
-            title="Fuentes vivas"
-            description="SAT, INEGI, CONASAMI, SEFIN. Detectan cambios fiscales"
-            badge={String(liveSourcesCount)}
-          />
-          <SecondaryCard
-            href="/admin/modelos-ml"
-            icon={<BrainCircuit className="w-5 h-5" />}
-            title="Modelos ML"
-            description="Predicción de esfuerzo, riesgo de cambios, desviación"
-            badge={String(mlModelsCount)}
-          />
-          <SecondaryCard
-            href="/comparator"
-            icon={<TrendingUp className="w-5 h-5" />}
-            title="Comparador técnico"
-            description="Coeficientes y velocidad de los 5 modos de desarrollo"
-          />
-        </div>
-      </section>
-
-      {/* Operación y tutorial */}
-      <section>
-        <h2 className="text-xl font-semibold mb-1">Operación y ayuda</h2>
-        <p className="text-sm text-muted-foreground mb-4">Documentación, bitácora y administración de usuarios.</p>
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-3">
+        <h2 className="text-xl font-semibold mb-1">Ayuda</h2>
+        <p className="text-sm text-muted-foreground mb-4">Documentación de uso del sistema.</p>
+        <div className="grid md:grid-cols-2 gap-3">
           <SecondaryCard
             href="/como-funciona"
             icon={<BookOpen className="w-5 h-5" />}
@@ -186,19 +139,6 @@ export default async function HomePage() {
             icon={<FileText className="w-5 h-5" />}
             title="Glosario"
             description="30 términos del sistema explicados"
-          />
-          <SecondaryCard
-            href="/audit"
-            icon={<History className="w-5 h-5" />}
-            title="Bitácora"
-            description="Historial de cambios para auditoría (RNF-03)"
-          />
-          <SecondaryCard
-            href="/users"
-            icon={<Users className="w-5 h-5" />}
-            title="Usuarios y roles"
-            description="5 roles: admin, estimador, ayuntamiento, proveedor, auditor"
-            badge={String(usersCount)}
           />
         </div>
       </section>
