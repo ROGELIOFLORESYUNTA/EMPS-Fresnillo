@@ -132,18 +132,25 @@ export default async function ProjectDetailPage({
         </div>
       </div>
 
-      {/* Banner de perspectiva — desde dónde se ve el proyecto */}
+      {/* Banner de perspectiva. Esta pantalla muestra TODO desde el lado del proveedor.
+          Para ver el proyecto redactado para otra audiencia (cliente o investigador)
+          el sistema genera reportes separados. */}
       <div className="flex flex-wrap items-center gap-3 rounded-lg border border-blue-200 bg-blue-50/60 p-3 text-sm">
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-white text-xs font-bold">P</div>
-        <div className="flex-1 min-w-[200px]">
+        <div className="flex-1 min-w-[260px]">
           <p className="font-medium text-blue-900">Estás viendo este proyecto como <strong>Proveedor de software</strong></p>
           <p className="text-xs text-blue-800">
-            Las cifras hablan desde tu lado: lo que cobras, lo que pagas y el dinero que tienes que adelantar antes de que el cliente ({project.client}) te liquide.
+            Las cifras hablan desde tu lado: lo que cobras, lo que pagas y el dinero que tienes que adelantar antes de que el cliente ({project.client}) te liquide. Los reportes redactan los mismos números para las otras audiencias.
           </p>
         </div>
-        <Button asChild size="sm" variant="outline">
-          <Link href={`/projects/${id}/reports`}>Ver desde otra perspectiva</Link>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild size="sm" variant="outline">
+            <Link href={`/projects/${id}/reports/municipal`}>Ver versión para Ayuntamiento</Link>
+          </Button>
+          <Button asChild size="sm" variant="outline">
+            <Link href={`/projects/${id}/reports/research`}>Ver versión académica</Link>
+          </Button>
+        </div>
       </div>
 
       {/* Checklist de progreso */}

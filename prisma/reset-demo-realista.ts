@@ -49,7 +49,7 @@ async function main() {
   console.log("Creando proyecto demo realista...");
   const project = await prisma.project.create({
     data: {
-      name: "Sistema integral de trámites — Fresnillo",
+      name: "Sistema integral de trámites de Fresnillo",
       description: "Plataforma web para que el Ayuntamiento gestione trámites de Predial, Agua, Licencias, Actas, Multas, con portal ciudadano e integración bancaria.",
       client: "Ayuntamiento de Fresnillo",
       clientType: "municipal",
@@ -74,10 +74,10 @@ async function main() {
       },
       team: {
         create: [
-          { name: "Líder técnico — Ana Pérez", role: "lider_tecnico", level: "senior", monthlySalary: 55000, availabilityPercent: 100, monthsAssigned: 6, contractType: "nomina", productivityFactor: 1.0, turnoverRisk: 2, supervisionRequired: 1 },
-          { name: "Dev senior backend — Luis Ortiz", role: "dev_senior", level: "senior", monthlySalary: 42000, availabilityPercent: 100, monthsAssigned: 6, contractType: "nomina", productivityFactor: 1.0, turnoverRisk: 2, supervisionRequired: 2 },
-          { name: "Dev mid frontend — Sofía Reyes", role: "dev_senior", level: "mid", monthlySalary: 30000, availabilityPercent: 100, monthsAssigned: 6, contractType: "nomina", productivityFactor: 1.0, turnoverRisk: 3, supervisionRequired: 3 },
-          { name: "QA + soporte — Carlos Vega", role: "tester", level: "mid", monthlySalary: 26000, availabilityPercent: 80, monthsAssigned: 4, contractType: "nomina", productivityFactor: 1.0, turnoverRisk: 2, supervisionRequired: 2 },
+          { name: "Líder técnico: Ana Pérez", role: "lider_tecnico", level: "senior", monthlySalary: 55000, availabilityPercent: 100, monthsAssigned: 6, contractType: "nomina", productivityFactor: 1.0, turnoverRisk: 2, supervisionRequired: 1 },
+          { name: "Dev senior backend: Luis Ortiz", role: "dev_senior", level: "senior", monthlySalary: 42000, availabilityPercent: 100, monthsAssigned: 6, contractType: "nomina", productivityFactor: 1.0, turnoverRisk: 2, supervisionRequired: 2 },
+          { name: "Dev mid frontend: Sofía Reyes", role: "dev_senior", level: "mid", monthlySalary: 30000, availabilityPercent: 100, monthsAssigned: 6, contractType: "nomina", productivityFactor: 1.0, turnoverRisk: 3, supervisionRequired: 3 },
+          { name: "QA + soporte: Carlos Vega", role: "tester", level: "mid", monthlySalary: 26000, availabilityPercent: 80, monthsAssigned: 4, contractType: "nomina", productivityFactor: 1.0, turnoverRisk: 2, supervisionRequired: 2 },
         ],
       },
     },

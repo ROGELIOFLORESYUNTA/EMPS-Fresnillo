@@ -96,7 +96,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         entityId: assessment.id,
         action: "compute",
         after: JSON.stringify({ result, breakdown: result.breakdown }),
-        context: `Cambio ${changeId} en proyecto ${id} — fase ${input.currentPhase} · modo ${input.developmentMode}`,
+        context: `Cambio ${changeId} en proyecto ${id}, fase ${input.currentPhase}, modo ${input.developmentMode}`,
       },
     });
 
