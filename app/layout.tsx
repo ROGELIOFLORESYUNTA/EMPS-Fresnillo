@@ -6,7 +6,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
-  title: "EMPS-Fresnillo · Estimador Municipal de Proyectos de Software",
+  title: "EMPS Fresnillo. Estimador Municipal de Proyectos de Software",
   description:
     "Estimación temprana integral: técnica, modo de desarrollo, fiscal-laboral, flujo de efectivo y control de cambios.",
 };
@@ -42,7 +42,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   EM
                 </div>
                 <div className="hidden sm:block">
-                  <p className="font-semibold text-sm leading-tight">EMPS-Fresnillo</p>
+                  <p className="font-semibold text-sm leading-tight">EMPS Fresnillo</p>
                   <p className="text-xs text-muted-foreground leading-tight">Estimador Municipal de Proyectos</p>
                 </div>
               </Link>
@@ -70,9 +70,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <div className="max-w-6xl mx-auto px-6 py-6">
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2 font-semibold">EMPS-Fresnillo · v0.1.0</p>
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2 font-semibold">EMPS Fresnillo v0.1.0</p>
                   <p className="text-sm">Universidad Autónoma de Zacatecas</p>
-                  <p className="text-xs text-muted-foreground">Ingeniería en Software · Seminario de Investigación</p>
+                  <p className="text-xs text-muted-foreground">Ingeniería en Software. Seminario de Investigación</p>
                 </div>
                 <div>
                   <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2 font-semibold">Pantallas administrativas</p>

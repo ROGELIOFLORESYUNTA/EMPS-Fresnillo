@@ -2,7 +2,7 @@
   "name": "emps-fresnillo",
   "version": "0.1.0",
   "private": true,
-  "description": "EMPS-Fresnillo: Estimador Municipal de Proyectos de Software con viabilidad tecnica, fiscal-laboral, flujo de efectivo, bytecoding y control de cambios.",
+  "description": "EMPS Fresnillo: Estimador Municipal de Proyectos de Software con viabilidad tecnica, fiscal-laboral, flujo de efectivo, bytecoding y control de cambios.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

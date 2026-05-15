@@ -157,7 +157,7 @@ export default async function ProjectDetailPage({
             {siguientePaso && (
               <Button asChild>
                 <Link href={siguientePaso.href}>
-                  Continuar — {siguientePaso.label} <ArrowRight className="w-4 h-4 ml-2" />
+                  Continuar a {siguientePaso.label} <ArrowRight className="w-4 h-4 ml-2" />
                 </Link>
               </Button>
             )}
@@ -229,7 +229,7 @@ export default async function ProjectDetailPage({
             value={formatMXN(Number(workingCapitalRequired))}
             hint={
               worstAccumulated
-                ? `Aparece en el mes ${worstAccumulated.monthNumber} del proyecto (ver tabla "Flujo de efectivo" abajo). Equivale a ${bacheVsPrecioPct.toFixed(0)}% del precio cotizado — es lo que el proveedor adelanta de su bolsa antes de cobrar el siguiente pago del cliente.`
+                ? `Aparece en el mes ${worstAccumulated.monthNumber} del proyecto (ver tabla "Flujo de efectivo" abajo). Equivale a ${bacheVsPrecioPct.toFixed(0)}% del precio cotizado. Es lo que el proveedor adelanta de su bolsa antes de cobrar el siguiente pago del cliente.`
                 : `Lo que el proveedor debe tener en banco antes de empezar para no quebrar entre pagos del cliente.`
             }
             info={{
@@ -237,7 +237,7 @@ export default async function ProjectDetailPage({
               body: (
                 <>
                   <p>No es el costo total del proyecto. Es el momento donde el proveedor tiene <strong>más dinero acumulado en negativo</strong> entre dos pagos del cliente.</p>
-                  <p>Ejemplo del proyecto actual: el cliente paga un anticipo, después pagos mensuales y al final el pago de cierre. Pero el proveedor paga nómina cada mes desde el día uno. Cuando los pagos del cliente están más espaciados, el saldo en banco baja a su punto más profundo — ese punto es el bache.</p>
+                  <p>Ejemplo del proyecto actual: el cliente paga un anticipo, después pagos mensuales y al final el pago de cierre. Pero el proveedor paga nómina cada mes desde el día uno. Cuando los pagos del cliente están más espaciados, el saldo en banco baja a su punto más profundo. Ese punto es el bache.</p>
                   <p><strong>Fórmula:</strong> <code>bache = |menor(saldo_acumulado, 0)|</code>.</p>
                   <p><strong>Para reducirlo:</strong> pedir más anticipo, fragmentar el contrato en pagos parciales mensuales, reducir tamaño del equipo, o cobrar antes contra entregables.</p>
                   <p className="text-[10px]">Fuente: Konfío y BBVA México (capital de trabajo PyME).</p>
@@ -512,7 +512,7 @@ export default async function ProjectDetailPage({
               Cómo entra y sale el dinero del proveedor mes a mes. Los <strong>cobros al cliente</strong> son ingresos (todos en verde con flecha ↓ porque son dinero que ENTRA al proveedor). Las <strong>salidas</strong> son nómina del equipo, impuestos, herramientas y administración.
               <br />
               <span className="block mt-1">
-                <strong className="text-foreground">Estructura de pagos de este proyecto:</strong> {totalPayments} cobros en total — 1 anticipo al arrancar, {intermediatePayments} {intermediatePayments === 1 ? "pago parcial intermedio" : "pagos parciales intermedios"} y 1 pago final al cerrar. Distribuidos en <strong>{cashflowMonths} meses</strong>.
+                <strong className="text-foreground">Estructura de pagos de este proyecto:</strong> {totalPayments} cobros en total: 1 anticipo al arrancar, {intermediatePayments} {intermediatePayments === 1 ? "pago parcial intermedio" : "pagos parciales intermedios"} y 1 pago final al cerrar. Distribuidos en <strong>{cashflowMonths} meses</strong>.
                 <InfoTip title="¿Por qué está en meses y no en semanas? ¿Por qué pagos parciales mensuales?">
                   <p>El flujo de efectivo se modela en MESES porque los ciclos de nómina, impuestos (IMSS, ISN), facturación y rentas administrativas son mensuales. Las {selectedWeeks ? `${selectedWeeks.toFixed(1)} semanas` : "semanas"} de calendario del modo se convierten a meses dividiendo entre 4.33.</p>
                   <p>Los <strong>pagos parciales</strong> entre el anticipo y el pago final se asumen <strong>mensuales</strong> por defecto del modelo. Esto refleja la práctica común en contratos municipales (estimación mensual contra avance, art. 54 LOPSRM). Si tu contrato real es a 3 pagos totales (anticipo + 1 intermedio + finiquito) o anticipo + finiquito, eso se configura en el wizard de estimación con los porcentajes.</p>
@@ -541,7 +541,7 @@ export default async function ProjectDetailPage({
                         <p>Todas las filas con flecha <strong>↓</strong> son <strong>cobros que el proveedor recibe del cliente</strong> (dinero que entra). El sistema mira el monto y asigna:</p>
                         <ul className="list-disc ml-4 space-y-0.5">
                           <li><strong>Anticipo (cobro)</strong>: el primer mes con el cobro más alto. Es el pago inicial al arrancar.</li>
-                          <li><strong>Pago final (cobro)</strong>: el último mes con el cobro más alto. Es el pago de cierre cuando se entrega — aquí lo nombramos "Pago final" en lugar de "Finiquito" porque finiquito en español también significa liquidación al trabajador, y el pago aquí es del CLIENTE al PROVEEDOR.</li>
+                          <li><strong>Pago final (cobro)</strong>: el último mes con el cobro más alto. Es el pago de cierre cuando se entrega. Aquí lo nombramos "Pago final" en lugar de "Finiquito" porque finiquito en español también significa liquidación al trabajador, y el pago aquí es del CLIENTE al PROVEEDOR.</li>
                           <li><strong>Pago parcial (cobro)</strong>: meses intermedios donde el cliente paga contra avance. Se asume mensual por defecto del modelo (práctica común en contratos municipales). Si tu contrato es a 2 pagos totales, ajusta los % en el wizard.</li>
                           <li><strong>Sin cobro</strong>: meses sin ingreso del cliente. El proveedor solo paga (nómina, impuestos, etc.).</li>
                         </ul>

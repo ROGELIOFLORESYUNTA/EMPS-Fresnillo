@@ -1,5 +1,5 @@
 /**
- * EMPS-Fresnillo seed script
+ * EMPS Fresnillo seed script
  * Carga:
  *   - 17_seed_data_parametros_2026.json -> Parameter (38)
  *   - addendum: 5 modos catalogo + 4 factores productividad por modo (escenario probable)
@@ -100,7 +100,7 @@ async function seedParameters() {
       key: factorsKey,
       value: JSON.stringify(seedData.development_mode_factors),
       unit: "json",
-      source: "EMPS-Fresnillo internal",
+      source: "EMPS Fresnillo internal",
       effectiveFrom: new Date(`${year}-01-01`),
       notes: "Coeficientes de distribucion por fase para cada modo. Suma esperada 1.00 excepto bytecoding (1.10).",
     },
@@ -125,7 +125,7 @@ async function seedParameters() {
       key: velocityKey,
       value: JSON.stringify(seedData.development_mode_velocity),
       unit: "json",
-      source: "EMPS-Fresnillo internal",
+      source: "EMPS Fresnillo internal",
       effectiveFrom: new Date(`${year}-01-01`),
       notes: "Velocidad calendario y aceleracion a prototipo por modo. Modela la decision de elegir bytecoding pese a sumar 1.10 horas-persona.",
     },
@@ -150,7 +150,7 @@ async function seedParameters() {
       key: scenariosKey,
       value: JSON.stringify(seedData.scenario_factors),
       unit: "json",
-      source: "EMPS-Fresnillo internal",
+      source: "EMPS Fresnillo internal",
       effectiveFrom: new Date(`${year}-01-01`),
       notes: "Factores optimista/probable/conservador para escenarios.",
     },
@@ -175,7 +175,7 @@ async function seedParameters() {
       key: cargaKey,
       value: JSON.stringify(seedData.default_carga_patronal_estimada),
       unit: "json",
-      source: "EMPS-Fresnillo internal",
+      source: "EMPS Fresnillo internal",
       effectiveFrom: new Date(`${year}-01-01`),
       notes: "Factor agregado para modo 'estimado' cuando no hay desglose.",
     },
@@ -286,7 +286,7 @@ async function seedDatasets() {
     { code: "D4_ARTICULOS_REVISION", name: "Matriz local de articulos revisados", sourceType: "local_capture", description: "Matriz de revision de literatura con metodo, hallazgos y relacion con variables.", intendedUse: "Justificar variables y decisiones del modelo." },
     { code: "D5_CONTRATACION_PUBLICA_MX", name: "Procedimientos de contratacion publica Mexico", sourceType: "csv", sourceUrl: "https://www.datos.gob.mx/dataset/procedimientos_contratacion", license: "Creative Commons Attribution 4.0", description: "Datos de procedimientos, proveedor y monto de contrato.", intendedUse: "Contextualizar contratacion publica y rangos de montos; no estima horas de software." },
     { code: "D6_PARAMS_FISCAL_2026", name: "Parametros fiscales/laborales 2026 (Mexico, Zacatecas)", sourceType: "local_capture", description: "Tabla Parameter sembrada con 38 parametros oficiales 2026.", intendedUse: "Calculos deterministicos: ISR, IVA, UMA, salario minimo, ISN, IMSS, INFONAVIT, prestaciones LFT." },
-    { code: "D7_CASOS_LOCALES_EMPS", name: "Casos locales capturados en EMPS-Fresnillo", sourceType: "local_capture", description: "Estimaciones y resultados reales capturados dentro del sistema.", intendedUse: "Dataset principal para recalibrar el modelo en contexto municipal." },
+    { code: "D7_CASOS_LOCALES_EMPS", name: "Casos locales capturados en EMPS Fresnillo", sourceType: "local_capture", description: "Estimaciones y resultados reales capturados dentro del sistema.", intendedUse: "Dataset principal para recalibrar el modelo en contexto municipal." },
   ];
   for (const d of datasets) {
     await prisma.estimationDatasetSource.upsert({

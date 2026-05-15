@@ -64,7 +64,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
         <CardContent className="py-6">
           <div className="flex justify-between items-start mb-4">
             <div>
-              <Badge variant="outline" className="mb-2">EMPS-Fresnillo · v0.1.0</Badge>
+              <Badge variant="outline" className="mb-2">EMPS Fresnillo v0.1.0</Badge>
               <h1 className="text-2xl font-bold">{meta.title}</h1>
               <p className="text-muted-foreground">Para: {meta.audience}</p>
             </div>
@@ -291,7 +291,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
       {/* Footer */}
       <Card className="bg-muted/30 no-print">
         <CardContent className="py-4 text-xs text-muted-foreground">
-          Reporte generado automáticamente por EMPS-Fresnillo. Los cálculos son estimaciones preliminares.
+          Reporte generado automáticamente por EMPS Fresnillo. Los cálculos son estimaciones preliminares.
           La determinación oficial fiscal/laboral requiere revisión profesional.
           Versión {latestVersion} · {new Date().toISOString().split("T")[0]}
         </CardContent>

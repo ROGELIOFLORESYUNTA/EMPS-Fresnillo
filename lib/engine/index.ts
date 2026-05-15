@@ -1,7 +1,7 @@
 /**
- * EMPS-Fresnillo motor de estimacion.
+ * EMPS Fresnillo motor de estimacion.
  *
- * API publica del modulo de dominio. Sin I/O — todas las funciones son puras.
+ * API publica del modulo de dominio. Sin I/O. Todas las funciones son puras.
  * Implementa 07_motor_formulas.md (reconciliado Fase B 2026-05-01).
  */
 

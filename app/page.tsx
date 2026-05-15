@@ -34,7 +34,7 @@ export default async function HomePage() {
     <div className="space-y-8">
       {/* Acciones principales — bien visibles, una sola fila */}
       <section>
-        <h1 className="text-3xl font-bold mb-2">EMPS-Fresnillo</h1>
+        <h1 className="text-3xl font-bold mb-2">EMPS Fresnillo</h1>
         <p className="text-muted-foreground mb-6">Estimador municipal de proyectos de software</p>
 
         <div className="grid md:grid-cols-3 gap-4">
@@ -56,7 +56,7 @@ export default async function HomePage() {
             href="/admin/parametros"
             icon={<Settings className="w-6 h-6" />}
             title="Editar parámetros"
-            description="UMA, IVA, ISR, IMSS, ISN — modificar para 2027 u otros cambios"
+            description="UMA, IVA, ISR, IMSS, ISN. Modificar para 2027 u otros cambios"
             badge={`${paramsCount}`}
           />
         </div>
@@ -151,7 +151,7 @@ export default async function HomePage() {
             href="/admin/fuentes-vivas"
             icon={<Activity className="w-5 h-5" />}
             title="Fuentes vivas"
-            description="SAT, INEGI, CONASAMI, SEFIN — detectan cambios fiscales"
+            description="SAT, INEGI, CONASAMI, SEFIN. Detectan cambios fiscales"
             badge={String(liveSourcesCount)}
           />
           <SecondaryCard

@@ -27,7 +27,7 @@ type AllCalibrations = Record<Mode, ModeCalibration>;
 const MODE_LABELS: Record<Mode, { label: string; description: string }> = {
   traditional: {
     label: "Tradicional",
-    description: "Codificación manual. Línea base — siempre 1.0. No editable.",
+    description: "Codificación manual. Línea base 1.0. No editable.",
   },
   ai_assisted: {
     label: "Asistido por IA",

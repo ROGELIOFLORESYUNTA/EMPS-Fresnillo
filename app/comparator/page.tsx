@@ -38,7 +38,7 @@ export default async function ComparatorPage() {
           <CardHeader>
             <CardTitle className="text-base">Distribución del esfuerzo por fase</CardTitle>
             <CardDescription>
-              Multiplicadores sobre el esfuerzo técnico. Suma esperada = 1.0 excepto bytecoding (1.10) — el hardening es trabajo adicional, no sustituto.
+              Multiplicadores sobre el esfuerzo técnico. Suma esperada = 1.0 excepto bytecoding (1.10). El hardening es trabajo adicional, no sustituto.
             </CardDescription>
           </CardHeader>
           <CardContent className="p-0">

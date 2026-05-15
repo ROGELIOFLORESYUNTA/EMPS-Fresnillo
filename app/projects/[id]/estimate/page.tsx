@@ -263,7 +263,7 @@ export default function EstimatePage({ params }: { params: Promise<{ id: string 
             <div className="grid gap-2">
               <Label>Capital de trabajo declarado por el proveedor</Label>
               <Input type="number" min={0} step={10000} value={form.capitalDeclaredByProvider} onChange={(e) => setForm({ ...form, capitalDeclaredByProvider: +e.target.value })} />
-              <p className="text-xs text-muted-foreground">{formatMXN(form.capitalDeclaredByProvider)} — si la necesidad supera este monto, el sistema marca riesgo financiero alto</p>
+              <p className="text-xs text-muted-foreground">{formatMXN(form.capitalDeclaredByProvider)}. Si la necesidad supera este monto, el sistema marca riesgo financiero alto</p>
             </div>
           </CardContent>
         </Card>
