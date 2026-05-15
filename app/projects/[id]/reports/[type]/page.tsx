@@ -64,7 +64,6 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
         <CardContent className="py-6">
           <div className="flex justify-between items-start mb-4">
             <div>
-              <Badge variant="outline" className="mb-2">EMPS Fresnillo v0.1.0</Badge>
               <h1 className="text-2xl font-bold">{meta.title}</h1>
               <p className="text-muted-foreground">Para: {meta.audience}</p>
             </div>

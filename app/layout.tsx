@@ -70,12 +70,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <div className="max-w-6xl mx-auto px-6 py-6">
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2 font-semibold">EMPS Fresnillo v0.1.0</p>
-                  <p className="text-sm">Universidad Autónoma de Zacatecas</p>
-                  <p className="text-xs text-muted-foreground">Ingeniería en Software. Seminario de Investigación</p>
+                  <p className="text-sm font-semibold">EMPS Fresnillo</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Tesis del Seminario de Investigación de Ingeniería en Software, Universidad Autónoma de Zacatecas.
+                  </p>
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2 font-semibold">Pantallas administrativas</p>
+                  <p className="text-sm font-semibold mb-2">Pantallas administrativas</p>
                   <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm">
                     {NAV_ADMIN.map((item) => (
                       <Link
