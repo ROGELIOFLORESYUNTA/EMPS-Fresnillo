@@ -17,10 +17,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const { id } = await params;
     const body = await req.json();
     const data = moduleCreateSchema.parse(body);
-    const module = await prisma.module.create({
+    const mod = await prisma.module.create({
       data: { ...data, projectId: id },
     });
-    return NextResponse.json({ module }, { status: 201 });
+    return NextResponse.json({ module: mod }, { status: 201 });
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "error" }, { status: 400 });
   }
