@@ -14,6 +14,8 @@ import {
   MessageSquare,
   ClipboardCheck,
   Users,
+  Beaker,
+  BookOpenCheck,
 } from "lucide-react";
 
 export const metadata = {
@@ -58,6 +60,20 @@ export default async function InvestigacionPage() {
       </div>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <ResearchCard
+          href="/investigacion/validacion-hipotesis"
+          icon={<Beaker className="w-5 h-5" />}
+          title="Validación de la hipótesis"
+          description="Motor estadístico + ML interno que calcula MAPE, regresión multivariable, random forest y red neuronal. Emite veredicto automático (cumplida / parcial / no cumplida / insuficiente) sobre la hipótesis del artículo."
+          badge={actualResultsCount}
+          emptyHint={actualResultsCount < 15 ? `Necesitas N≥15 (hoy ${actualResultsCount})` : undefined}
+        />
+        <ResearchCard
+          href="/investigacion/metodologia"
+          icon={<BookOpenCheck className="w-5 h-5" />}
+          title="Metodología"
+          description="Cómo se operacionaliza la hipótesis: variable dependiente, 4 grupos de variables independientes, umbral de decisión, métodos estadísticos y referencias bibliográficas."
+        />
         <ResearchCard
           href="/investigacion/datasets"
           icon={<Database className="w-5 h-5" />}
