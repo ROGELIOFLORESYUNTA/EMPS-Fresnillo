@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { approveBaselineSchema } from "@/lib/validators";
+import { getCurrentWorkspace, logWorkspaceActivity } from "@/lib/workspace";
 
 export async function POST(
   req: NextRequest,
@@ -72,6 +73,17 @@ export async function POST(
         context: data.comment,
       },
     });
+
+    const workspace = await getCurrentWorkspace();
+    if (workspace) {
+      await logWorkspaceActivity(workspace.id, "baseline_approved", {
+        projectId: id,
+        changeRequestId: changeId,
+        baselineBefore: beforeVersion,
+        baselineAfter: data.newBaselineVersion,
+        approvedBy: data.approvedBy,
+      });
+    }
 
     return NextResponse.json({ assessment: updatedAssessment, baselineBefore: beforeVersion, baselineAfter: data.newBaselineVersion });
   } catch (e) {

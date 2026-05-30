@@ -18,6 +18,7 @@ import { prisma } from "@/lib/db";
 import { changeImpactInputSchema } from "@/lib/validators";
 import { computeChangeImpact } from "@/lib/engine";
 import { loadChangeImpactParameters } from "@/lib/parameters";
+import { getCurrentWorkspace, logWorkspaceActivity } from "@/lib/workspace";
 
 const dec = (v: number | string) => new Decimal(v);
 
@@ -100,6 +101,20 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         context: `Cambio ${changeId} en proyecto ${id}, fase ${input.currentPhase}, modo ${input.developmentMode} (motor v7)`,
       },
     });
+
+    const workspace = await getCurrentWorkspace();
+    if (workspace) {
+      await logWorkspaceActivity(workspace.id, "change_evaluated", {
+        projectId: id,
+        changeRequestId: changeId,
+        suggestedType: result.suggestedType,
+        riskLevel: result.riskLevel,
+        phase: input.currentPhase,
+        mode: input.developmentMode,
+        probableHours: result.probableHours,
+        requiresFormalApproval: result.requiresFormalApproval,
+      });
+    }
 
     return NextResponse.json({ assessment, result }, { status: 201 });
   } catch (e) {

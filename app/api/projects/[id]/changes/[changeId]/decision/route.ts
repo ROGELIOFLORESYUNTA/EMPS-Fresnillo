@@ -9,6 +9,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { changeImpactDecisionSchema } from "@/lib/validators";
+import { getCurrentWorkspace, logWorkspaceActivity } from "@/lib/workspace";
 
 const STATUS_TO_REQUEST_DECISION: Record<string, string> = {
   approved: "aceptado",
@@ -82,6 +83,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         context: data.comment ?? null,
       },
     });
+
+    const workspace = await getCurrentWorkspace();
+    if (workspace) {
+      await logWorkspaceActivity(workspace.id, "change_decided", {
+        projectId: id,
+        changeRequestId: changeId,
+        decision: data.status,
+        decidedBy: data.decidedBy,
+        scopeIncrease: data.status === "scope_increase",
+      });
+    }
 
     return NextResponse.json({ assessment: updatedAssessment });
   } catch (e) {

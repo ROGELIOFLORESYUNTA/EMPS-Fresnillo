@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { runEstimate } from "@/lib/estimate-service";
 import type { DevelopmentMode, Scenario } from "@/lib/engine";
+import { getCurrentWorkspace, logWorkspaceActivity } from "@/lib/workspace";
 
 /**
  * Re-ejecuta la ultima estimacion del proyecto usando los parametros vigentes,
@@ -56,6 +57,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         context: `Recalculo con parametros vigentes. Versión previa: ${last.version}`,
       },
     });
+
+    const workspace = await getCurrentWorkspace();
+    if (workspace) {
+      await logWorkspaceActivity(workspace.id, "project_recalculated", {
+        projectId: id,
+        previousVersion: last.version,
+        mode: inputs.mode,
+      });
+    }
 
     return NextResponse.json({
       message: "Estimacion recalculada con parametros vigentes. Versiones anteriores conservadas.",
