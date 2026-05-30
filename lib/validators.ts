@@ -167,3 +167,26 @@ export const calculationExplanationQuerySchema = z.object({
   entityType: z.enum(["estimate", "change", "cashflow", "team"]).optional(),
   entityId: z.string().optional(),
 });
+
+// === Addendum v8 — Recursos materiales y gastos indirectos ===
+
+export const resourceCostSchema = z.object({
+  category: z.string().min(1),
+  description: z.string().min(3),
+  acquisitionMode: z.string().min(1),
+  quantity: z.coerce.number().positive(),
+  unitCostBeforeVat: z.coerce.number().min(0),
+  vatRate: z.coerce.number().min(0).max(0.16).default(0.16),
+  vatCreditablePercent: z.coerce.number().min(0).max(1).default(1),
+  invoiceStatus: z.string().default("pending"),
+  allocationPercent: z.coerce.number().min(0).max(1).default(1),
+  monthsAllocated: z.coerce.number().positive().default(1),
+  cashOutflowMonth: z.coerce.number().int().min(1).default(1),
+  capitalizedAsset: z.coerce.boolean().default(false),
+  depreciationRateAnnual: z.coerce.number().min(0).max(1).optional(),
+  usefulLifeMonths: z.coerce.number().int().min(1).optional(),
+  isRecurring: z.coerce.boolean().default(false),
+  monthlyCostBeforeVat: z.coerce.number().min(0).optional(),
+  notes: z.string().optional(),
+  changeRequestId: z.string().optional(),
+});

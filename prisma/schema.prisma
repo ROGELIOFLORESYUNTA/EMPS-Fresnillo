@@ -63,6 +63,7 @@ model Project {
   estimates      Estimate[]
   changes        ChangeRequest[]
   cashflow       CashFlowLine[]
+  resources      ProjectResourceCost[]
   workspace      Workspace?      @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
 
   @@index([status])
@@ -816,3 +817,64 @@ model WorkspaceActivityLog {
   @@index([createdAt])
 }
 
+
+// ============================================================
+// Addendum v8 — Materiales y gastos indirectos asociados a proyecto/cambio
+// Fuente: 48_prisma_migracion_aditiva_materiales_overhead.md
+// ============================================================
+
+model ProjectResourceCost {
+  id                       String   @id @default(cuid())
+  workspaceId              String
+  projectId                String
+  changeRequestId          String?
+
+  category                 String   // equipo_computo|mobiliario|software_licencia|cloud|renta|internet|energia_agua|contabilidad_admin|transporte|consultoria|otros
+  description              String
+  acquisitionMode          String   // existing_owned|used_owned|new_with_invoice|new_without_invoice|rented|financed|subscription
+
+  quantity                 Decimal  @default(1)
+  unitCostBeforeVat        Decimal  @default(0)
+  vatRate                  Decimal  @default(0.16)
+  vatCreditablePercent     Decimal  @default(1.0)
+  invoiceStatus            String   @default("pending") // cfdi_valid|pending|no_invoice|not_applicable
+
+  allocationPercent        Decimal  @default(1.0)
+  monthsAllocated          Decimal  @default(1.0)
+  cashOutflowMonth         Int      @default(1)
+
+  capitalizedAsset         Boolean  @default(false)
+  depreciationRateAnnual   Decimal?
+  usefulLifeMonths         Int?
+
+  isRecurring              Boolean  @default(false)
+  monthlyCostBeforeVat     Decimal?
+
+  notes                    String?
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  project                  Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([projectId])
+  @@index([changeRequestId])
+  @@index([category])
+}
+
+model ResourceCostExplanation {
+  id                       String   @id @default(cuid())
+  workspaceId              String
+  projectId                String
+  resourceCostId           String?
+  calculationType          String   // project_resource|change_resource|cashflow|vat
+  inputSnapshotJson        String
+  resultSnapshotJson       String
+  legalReferencesJson      String?
+  warningsJson             String?
+  createdAt                DateTime @default(now())
+
+  @@index([workspaceId])
+  @@index([projectId])
+  @@index([resourceCostId])
+}

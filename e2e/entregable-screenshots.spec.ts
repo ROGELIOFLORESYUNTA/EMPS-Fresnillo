@@ -175,4 +175,68 @@ test.describe("Capturas del entregable", () => {
     await page.goto("/investigacion/usuarios-y-roles");
     await shot(page, "28_investigacion_usuarios_roles");
   });
+
+  // === Addendum v7 — wizard de evaluación de cambios ===
+  test("29_changes_wizard_paso1", async ({ page }) => {
+    const id = await getDemoProjectId(page);
+    const resp = await page.request.get(`/api/projects/${id}/changes`);
+    const data = await resp.json();
+    if (!data.changes?.[0]?.id) throw new Error("Demo no tiene change requests cargados");
+    await page.goto(`/projects/${id}/changes/${data.changes[0].id}/impact`);
+    await shot(page, "29_changes_wizard_paso1");
+  });
+
+  // === Fase G.H — Reportes con preguntas de cada audiencia ===
+  test("30_reporte_municipal_con_G1_G6", async ({ page }) => {
+    const id = await getDemoProjectId(page);
+    await page.goto(`/projects/${id}/reports/municipal`);
+    await page.waitForTimeout(500);
+    await shot(page, "30_reporte_municipal_con_G1_G6");
+  });
+
+  test("31_reporte_proveedor_con_H1_H4", async ({ page }) => {
+    const id = await getDemoProjectId(page);
+    await page.goto(`/projects/${id}/reports/provider`);
+    await page.waitForTimeout(500);
+    await shot(page, "31_reporte_proveedor_con_H1_H4");
+  });
+
+  // === Fase G.I — Multi-tenancy + manual + admin ===
+  test("32_admin_parametros_con_manual_button", async ({ page }) => {
+    await page.goto("/admin/parametros");
+    await shot(page, "32_admin_parametros_con_manual_button");
+  });
+
+  test("33_admin_login", async ({ page }) => {
+    await page.goto("/admin-login");
+    await shot(page, "33_admin_login");
+  });
+
+  test("34_admin_datos_panel", async ({ page }) => {
+    // Setear cookie de admin para acceder al panel
+    await page.context().addCookies([{
+      name: "emps_admin_token",
+      value: "demo_admin_2026_emps_rogelio",
+      domain: "localhost",
+      path: "/",
+    }]);
+    await page.goto("/investigacion/admin-datos");
+    await page.waitForTimeout(800);
+    await shot(page, "34_admin_datos_panel");
+  });
+
+  test("35_investigacion_exportar_cambios", async ({ page }) => {
+    await page.goto("/investigacion/exportar-cambios");
+    await shot(page, "35_investigacion_exportar_cambios");
+  });
+
+  test("36_investigacion_dashboard_actualizado", async ({ page }) => {
+    await page.goto("/investigacion");
+    await shot(page, "36_investigacion_dashboard_actualizado");
+  });
+
+  test("37_admin_calibracion", async ({ page }) => {
+    await page.goto("/admin/calibracion");
+    await shot(page, "37_admin_calibracion");
+  });
 });

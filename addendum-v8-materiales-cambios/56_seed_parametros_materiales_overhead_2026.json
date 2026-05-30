@@ -1,0 +1,56 @@
+{
+  "version": "2026-05-v8-materiales-cambios",
+  "effectiveFrom": "2026-05-30",
+  "parameters": [
+    {
+      "key": "DEPRECIACION_COMPUTO_ANUAL",
+      "value": 0.3,
+      "unit": "rate",
+      "source": "LISR Articulo 34 fraccion VII",
+      "sourceUrl": "https://www.diputados.gob.mx/LeyesBiblio/pdf/LISR.pdf",
+      "effectiveFrom": "2026-01-01"
+    },
+    {
+      "key": "DEPRECIACION_MOBILIARIO_OFICINA_ANUAL",
+      "value": 0.1,
+      "unit": "rate",
+      "source": "LISR Articulo 34 fraccion III",
+      "sourceUrl": "https://www.diputados.gob.mx/LeyesBiblio/pdf/LISR.pdf",
+      "effectiveFrom": "2026-01-01"
+    },
+    {
+      "key": "RESOURCE_ADMIN_OVERHEAD_DEFAULT",
+      "value": 0.1,
+      "unit": "rate",
+      "source": "Parametro interno de calibracion EMPS; requiere validacion por casos",
+      "sourceUrl": "",
+      "effectiveFrom": "2026-05-30",
+      "notes": "No es tasa fiscal. Es supuesto operativo configurable."
+    },
+    {
+      "key": "RESOURCE_DEFAULT_ALLOCATION_PERCENT",
+      "value": 1.0,
+      "unit": "rate",
+      "source": "Parametro interno de captura EMPS",
+      "sourceUrl": "",
+      "effectiveFrom": "2026-05-30"
+    },
+    {
+      "key": "RESOURCE_VAT_CREDITABLE_WITH_CFDI_DEFAULT",
+      "value": 1.0,
+      "unit": "rate",
+      "source": "LIVA Articulos 1 y 5; verificar requisitos especificos",
+      "sourceUrl": "https://www.diputados.gob.mx/LeyesBiblio/pdf/LIVA.pdf",
+      "effectiveFrom": "2026-01-01"
+    },
+    {
+      "key": "RESOURCE_VAT_CREDITABLE_WITHOUT_CFDI_DEFAULT",
+      "value": 0.0,
+      "unit": "rate",
+      "source": "Control interno: sin CFDI no se estima IVA acreditable",
+      "sourceUrl": "",
+      "effectiveFrom": "2026-05-30",
+      "notes": "Validar caso concreto con contador."
+    }
+  ]
+}

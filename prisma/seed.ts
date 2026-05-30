@@ -13,6 +13,7 @@ import { Decimal } from "decimal.js";
 import seedData from "../17_seed_data_parametros_2026.json";
 import liveSourcesData from "../26_seed_fuentes_vivas_2026.json";
 import changeImpactSeedData from "../31_seed_parametros_control_cambios_2026.json";
+import materialsSeedData from "../addendum-v8-materiales-cambios/56_seed_parametros_materiales_overhead_2026.json";
 
 const prisma = new PrismaClient();
 
@@ -466,11 +467,58 @@ async function seedChangeImpactParameters() {
   }
 }
 
+/**
+ * Addendum v8 — Parámetros de materiales, depreciación y overhead.
+ * Carga las 6 claves del 56_seed_parametros_materiales_overhead_2026.json:
+ * DEPRECIACION_COMPUTO_ANUAL, DEPRECIACION_MOBILIARIO_OFICINA_ANUAL,
+ * RESOURCE_ADMIN_OVERHEAD_DEFAULT, RESOURCE_DEFAULT_ALLOCATION_PERCENT,
+ * RESOURCE_VAT_CREDITABLE_WITH_CFDI_DEFAULT, RESOURCE_VAT_CREDITABLE_WITHOUT_CFDI_DEFAULT.
+ */
+async function seedMaterialsOverheadParameters() {
+  const year = 2026;
+  const country = "Mexico";
+  const state = "Zacatecas";
+  for (const p of materialsSeedData.parameters) {
+    const effectiveFrom = new Date(p.effectiveFrom);
+    await prisma.parameter.upsert({
+      where: {
+        year_country_state_key_effectiveFrom: {
+          year,
+          country,
+          state,
+          key: p.key,
+          effectiveFrom,
+        },
+      },
+      create: {
+        year,
+        country,
+        state,
+        key: p.key,
+        value: String(p.value),
+        unit: p.unit,
+        source: p.source,
+        sourceUrl: p.sourceUrl || null,
+        effectiveFrom,
+        notes: p.notes ?? null,
+      },
+      update: {
+        value: String(p.value),
+        unit: p.unit,
+        source: p.source,
+        notes: p.notes ?? null,
+      },
+    });
+  }
+}
+
 async function main() {
   console.log("Sembrando parametros 2026...");
   await seedParameters();
   console.log("Sembrando parametros del motor de cambios v7 (10)...");
   await seedChangeImpactParameters();
+  console.log("Sembrando parametros v8 materiales/overhead (6)...");
+  await seedMaterialsOverheadParameters();
   console.log("Sembrando usuarios demo...");
   await seedUsers();
   console.log("Sembrando proyecto demo...");

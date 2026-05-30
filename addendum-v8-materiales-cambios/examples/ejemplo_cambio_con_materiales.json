@@ -1,0 +1,48 @@
+{
+  "projectId": "demo-fresnillo",
+  "changeRequest": {
+    "clientOriginalText": "Agregar pantalla para que el director vea avance por dependencia y pueda aprobar solicitudes desde su usuario.",
+    "currentPhase": "after_testing",
+    "developmentMode": "hybrid",
+    "clarityLevel": 2,
+    "affectedArtifacts": {
+      "uiScreens": 1,
+      "apiEndpoints": 2,
+      "businessRules": 2,
+      "databaseTables": 1,
+      "reports": 1,
+      "rolesPermissions": 2,
+      "externalIntegrations": 0,
+      "dataMigrationObjects": 0,
+      "automatedTests": 3,
+      "manualTestScenarios": 5,
+      "documentsOrTrainingItems": 2
+    }
+  },
+  "resources": [
+    {
+      "category": "software_licencia",
+      "description": "Licencia adicional de herramienta de pruebas por 2 meses",
+      "acquisitionMode": "subscription",
+      "quantity": 1,
+      "unitCostBeforeVat": 1800,
+      "vatRate": 0.16,
+      "invoiceStatus": "cfdi_valid",
+      "allocationPercent": 1,
+      "monthsAllocated": 2,
+      "cashOutflowMonth": 1
+    },
+    {
+      "category": "cloud",
+      "description": "Ambiente temporal de pruebas y staging",
+      "acquisitionMode": "subscription",
+      "quantity": 1,
+      "unitCostBeforeVat": 2500,
+      "vatRate": 0.16,
+      "invoiceStatus": "cfdi_valid",
+      "allocationPercent": 1,
+      "monthsAllocated": 1,
+      "cashOutflowMonth": 1
+    }
+  ]
+}
