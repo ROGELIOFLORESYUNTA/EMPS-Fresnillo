@@ -46,3 +46,7 @@ tsconfig.tsbuildinfo
 # Temporary
 _pdf_extracted.txt
 *.tmp
+
+# Entregable a ChatGPT Pro (generado, no se versiona)
+entregable-chatgpt/
+entregable-chatgpt.zip
