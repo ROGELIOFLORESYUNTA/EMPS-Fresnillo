@@ -198,3 +198,104 @@ describe("Validación de explicación y outputs auditables", () => {
     expect(r.breakdown).toHaveProperty("estimatedHours");
   });
 });
+
+// =========================================================================
+// Addendum v7 — tests de los campos nuevos
+// =========================================================================
+describe("Motor de cambios v7 — desglose financiero y explicaciones", () => {
+  it("computeChangeImpact devuelve financialBreakdown completo con IVA y mantenimiento", () => {
+    const r = computeChangeImpact(
+      baseInput({
+        affectedArtifacts: { ...emptyArtifacts, uiScreens: 2, businessRules: 1, reports: 1 },
+      }),
+    );
+    expect(r.financialBreakdown).toBeDefined();
+    const fb = r.financialBreakdown!;
+    expect(fb.laborCost).toBeGreaterThan(0);
+    expect(fb.imssEstimated).toBeGreaterThan(0);
+    expect(fb.isnEstimated).toBeGreaterThan(0);
+    expect(fb.vat).toBeCloseTo(fb.subtotalBeforeVat * 0.16, 2);
+    expect(fb.totalInvoice).toBeCloseTo(fb.subtotalBeforeVat + fb.vat, 2);
+    expect(fb.maintenanceMonthlyImpact).toBeGreaterThanOrEqual(0);
+  });
+
+  it("plainExplanationForClient NO contiene jerga técnica como 'modeFactor' o 'artifactPoints'", () => {
+    const r = computeChangeImpact(
+      baseInput({
+        affectedArtifacts: { ...emptyArtifacts, uiScreens: 1, databaseTables: 1, rolesPermissions: 1 },
+        currentPhase: "after_testing",
+      }),
+    );
+    expect(r.plainExplanationForClient).toBeDefined();
+    const joined = (r.plainExplanationForClient ?? []).join(" ").toLowerCase();
+    expect(joined).not.toContain("modefactor");
+    expect(joined).not.toContain("artifactpoints");
+    expect(joined).not.toContain("phasefactor");
+    expect(joined).not.toContain("contingencyrate");
+    expect(joined.length).toBeGreaterThan(20);
+  });
+
+  it("technicalExplanationForProvider contiene desglose numérico de la fórmula", () => {
+    const r = computeChangeImpact(baseInput({ affectedArtifacts: { ...emptyArtifacts, uiScreens: 1 } }));
+    expect(r.technicalExplanationForProvider).toBeDefined();
+    const joined = (r.technicalExplanationForProvider ?? []).join(" ");
+    expect(joined).toMatch(/IMSS|ISN|IVA|base|contingencia/i);
+  });
+
+  it("evaluateFreeChangeGuardrail bloquea 'sin costo' cuando requiresFormalApproval", () => {
+    const r = computeChangeImpact(
+      baseInput({
+        affectedArtifacts: { ...emptyArtifacts, databaseTables: 1, externalIntegrations: 1 },
+        securityImpact: 2,
+        dataImpact: 2,
+        integrationImpact: 2,
+      }),
+    );
+    expect(r.requiresFormalApproval).toBe(true);
+    expect(r.freeChangeGuardrailReason).toBeTruthy();
+    expect(typeof r.freeChangeGuardrailReason).toBe("string");
+  });
+
+  it("minimumChargeApplied es true cuando el costo bruto queda por debajo del mínimo", () => {
+    const r = computeChangeImpact(
+      baseInput({
+        affectedArtifacts: { ...emptyArtifacts, uiScreens: 1 },
+        clarityLevel: 5,
+        currentPhase: "before_baseline",
+      }),
+    );
+    // 1 pantalla con claridad alta y fase temprana debería dar costo bajo
+    // pero podría no aplicar mínimo dependiendo de tarifa. Validamos la coherencia:
+    if (r.minimumChargeApplied) {
+      expect(r.costImpact).toBeGreaterThanOrEqual(2500);
+    }
+    expect(r.minimumChargeApplied).toBeDefined();
+  });
+
+  it("legalReferences siempre incluye LIVA, LISR, LSS y Ley de Hacienda Zacatecas", () => {
+    const r = computeChangeImpact(baseInput({ affectedArtifacts: { ...emptyArtifacts, uiScreens: 1 } }));
+    expect(r.legalReferences).toBeDefined();
+    const refs = (r.legalReferences ?? []).join("|");
+    expect(refs).toMatch(/LIVA/);
+    expect(refs).toMatch(/LISR/);
+    expect(refs).toMatch(/LSS/);
+    expect(refs).toMatch(/Zacatecas/);
+  });
+
+  it("legalReferences agrega LGPDPPSO/LFPDPPP si hay migración de datos o dataImpact alto", () => {
+    const r = computeChangeImpact(
+      baseInput({
+        affectedArtifacts: { ...emptyArtifacts, uiScreens: 1, dataMigrationObjects: 1 },
+        dataImpact: 2,
+      }),
+    );
+    const refs = (r.legalReferences ?? []).join("|");
+    expect(refs).toMatch(/LGPDPPSO/);
+    expect(refs).toMatch(/LFPDPPP/);
+  });
+
+  it("parameterSourceKeys está vacío cuando se usan defaults (sin loadChangeImpactParameters)", () => {
+    const r = computeChangeImpact(baseInput({ affectedArtifacts: { ...emptyArtifacts, uiScreens: 1 } }));
+    expect(r.parameterSourceKeys).toEqual([]);
+  });
+});

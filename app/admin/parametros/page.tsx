@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Breadcrumbs } from "@/components/breadcrumbs";
-import { Plus, Upload, Pencil, AlertCircle } from "lucide-react";
+import { Plus, Upload, Pencil, AlertCircle, RefreshCw } from "lucide-react";
+import { ClearCacheButton } from "./clear-cache-button";
 
 const CATEGORIAS: Record<string, string> = {
   IMSS: "Cuotas IMSS por ramo",
@@ -16,10 +17,12 @@ const CATEGORIAS: Record<string, string> = {
   INFONAVIT: "INFONAVIT",
   FED: "Federales (IVA, ISR)",
   MODO: "Modos de desarrollo",
+  CHANGE: "Motor de control de cambios (v7)",
   OTROS: "Otros",
 };
 
 function categorizar(key: string): keyof typeof CATEGORIAS {
+  if (key.startsWith("CHANGE_")) return "CHANGE";
   if (key.startsWith("IMSS_")) return "IMSS";
   if (key.startsWith("UMA_")) return "UMA";
   if (key.startsWith("SALARIO_")) return "SALARIO";
@@ -64,6 +67,7 @@ export default async function AdminParametrosPage() {
           <Button asChild>
             <Link href="/admin/parametros/nuevo"><Plus className="w-4 h-4 mr-2" />Nuevo parámetro</Link>
           </Button>
+          <ClearCacheButton />
         </div>
       </div>
 

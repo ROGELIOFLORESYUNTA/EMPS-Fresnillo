@@ -12,6 +12,7 @@ import { PrismaClient } from "@prisma/client";
 import { Decimal } from "decimal.js";
 import seedData from "../17_seed_data_parametros_2026.json";
 import liveSourcesData from "../26_seed_fuentes_vivas_2026.json";
+import changeImpactSeedData from "../31_seed_parametros_control_cambios_2026.json";
 
 const prisma = new PrismaClient();
 
@@ -401,9 +402,75 @@ async function seedSampleTrainingCase() {
   });
 }
 
+/**
+ * Addendum v7 — Carga los parámetros del motor de cambios a la tabla Parameter.
+ * Migra las 6 claves del JSON original (31_seed_parametros_control_cambios_2026.json)
+ * a los nombres canónicos esperados por loadChangeImpactParameters, y agrega 4 claves
+ * nuevas v7 (mínimo de cobro, tarifa default, tope free change, tasa de mantenimiento).
+ */
+async function seedChangeImpactParameters() {
+  const year = 2026;
+  const country = "Mexico";
+  const state = "Zacatecas";
+  const source = "EMPS Fresnillo v7 (31_seed_parametros_control_cambios_2026.json)";
+  const sourceUrl = null;
+  const effectiveFrom = new Date(changeImpactSeedData.effectiveFrom);
+
+  // Mapeo de claves del JSON original → claves canónicas del motor v7
+  const p = changeImpactSeedData.parameters;
+  const items: Array<{ key: string; value: unknown; unit: string; notes?: string }> = [
+    { key: "CHANGE_PHASE_FACTOR", value: p.CHANGE_PHASE_FACTOR, unit: "json", notes: "Factor por fase del proyecto (Boehm aplanada, Mountain Goat 2014)" },
+    { key: "CHANGE_MODE_FACTOR", value: p.CHANGE_MODE_FACTOR, unit: "json", notes: "Factor por modo de desarrollo (Forrester Wave Low-Code 2025)" },
+    { key: "CHANGE_HIGH_RISK_MODE_FLOOR", value: p.CHANGE_MODE_MIN_FACTOR_HIGH_RISK, unit: "rate", notes: "Piso del modeFactor cuando hay alto riesgo en seguridad/datos/integración" },
+    { key: "CHANGE_CLARITY_FACTOR", value: p.CHANGE_CLARITY_FACTOR, unit: "json", notes: "Factor por nivel de claridad de la solicitud (1-5)" },
+    { key: "CHANGE_CONTINGENCY_BY_TYPE", value: p.CHANGE_CONTINGENCY_RATE, unit: "json", notes: "Contingencia PMBOK 7 por tipo de cambio (10-25%)" },
+    { key: "CHANGE_ARTIFACT_WEIGHTS", value: p.CHANGE_ARTIFACT_WEIGHTS, unit: "json", notes: "Peso de cada artefacto en puntos (IFPUG compatible, ratio integración/pantalla 4×)" },
+    // === v7 nuevas claves no presentes en el JSON original ===
+    { key: "CHANGE_MINIMUM_CHARGE_MXN", value: 2500, unit: "MXN", notes: "Costo mínimo de un change request para no regalar tiempo" },
+    { key: "CHANGE_HOURLY_RATE_DEFAULT_MXN", value: 500, unit: "MXN", notes: "Tarifa por hora default cuando no se entrega una explícita" },
+    { key: "CHANGE_FREE_CHANGE_LIMIT_MXN", value: 10000, unit: "MXN", notes: "Tope debajo del cual se permite 'incluido sin costo' sin guardrail" },
+    { key: "CHANGE_MAINTENANCE_RATE_BY_RISK", value: { bajo: 0.005, medio: 0.01, alto: 0.015, critico: 0.02 }, unit: "json", notes: "% del subtotal que se suma al mantenimiento mensual según riesgo del cambio" },
+  ];
+
+  for (const it of items) {
+    const valueStr = typeof it.value === "object" ? JSON.stringify(it.value) : String(it.value);
+    await prisma.parameter.upsert({
+      where: {
+        year_country_state_key_effectiveFrom: {
+          year,
+          country,
+          state,
+          key: it.key,
+          effectiveFrom,
+        },
+      },
+      create: {
+        year,
+        country,
+        state,
+        key: it.key,
+        value: valueStr,
+        unit: it.unit,
+        source,
+        sourceUrl,
+        effectiveFrom,
+        notes: it.notes ?? null,
+      },
+      update: {
+        value: valueStr,
+        unit: it.unit,
+        source,
+        notes: it.notes ?? null,
+      },
+    });
+  }
+}
+
 async function main() {
   console.log("Sembrando parametros 2026...");
   await seedParameters();
+  console.log("Sembrando parametros del motor de cambios v7 (10)...");
+  await seedChangeImpactParameters();
   console.log("Sembrando usuarios demo...");
   await seedUsers();
   console.log("Sembrando proyecto demo...");

@@ -24,7 +24,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
       modules: { include: { stories: true } },
       team: true,
       estimates: { orderBy: [{ version: "desc" }, { mode: "asc" }, { scenario: "asc" }] },
-      changes: { orderBy: { createdAt: "desc" } },
+      changes: { orderBy: { createdAt: "desc" }, include: { assessment: true } },
       cashflow: { orderBy: { monthNumber: "asc" } },
     },
   });
@@ -168,6 +168,48 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
               </ul>
             </CardContent>
           </Card>
+
+          {project.changes.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Cambios solicitados durante el proyecto</CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  Solicitudes de cambio registradas por el cliente. Si alguna requiere nueva línea base, aparece marcada.
+                </p>
+              </CardHeader>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Solicitud</TableHead>
+                      <TableHead>Tipo</TableHead>
+                      <TableHead className="text-right">Días</TableHead>
+                      <TableHead className="text-right">Costo extra</TableHead>
+                      <TableHead>Decisión</TableHead>
+                      <TableHead>¿Requiere aprobación?</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {project.changes.map((c) => (
+                      <TableRow key={c.id} className={c.assessment?.requiresNewBaseline ? "bg-orange-50" : ""}>
+                        <TableCell className="max-w-md">
+                          <p className="truncate" title={c.clientOriginalText ?? c.description}>{c.clientOriginalText ?? c.description}</p>
+                          {c.assessment?.requiresNewBaseline && (
+                            <p className="text-xs text-orange-700 font-medium mt-0.5">← Esta versión cambia el alcance original</p>
+                          )}
+                        </TableCell>
+                        <TableCell><Badge variant="outline">{c.assessment?.finalType ?? c.assessment?.suggestedType ?? c.type}</Badge></TableCell>
+                        <TableCell className="text-right">{c.assessment?.calendarImpactDays ?? (c.timeImpactHours ? Math.ceil(Number(c.timeImpactHours) / 8) : "—")}</TableCell>
+                        <TableCell className="text-right">{c.assessment?.estimatedCost ? formatMXN(Number(c.assessment.estimatedCost)) : c.costImpact ? formatMXN(Number(c.costImpact)) : "Sin costo extra"}</TableCell>
+                        <TableCell><Badge variant={c.decision === "aceptado" || c.decision === "incluido" ? "success" : c.decision === "rechazado" ? "destructive" : "outline"}>{c.decision}</Badge></TableCell>
+                        <TableCell>{c.assessment?.requiresFormalApproval ? <Badge variant="outline" className="text-orange-700 border-orange-300">Sí</Badge> : "No"}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
         </>
       )}
 
@@ -221,6 +263,78 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
               <p className="text-muted-foreground">El cálculo es preliminar y requiere revisión profesional contable/fiscal antes de firmar.</p>
             </CardContent>
           </Card>
+
+          {project.changes.length > 0 && (
+            <>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Cambios y su impacto financiero</CardTitle>
+                  <p className="text-xs text-muted-foreground">
+                    Costo facturable adicional al contrato base, calculado con el motor v7 (incluye IMSS, ISN y contingencia PMBOK 7).
+                  </p>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Tipo</TableHead>
+                        <TableHead className="text-right">Horas probables</TableHead>
+                        <TableHead className="text-right">Mano de obra</TableHead>
+                        <TableHead className="text-right">IMSS+ISN+admin</TableHead>
+                        <TableHead className="text-right">Contingencia</TableHead>
+                        <TableHead className="text-right">Subtotal antes IVA</TableHead>
+                        <TableHead className="text-right">Total facturable</TableHead>
+                        <TableHead className="text-right">Mant. mensual</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {project.changes
+                        .filter((c) => c.assessment?.financialBreakdownJson)
+                        .map((c) => {
+                          const fb = c.assessment?.financialBreakdownJson ? JSON.parse(c.assessment.financialBreakdownJson) as { laborCost: number; imssEstimated: number; isnEstimated: number; adminOverhead: number; contingencyAmount: number; subtotalBeforeVat: number; totalInvoice: number; maintenanceMonthlyImpact: number } : null;
+                          if (!fb) return null;
+                          return (
+                            <TableRow key={c.id}>
+                              <TableCell><Badge variant="outline">{c.assessment?.finalType ?? c.assessment?.suggestedType ?? c.type}</Badge></TableCell>
+                              <TableCell className="text-right">{c.assessment?.probableHours ? Number(c.assessment.probableHours).toFixed(1) : "—"}</TableCell>
+                              <TableCell className="text-right">{formatMXN(fb.laborCost)}</TableCell>
+                              <TableCell className="text-right">{formatMXN(fb.imssEstimated + fb.isnEstimated + fb.adminOverhead)}</TableCell>
+                              <TableCell className="text-right">{formatMXN(fb.contingencyAmount)}</TableCell>
+                              <TableCell className="text-right">{formatMXN(fb.subtotalBeforeVat)}</TableCell>
+                              <TableCell className="text-right font-semibold">{formatMXN(fb.totalInvoice)}</TableCell>
+                              <TableCell className="text-right">{formatMXN(fb.maintenanceMonthlyImpact)}</TableCell>
+                            </TableRow>
+                          );
+                        })}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+
+              {project.changes.some((c) => c.decision === "incluido" && Number(c.costImpact ?? 0) === 0) && (
+                <Card className="border-orange-300">
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-orange-600" />Cambios absorbidos sin costo</CardTitle>
+                    <p className="text-xs text-muted-foreground">
+                      El proveedor decidió incluir estos cambios sin cobro adicional. Si el motor activó un guardrail, aparece la razón.
+                    </p>
+                  </CardHeader>
+                  <CardContent className="space-y-2 text-sm">
+                    {project.changes
+                      .filter((c) => c.decision === "incluido" && Number(c.costImpact ?? 0) === 0)
+                      .map((c) => (
+                        <div key={c.id} className="border-l-2 border-orange-300 pl-2 py-1">
+                          <p className="font-medium">{c.clientOriginalText ?? c.description}</p>
+                          {c.assessment?.freeChangeGuardrailReason && (
+                            <p className="text-xs text-orange-800 mt-1">Guardrail: {c.assessment.freeChangeGuardrailReason}</p>
+                          )}
+                        </div>
+                      ))}
+                  </CardContent>
+                </Card>
+              )}
+            </>
+          )}
         </>
       )}
 
@@ -277,13 +391,72 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
               <ul className="list-disc pl-6 space-y-1">
                 <li>Reporte generado: ✅</li>
                 <li>Versión de estimación: v{latestVersion}</li>
-                <li>Cambios registrados: {project.changes.length}</li>
+                <li>Cambios registrados: {project.changes.length} ({project.changes.filter((c) => c.assessment).length} con evaluación de impacto v7)</li>
                 <li>Comparación de escenarios: {latest.length} estimaciones</li>
                 <li>Parámetros snapshot: ✅ (cada estimación guarda copia de los parámetros usados para auditoría)</li>
                 <li>Resultado real pendiente de capturar al cierre del proyecto</li>
               </ul>
             </CardContent>
           </Card>
+
+          {project.changes.filter((c) => c.assessment).length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Cambios capturados — evidencia para el artículo</CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  Tabla completa con factores aplicados y fuentes de parámetros. Cada cambio guarda su fórmula con los parámetros vigentes al momento del cálculo.
+                </p>
+              </CardHeader>
+              <CardContent className="p-0 overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Tipo</TableHead>
+                      <TableHead>Fase</TableHead>
+                      <TableHead>Modo</TableHead>
+                      <TableHead className="text-right">Puntos</TableHead>
+                      <TableHead className="text-right">F.clar.</TableHead>
+                      <TableHead className="text-right">F.fase</TableHead>
+                      <TableHead className="text-right">F.modo</TableHead>
+                      <TableHead className="text-right">F.riesgo</TableHead>
+                      <TableHead className="text-right">Contg.</TableHead>
+                      <TableHead className="text-right">Horas</TableHead>
+                      <TableHead className="text-right">Costo</TableHead>
+                      <TableHead>Riesgo</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {project.changes
+                      .filter((c) => c.assessment)
+                      .map((c) => {
+                        const a = c.assessment!;
+                        return (
+                          <TableRow key={c.id}>
+                            <TableCell><Badge variant="outline" className="text-[10px]">{a.suggestedType}</Badge></TableCell>
+                            <TableCell className="text-xs">{a.currentPhase}</TableCell>
+                            <TableCell className="text-xs">{a.developmentMode}</TableCell>
+                            <TableCell className="text-right text-xs">{Number(a.artifactPoints).toFixed(0)}</TableCell>
+                            <TableCell className="text-right text-xs">{Number(a.clarityFactor).toFixed(2)}</TableCell>
+                            <TableCell className="text-right text-xs">{Number(a.phaseFactor).toFixed(2)}</TableCell>
+                            <TableCell className="text-right text-xs">{Number(a.modeFactor).toFixed(2)}</TableCell>
+                            <TableCell className="text-right text-xs">{Number(a.riskFactor).toFixed(3)}</TableCell>
+                            <TableCell className="text-right text-xs">{(Number(a.contingencyRate) * 100).toFixed(0)}%</TableCell>
+                            <TableCell className="text-right text-xs">{Number(a.probableHours).toFixed(1)}</TableCell>
+                            <TableCell className="text-right text-xs">{formatMXN(Number(a.estimatedCost))}</TableCell>
+                            <TableCell><Badge className={RISK_LEVELS[a.riskLevel as keyof typeof RISK_LEVELS]?.bg} variant="outline">{a.riskLevel}</Badge></TableCell>
+                          </TableRow>
+                        );
+                      })}
+                  </TableBody>
+                </Table>
+                <div className="p-3 text-xs text-muted-foreground border-t flex flex-wrap items-center gap-3 no-print">
+                  <span>Exportar evidencia:</span>
+                  <a href={`/api/changes/export?format=json&projectId=${id}`} download className="text-primary hover:underline">JSON</a>
+                  <a href={`/api/changes/export?format=csv&projectId=${id}`} download className="text-primary hover:underline">CSV</a>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </>
       )}
 

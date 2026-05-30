@@ -133,3 +133,104 @@ export function buildParametersSnapshot(rows: LoadedParam[]): string {
     })),
   });
 }
+
+// ============================================================
+// Addendum v7 — Loader de parámetros del motor de cambios
+// ============================================================
+import type { ChangeImpactParameters } from "./engine/change-types";
+import { DEFAULT_CHANGE_PARAMETERS } from "./engine/change-impact";
+
+/**
+ * Claves canónicas que el motor v7 espera en la tabla Parameter.
+ * Si una clave no existe en DB, se usa el valor de DEFAULT_CHANGE_PARAMETERS
+ * y se agrega a fallbackWarnings.
+ */
+const CHANGE_PARAMETER_KEYS = [
+  "CHANGE_ARTIFACT_WEIGHTS",
+  "CHANGE_CLARITY_FACTOR",
+  "CHANGE_PHASE_FACTOR",
+  "CHANGE_MODE_FACTOR",
+  "CHANGE_CONTINGENCY_BY_TYPE",
+  "CHANGE_HIGH_RISK_MODE_FLOOR",
+  "CHANGE_MINIMUM_CHARGE_MXN",
+  "CHANGE_HOURLY_RATE_DEFAULT_MXN",
+  "CHANGE_FREE_CHANGE_LIMIT_MXN",
+  "CHANGE_MAINTENANCE_RATE_BY_RISK",
+] as const;
+
+/**
+ * Carga los parámetros del motor v7 de cambios desde la tabla Parameter,
+ * con fallback seguro al default si la clave no existe.
+ *
+ * El llamador (endpoints /impact y /preview) debe usar esta función para
+ * obtener parámetros frescos en cada cálculo (con cache de 5 min vía
+ * unstable_cache de Next 15, aplicado en el endpoint, no aquí).
+ *
+ * @param year — año fiscal/laboral (default 2026)
+ * @param state — estado (default Zacatecas; null permite parámetros nacionales)
+ */
+export async function loadChangeImpactParameters(
+  year = DEFAULT_YEAR,
+  state: string | null = DEFAULT_STATE,
+): Promise<ChangeImpactParameters> {
+  const rows = await prisma.parameter.findMany({
+    where: {
+      year,
+      country: DEFAULT_COUNTRY,
+      OR: state ? [{ state }, { state: null }] : [{ state: null }],
+      key: { in: [...CHANGE_PARAMETER_KEYS] },
+    },
+  });
+
+  const rowMap = new Map<string, string | null>();
+  for (const r of rows) rowMap.set(r.key, r.value);
+
+  const loadedKeys: string[] = [];
+  const fallbackWarnings: string[] = [];
+
+  function readJson<T>(key: string, fallback: T): T {
+    const raw = rowMap.get(key);
+    if (!raw) {
+      fallbackWarnings.push(`${key} no encontrado en Parameter; usando default.`);
+      return fallback;
+    }
+    try {
+      loadedKeys.push(key);
+      return JSON.parse(raw) as T;
+    } catch {
+      fallbackWarnings.push(`${key} no parseable como JSON; usando default.`);
+      return fallback;
+    }
+  }
+
+  function readNum(key: string, fallback: number): number {
+    const raw = rowMap.get(key);
+    if (raw === undefined || raw === null) {
+      fallbackWarnings.push(`${key} no encontrado en Parameter; usando default.`);
+      return fallback;
+    }
+    const n = Number.parseFloat(raw);
+    if (!Number.isFinite(n)) {
+      fallbackWarnings.push(`${key} no es numérico (${raw}); usando default.`);
+      return fallback;
+    }
+    loadedKeys.push(key);
+    return n;
+  }
+
+  return {
+    artifactWeights: readJson("CHANGE_ARTIFACT_WEIGHTS", DEFAULT_CHANGE_PARAMETERS.artifactWeights),
+    clarityFactor: readJson("CHANGE_CLARITY_FACTOR", DEFAULT_CHANGE_PARAMETERS.clarityFactor),
+    phaseFactor: readJson("CHANGE_PHASE_FACTOR", DEFAULT_CHANGE_PARAMETERS.phaseFactor),
+    modeFactor: readJson("CHANGE_MODE_FACTOR", DEFAULT_CHANGE_PARAMETERS.modeFactor),
+    contingencyByType: readJson("CHANGE_CONTINGENCY_BY_TYPE", DEFAULT_CHANGE_PARAMETERS.contingencyByType),
+    highRiskModeFloor: readNum("CHANGE_HIGH_RISK_MODE_FLOOR", DEFAULT_CHANGE_PARAMETERS.highRiskModeFloor),
+    minimumChargeMxn: readNum("CHANGE_MINIMUM_CHARGE_MXN", DEFAULT_CHANGE_PARAMETERS.minimumChargeMxn),
+    hourlyRateDefaultMxn: readNum("CHANGE_HOURLY_RATE_DEFAULT_MXN", DEFAULT_CHANGE_PARAMETERS.hourlyRateDefaultMxn),
+    freeChangeLimitMxn: readNum("CHANGE_FREE_CHANGE_LIMIT_MXN", DEFAULT_CHANGE_PARAMETERS.freeChangeLimitMxn),
+    maintenanceRateByRisk: readJson("CHANGE_MAINTENANCE_RATE_BY_RISK", DEFAULT_CHANGE_PARAMETERS.maintenanceRateByRisk),
+    loadedKeys,
+    fallbackWarnings,
+    loadedAt: new Date().toISOString(),
+  };
+}

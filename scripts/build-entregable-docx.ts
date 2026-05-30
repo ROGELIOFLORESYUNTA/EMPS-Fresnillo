@@ -82,7 +82,7 @@ function img(filename: string, widthCm = 16, caption?: string): Paragraph[] {
   const heightPx = Math.round(widthPx * (900 / 1440));
   const out: Paragraph[] = [
     new Paragraph({
-      children: [new ImageRun({ data, transformation: { width: widthPx, height: heightPx } })],
+      children: [new ImageRun({ type: "png", data, transformation: { width: widthPx, height: heightPx } })],
       alignment: AlignmentType.CENTER,
       spacing: { before: 120, after: 60 },
     }),

@@ -314,6 +314,20 @@ model ChangeImpactAssessment {
   explanationJson            String
   questionsToClarifyJson     String
   parametersSnapshot         String
+
+  // === Addendum v7 (campos opcionales, migracion aditiva) ===
+  clientPlainExplanationJson String?   // explicacion en lenguaje claro para el cliente (JSON array)
+  providerTechnicalJson      String?   // desglose tecnico para el proveedor (JSON array)
+  financialBreakdownJson     String?   // laborCost, IMSS, ISN, admin, contingencia, IVA, total
+  legalReferencesJson        String?   // referencias legales aplicables (LIVA, LFT, LSS, LGPDPPSO)
+  maintenanceImpactMonthly   Decimal?  @default(0)  // costo mensual adicional en mantenimiento
+  minimumChargeApplied       Boolean   @default(false)  // true si el costo subio al minimo
+  freeChangeGuardrailReason  String?   // por que se bloqueo "incluido sin costo"
+  baselineBeforeVersion      Int?      // version de la linea base antes del cambio
+  baselineAfterVersion       Int?      // version de la nueva linea base si fue creada
+  sourceParameterKeysJson    String?   // claves de Parameter usadas (auditoria)
+  lastParameterReviewAt      DateTime? // ultima vez que se reviso si los parametros cambiaron
+
   createdAt                  DateTime @default(now())
   updatedAt                  DateTime @updatedAt
 
@@ -324,6 +338,28 @@ model ChangeImpactAssessment {
   @@index([currentPhase])
   @@index([developmentMode])
   @@index([decisionStatus])
+}
+
+// ============================================================
+// Addendum v7 — Explicaciones de cálculo (auditoría académica)
+// Fuente: 38_prisma_migracion_aditiva_v7.md
+// Guarda por cada cálculo importante (cambio, estimación, cashflow, equipo)
+// la fórmula, los insumos y las fuentes, para reproducibilidad del artículo.
+// ============================================================
+
+model CalculationExplanation {
+  id          String   @id @default(cuid())
+  entityType  String   // estimate | change | cashflow | team
+  entityId    String
+  label       String
+  formula     String
+  inputJson   String
+  outputJson  String
+  sourceJson  String
+  createdAt   DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
 }
 
 // ============================================================

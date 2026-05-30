@@ -25,12 +25,18 @@ import type {
   ChangeImpactBreakdown,
   ChangeType,
   ChangeRiskLevel,
+  ChangeImpactParameters,
+  ChangeFinancialBreakdown,
+  AffectedArtifactInput,
 } from "./change-types";
 import { buildClarificationQuestions } from "./change-questions";
 
-// ====== Parámetros del motor (mover a Parameter table cuando se cargue 31_seed_*.json) ======
+// ====== Parámetros DEFAULT del motor (fallback si la tabla Parameter no los tiene) ======
+// v7: el motor ahora acepta params: ChangeImpactParameters como segundo argumento opcional.
+// Si se omite, usa DEFAULT_CHANGE_PARAMETERS. Esto mantiene compatibilidad con los 9 tests
+// del v6 y permite que el endpoint cargue valores frescos desde DB.
 
-const ARTIFACT_WEIGHTS = {
+const DEFAULT_ARTIFACT_WEIGHTS: Record<keyof AffectedArtifactInput, number> = {
   uiScreens: 6,
   apiEndpoints: 8,
   businessRules: 10,
@@ -42,9 +48,9 @@ const ARTIFACT_WEIGHTS = {
   automatedTests: 4,
   manualTestScenarios: 3,
   documentsOrTrainingItems: 2,
-} as const;
+};
 
-const CLARITY_FACTOR: Record<1 | 2 | 3 | 4 | 5, number> = {
+const DEFAULT_CLARITY_FACTOR: Record<1 | 2 | 3 | 4 | 5, number> = {
   1: 1.6,
   2: 1.35,
   3: 1.15,
@@ -52,7 +58,7 @@ const CLARITY_FACTOR: Record<1 | 2 | 3 | 4 | 5, number> = {
   5: 1.0,
 };
 
-const PHASE_FACTOR = {
+const DEFAULT_PHASE_FACTOR = {
   before_baseline: 0.7,
   after_baseline: 1.0,
   in_development: 1.35,
@@ -62,7 +68,7 @@ const PHASE_FACTOR = {
   in_production: 3.0,
 } as const;
 
-const MODE_FACTOR = {
+const DEFAULT_MODE_FACTOR = {
   traditional: 1.0,
   ai_assisted: 0.88,
   hybrid: 0.78,
@@ -70,27 +76,84 @@ const MODE_FACTOR = {
   low_code: 0.62,
 } as const;
 
-const HIGH_RISK_MODE_FLOOR = 0.9;
+const DEFAULT_HIGH_RISK_MODE_FLOOR = 0.9;
 
 /**
  * Contingencia AJUSTADA según investigación PMBOK 7 (10-25%, no 5-20%).
  * 5% para corrección/garantía solo se justifica si está pre-aprobada (ITIL "standard").
  */
-const CONTINGENCY_BY_TYPE: Record<ChangeType, number> = {
-  correccion: 0.1, // antes 0.05 — subimos por riesgo de regresión
+const DEFAULT_CONTINGENCY_BY_TYPE: Record<ChangeType, number> = {
+  correccion: 0.1,
   garantia: 0.1,
   ajuste_menor: 0.12,
   mejora: 0.15,
   nuevo_alcance: 0.2,
-  cambio_estructural: 0.25, // antes 0.20 — alineado a PMI rango complejo
+  cambio_estructural: 0.25,
+};
+
+// === v7: nuevos parámetros fiscales/laborales ===
+
+/** % del subtotal que se suma al mantenimiento mensual según riesgo del cambio. */
+const DEFAULT_MAINTENANCE_RATE_BY_RISK: Record<ChangeRiskLevel, number> = {
+  bajo: 0.005,
+  medio: 0.01,
+  alto: 0.015,
+  critico: 0.02,
+};
+
+/** Costo mínimo en MXN: evita cobrar nada por un cambio. */
+const DEFAULT_MINIMUM_CHARGE_MXN = 2500;
+
+/** Tarifa por hora default si no se entrega. */
+const DEFAULT_HOURLY_RATE_MXN = 500;
+
+/** Tope debajo del cual se puede aceptar "incluido sin costo" sin guardrail. */
+const DEFAULT_FREE_CHANGE_LIMIT_MXN = 10000;
+
+/**
+ * Tasas fiscales mexicanas 2026 usadas para el desglose financiero.
+ * Si se quieren actualizar, vienen del Parameter table principal.
+ */
+const FISCAL_RATES_FALLBACK = {
+  iva: 0.16,
+  imssPatronalApprox: 0.265, // ~26.5% promedio EyM + IV + RT + retiro + CEAV + INFONAVIT + guarderías
+  isnZacatecasEffective: 0.0385, // ISN 3.5% × (1 + UAZ 10%)
+  adminOverheadPct: 0.10, // 10% para gastos administrativos del proveedor
 };
 
 // Optimista/conservador como ±25% sobre probable (consistente con scenario_factors del proyecto)
 const OPTIMISTIC_FACTOR = 0.85;
 const CONSERVATIVE_BASE = 1.25;
 
-// Tarifa por hora referencia para costo si no se entrega (MXN). El servicio inyectará la real.
-const DEFAULT_HOURLY_RATE_MXN = 500;
+/**
+ * Parámetros DEFAULT del motor. Se usa cuando el llamador no pasa argumento.
+ * Mantiene compatibilidad con los tests v6.
+ */
+export const DEFAULT_CHANGE_PARAMETERS: ChangeImpactParameters = {
+  artifactWeights: DEFAULT_ARTIFACT_WEIGHTS,
+  clarityFactor: DEFAULT_CLARITY_FACTOR,
+  phaseFactor: DEFAULT_PHASE_FACTOR,
+  modeFactor: DEFAULT_MODE_FACTOR,
+  contingencyByType: DEFAULT_CONTINGENCY_BY_TYPE,
+  highRiskModeFloor: DEFAULT_HIGH_RISK_MODE_FLOOR,
+  minimumChargeMxn: DEFAULT_MINIMUM_CHARGE_MXN,
+  hourlyRateDefaultMxn: DEFAULT_HOURLY_RATE_MXN,
+  freeChangeLimitMxn: DEFAULT_FREE_CHANGE_LIMIT_MXN,
+  maintenanceRateByRisk: DEFAULT_MAINTENANCE_RATE_BY_RISK,
+  loadedKeys: [],
+  fallbackWarnings: [
+    "Usando todos los parámetros default (no se invocó loadChangeImpactParameters)",
+  ],
+  loadedAt: "1970-01-01T00:00:00.000Z",
+};
+
+// Aliases para retrocompatibilidad con código que importa los nombres v6:
+const ARTIFACT_WEIGHTS = DEFAULT_ARTIFACT_WEIGHTS;
+const CLARITY_FACTOR = DEFAULT_CLARITY_FACTOR;
+const PHASE_FACTOR = DEFAULT_PHASE_FACTOR;
+const MODE_FACTOR = DEFAULT_MODE_FACTOR;
+const CONTINGENCY_BY_TYPE = DEFAULT_CONTINGENCY_BY_TYPE;
+const HIGH_RISK_MODE_FLOOR = DEFAULT_HIGH_RISK_MODE_FLOOR;
 
 // ====== Helpers ======
 
@@ -102,23 +165,26 @@ function isHighRiskChange(input: ChangeImpactInput): boolean {
   );
 }
 
-function applyModeFloor(modeFactor: number, highRisk: boolean): number {
-  return highRisk ? Math.max(modeFactor, HIGH_RISK_MODE_FLOOR) : modeFactor;
+function applyModeFloor(modeFactor: number, highRisk: boolean, floor: number): number {
+  return highRisk ? Math.max(modeFactor, floor) : modeFactor;
 }
 
-function computeArtifactPoints(a: ChangeImpactInput["affectedArtifacts"]): number {
+function computeArtifactPoints(
+  a: ChangeImpactInput["affectedArtifacts"],
+  weights: Record<keyof AffectedArtifactInput, number>,
+): number {
   return (
-    a.uiScreens * ARTIFACT_WEIGHTS.uiScreens +
-    a.apiEndpoints * ARTIFACT_WEIGHTS.apiEndpoints +
-    a.businessRules * ARTIFACT_WEIGHTS.businessRules +
-    a.databaseTables * ARTIFACT_WEIGHTS.databaseTables +
-    a.reports * ARTIFACT_WEIGHTS.reports +
-    a.rolesPermissions * ARTIFACT_WEIGHTS.rolesPermissions +
-    a.externalIntegrations * ARTIFACT_WEIGHTS.externalIntegrations +
-    a.dataMigrationObjects * ARTIFACT_WEIGHTS.dataMigrationObjects +
-    a.automatedTests * ARTIFACT_WEIGHTS.automatedTests +
-    a.manualTestScenarios * ARTIFACT_WEIGHTS.manualTestScenarios +
-    a.documentsOrTrainingItems * ARTIFACT_WEIGHTS.documentsOrTrainingItems
+    a.uiScreens * weights.uiScreens +
+    a.apiEndpoints * weights.apiEndpoints +
+    a.businessRules * weights.businessRules +
+    a.databaseTables * weights.databaseTables +
+    a.reports * weights.reports +
+    a.rolesPermissions * weights.rolesPermissions +
+    a.externalIntegrations * weights.externalIntegrations +
+    a.dataMigrationObjects * weights.dataMigrationObjects +
+    a.automatedTests * weights.automatedTests +
+    a.manualTestScenarios * weights.manualTestScenarios +
+    a.documentsOrTrainingItems * weights.documentsOrTrainingItems
   );
 }
 
@@ -207,16 +273,211 @@ function buildExplanation(
   return out;
 }
 
+// ====== Funciones puras v7 (financiero, mantenimiento, explicaciones, guardrails) ======
+
+/**
+ * Desglose financiero del cambio (v7).
+ * laborCost = subtotal sin overhead; sobre éste se calculan IMSS, ISN, admin.
+ */
+export function computeFinancialBreakdown(
+  probableHours: number,
+  hourlyRate: number,
+  contingencyRate: number,
+  riskLevel: ChangeRiskLevel,
+  params: ChangeImpactParameters = DEFAULT_CHANGE_PARAMETERS,
+): ChangeFinancialBreakdown {
+  const laborCost = probableHours * hourlyRate;
+  const imssEstimated = laborCost * FISCAL_RATES_FALLBACK.imssPatronalApprox;
+  const isnEstimated = laborCost * FISCAL_RATES_FALLBACK.isnZacatecasEffective;
+  const adminOverhead = laborCost * FISCAL_RATES_FALLBACK.adminOverheadPct;
+  const contingencyAmount = laborCost * contingencyRate;
+  const subtotalBeforeVat = laborCost + imssEstimated + isnEstimated + adminOverhead + contingencyAmount;
+  const vat = subtotalBeforeVat * FISCAL_RATES_FALLBACK.iva;
+  const totalInvoice = subtotalBeforeVat + vat;
+  const maintenanceMonthlyImpact = computeMaintenanceImpact(subtotalBeforeVat, riskLevel, params.maintenanceRateByRisk);
+  return {
+    laborCost,
+    imssEstimated,
+    isnEstimated,
+    adminOverhead,
+    contingencyAmount,
+    subtotalBeforeVat,
+    vat,
+    totalInvoice,
+    maintenanceMonthlyImpact,
+  };
+}
+
+/**
+ * Impacto mensual incremental en mantenimiento según riesgo del cambio.
+ * Cambios de alto riesgo o críticos requieren más monitoreo y soporte continuo.
+ */
+export function computeMaintenanceImpact(
+  subtotalBeforeVat: number,
+  riskLevel: ChangeRiskLevel,
+  rateByRisk: Record<ChangeRiskLevel, number>,
+): number {
+  return Math.max(0, subtotalBeforeVat * rateByRisk[riskLevel]);
+}
+
+/**
+ * Explicación en lenguaje plano para el cliente (Ayuntamiento). Sin jerga técnica.
+ */
+export function buildPlainExplanationForClient(
+  input: ChangeImpactInput,
+  type: ChangeType,
+  riskLevel: ChangeRiskLevel,
+  requiresFormalApproval: boolean,
+): string[] {
+  const out: string[] = [];
+  const a = input.affectedArtifacts;
+
+  const cosas: string[] = [];
+  if (a.uiScreens > 0) cosas.push(a.uiScreens === 1 ? "una pantalla" : `${a.uiScreens} pantallas`);
+  if (a.databaseTables > 0) cosas.push("guardar nuevos datos");
+  if (a.rolesPermissions > 0) cosas.push("permisos o autorizaciones");
+  if (a.reports > 0) cosas.push("uno o más reportes");
+  if (a.externalIntegrations > 0) cosas.push("conexión con otro sistema");
+
+  if (cosas.length === 0) {
+    out.push("El cambio solicitado no parece tocar partes críticas del sistema.");
+  } else {
+    out.push(`Este cambio toca: ${cosas.join(", ")}.`);
+  }
+
+  if (type === "garantia") {
+    out.push("Por la naturaleza del cambio, el proveedor lo absorbe sin costo adicional.");
+  } else if (type === "nuevo_alcance" || type === "cambio_estructural") {
+    out.push("Es un cambio que aumenta el alcance del contrato original. Requiere cotización y aprobación formal.");
+  } else if (type === "mejora") {
+    out.push("Es una mejora dentro del alcance, pero con costo adicional porque agrega trabajo.");
+  } else {
+    out.push("Es un ajuste menor sobre el alcance existente.");
+  }
+
+  if (input.currentPhase === "after_testing" || input.currentPhase === "after_acceptance" || input.currentPhase === "in_production") {
+    out.push("Se solicita en una fase avanzada del proyecto, por eso cuesta más: hay que rehacer pruebas y validar de nuevo con los usuarios.");
+  }
+
+  if (riskLevel === "alto" || riskLevel === "critico") {
+    out.push("Tiene riesgo alto: puede afectar datos, seguridad o conexiones externas. El proveedor recomienda revisión cuidadosa antes de aprobar.");
+  }
+
+  if (requiresFormalApproval) {
+    out.push("Antes de ejecutar este cambio se necesita firma de la persona autorizada del Ayuntamiento.");
+  }
+
+  if (input.clarityLevel <= 2) {
+    out.push("La solicitud original no fue del todo clara. Se agregaron preguntas para confirmar lo que realmente se necesita.");
+  }
+
+  return out;
+}
+
+/**
+ * Explicación técnica para el proveedor con desglose numérico de la fórmula.
+ */
+export function buildTechnicalExplanationForProvider(
+  input: ChangeImpactInput,
+  breakdown: ChangeImpactBreakdown,
+  financial: ChangeFinancialBreakdown,
+  hourlyRate: number,
+): string[] {
+  const out: string[] = [];
+  out.push(
+    `Puntos de artefactos: ${breakdown.artifactPoints.toFixed(0)} (suma ponderada de pantallas, endpoints, tablas, etc.).`,
+  );
+  out.push(
+    `Factores aplicados: claridad ${breakdown.clarityFactor.toFixed(2)}, fase ${breakdown.phaseFactor.toFixed(2)}, riesgo ${breakdown.riskFactor.toFixed(3)}, modo ${breakdown.modeFactorAdjusted.toFixed(2)}${breakdown.appliedFloor ? " (con piso por alto riesgo)" : ""}.`,
+  );
+  out.push(
+    `Base = ${breakdown.artifactPoints.toFixed(0)} × ${breakdown.clarityFactor.toFixed(2)} × ${breakdown.phaseFactor.toFixed(2)} × ${breakdown.riskFactor.toFixed(3)} × ${breakdown.modeFactorAdjusted.toFixed(2)} = ${breakdown.baseHours.toFixed(1)} h.`,
+  );
+  out.push(
+    `Contingencia ${(breakdown.contingencyRate * 100).toFixed(0)}% sobre base = ${breakdown.contingencyHours.toFixed(1)} h. Probable total = ${breakdown.estimatedHours.toFixed(1)} h.`,
+  );
+  out.push(
+    `Tarifa por hora: $${hourlyRate.toLocaleString("es-MX")} MXN. Mano de obra: $${financial.laborCost.toLocaleString("es-MX", { maximumFractionDigits: 0 })}.`,
+  );
+  out.push(
+    `IMSS patronal estimado: $${financial.imssEstimated.toLocaleString("es-MX", { maximumFractionDigits: 0 })}; ISN+UAZ: $${financial.isnEstimated.toLocaleString("es-MX", { maximumFractionDigits: 0 })}; admin overhead: $${financial.adminOverhead.toLocaleString("es-MX", { maximumFractionDigits: 0 })}.`,
+  );
+  out.push(
+    `Subtotal antes de IVA: $${financial.subtotalBeforeVat.toLocaleString("es-MX", { maximumFractionDigits: 0 })}. IVA 16%: $${financial.vat.toLocaleString("es-MX", { maximumFractionDigits: 0 })}. Total a facturar: $${financial.totalInvoice.toLocaleString("es-MX", { maximumFractionDigits: 0 })}.`,
+  );
+  out.push(
+    `Impacto incremental en mantenimiento mensual: $${financial.maintenanceMonthlyImpact.toLocaleString("es-MX", { maximumFractionDigits: 0 })}.`,
+  );
+  if (input.developmentMode === "low_code" || input.developmentMode === "bytecoding_prompts") {
+    out.push(
+      `Modo de desarrollo elegido: ${input.developmentMode}. Reduce horas de codificación pero NO elimina pruebas, aceptación ni mantenimiento.`,
+    );
+  }
+  return out;
+}
+
+/**
+ * Referencias legales aplicables al cambio, según el contexto.
+ */
+export function buildLegalReferences(input: ChangeImpactInput): string[] {
+  const refs: string[] = [];
+  refs.push("LIVA Art. 1 (IVA 16% sobre subtotal)");
+  refs.push("LISR Art. 9 (ISR persona moral 30%)");
+  refs.push("LSS Art. 25-106 (cuotas IMSS patronal)");
+  refs.push("Ley de Hacienda del Estado de Zacatecas (ISN 3.5% + UAZ 10%)");
+  if (input.affectedArtifacts.dataMigrationObjects > 0 || input.dataImpact >= 2) {
+    refs.push("LGPDPPSO (Ley General de Protección de Datos Personales en Posesión de Sujetos Obligados, aplicable al Ayuntamiento)");
+    refs.push("LFPDPPP (Ley Federal de Protección de Datos Personales en Posesión de los Particulares, aplicable al proveedor)");
+  }
+  if (input.currentPhase === "after_acceptance" || input.currentPhase === "in_production") {
+    refs.push("LFT Art. 50 (indemnización en caso de terminación, si afecta personal en nómina)");
+  }
+  return refs;
+}
+
+/**
+ * Guardrail: bloquea "incluido sin costo" en escenarios donde no debe absorberse.
+ * Retorna null si está permitido, o un string con la razón si está bloqueado.
+ */
+export function evaluateFreeChangeGuardrail(
+  costImpact: number,
+  riskLevel: ChangeRiskLevel,
+  requiresFormalApproval: boolean,
+  phase: ChangeImpactInput["currentPhase"],
+  freeChangeLimitMxn: number,
+): string | null {
+  if (requiresFormalApproval) {
+    return "Requiere aprobación formal: no se puede marcar como 'incluido sin costo' sin comentario y autorizador.";
+  }
+  if (costImpact > freeChangeLimitMxn) {
+    return `Costo estimado ($${costImpact.toLocaleString("es-MX", { maximumFractionDigits: 0 })}) excede el tope para cambios libres ($${freeChangeLimitMxn.toLocaleString("es-MX")}).`;
+  }
+  if (phase === "after_testing" || phase === "after_acceptance" || phase === "in_production") {
+    return "Se solicita en fase avanzada (post-pruebas, aceptado o en producción): no debe absorberse sin costo.";
+  }
+  if (riskLevel === "alto" || riskLevel === "critico") {
+    return `Riesgo ${riskLevel}: no debe absorberse sin costo ni revisión.`;
+  }
+  return null;
+}
+
 // ====== Función principal ======
 
-export function computeChangeImpact(input: ChangeImpactInput): ChangeImpactResult {
+/**
+ * Calcula el impacto de un cambio. v7: acepta `params` opcional para usar valores
+ * desde tabla Parameter. Sin params usa DEFAULT_CHANGE_PARAMETERS (compatibilidad v6).
+ */
+export function computeChangeImpact(
+  input: ChangeImpactInput,
+  params: ChangeImpactParameters = DEFAULT_CHANGE_PARAMETERS,
+): ChangeImpactResult {
   const highRisk = isHighRiskChange(input);
 
-  const artifactPoints = computeArtifactPoints(input.affectedArtifacts);
-  const clarityFactor = CLARITY_FACTOR[input.clarityLevel];
-  const phaseFactor = PHASE_FACTOR[input.currentPhase];
-  const modeFactorRaw = MODE_FACTOR[input.developmentMode];
-  const modeFactor = applyModeFloor(modeFactorRaw, highRisk);
+  const artifactPoints = computeArtifactPoints(input.affectedArtifacts, params.artifactWeights);
+  const clarityFactor = params.clarityFactor[input.clarityLevel];
+  const phaseFactor = params.phaseFactor[input.currentPhase];
+  const modeFactorRaw = params.modeFactor[input.developmentMode];
+  const modeFactor = applyModeFloor(modeFactorRaw, highRisk, params.highRiskModeFloor);
 
   // Penalización aditiva al riskFactor cuando el modo es low-code/bytecoding Y hay alto riesgo:
   // refleja que cambios complejos en low-code pueden costar 50-200% más (Forrester 2025).
@@ -236,7 +497,7 @@ export function computeChangeImpact(input: ChangeImpactInput): ChangeImpactResul
 
   const suggestedType = suggestType(input, artifactPoints);
   const contingencyType = input.requestedType ?? suggestedType;
-  const contingencyRate = CONTINGENCY_BY_TYPE[contingencyType];
+  const contingencyRate = params.contingencyByType[contingencyType];
   const contingencyHours = baseHours * contingencyRate;
   const probableHours = baseHours + contingencyHours;
 
@@ -258,7 +519,12 @@ export function computeChangeImpact(input: ChangeImpactInput): ChangeImpactResul
     (suggestedType === "nuevo_alcance" && (input.affectedArtifacts.databaseTables > 0 || input.affectedArtifacts.externalIntegrations > 0));
 
   const calendarImpactDays = Math.ceil(probableHours / 8); // 1 persona-día = 8h
-  const costImpact = probableHours * DEFAULT_HOURLY_RATE_MXN;
+
+  // v7: aplicar costo mínimo
+  const hourlyRate = params.hourlyRateDefaultMxn;
+  const costImpactRaw = probableHours * hourlyRate;
+  const minimumChargeApplied = costImpactRaw < params.minimumChargeMxn && costImpactRaw > 0;
+  const costImpact = Math.max(costImpactRaw, params.minimumChargeMxn);
 
   const breakdown: ChangeImpactBreakdown = {
     artifactPoints,
@@ -278,6 +544,26 @@ export function computeChangeImpact(input: ChangeImpactInput): ChangeImpactResul
   const explanation = buildExplanation(input, breakdown, suggestedType, highRisk);
   const questionsToClarify = buildClarificationQuestions(input);
 
+  // === v7: campos nuevos opcionales ===
+  const financialBreakdown = computeFinancialBreakdown(probableHours, hourlyRate, contingencyRate, riskLevel, params);
+  const plainExplanationForClient = buildPlainExplanationForClient(input, suggestedType, riskLevel, requiresFormalApproval);
+  const technicalExplanationForProvider = buildTechnicalExplanationForProvider(input, breakdown, financialBreakdown, hourlyRate);
+  const legalReferences = buildLegalReferences(input);
+  const freeChangeGuardrailReason = evaluateFreeChangeGuardrail(
+    costImpact,
+    riskLevel,
+    requiresFormalApproval,
+    input.currentPhase,
+    params.freeChangeLimitMxn,
+  );
+
+  // Si se usaron defaults, advertir en explanation
+  if (params.fallbackWarnings.length > 0 && params !== DEFAULT_CHANGE_PARAMETERS) {
+    explanation.push(
+      `Advertencia: ${params.fallbackWarnings.length} parámetro(s) usaron valor default por no estar en la tabla Parameter.`,
+    );
+  }
+
   return {
     suggestedType,
     contingencyType,
@@ -286,7 +572,7 @@ export function computeChangeImpact(input: ChangeImpactInput): ChangeImpactResul
     conservativeHours,
     estimatedHours: probableHours,
     costImpact,
-    hourlyRateUsed: DEFAULT_HOURLY_RATE_MXN,
+    hourlyRateUsed: hourlyRate,
     calendarImpactDays,
     riskLevel,
     requiresNewBaseline,
@@ -294,6 +580,16 @@ export function computeChangeImpact(input: ChangeImpactInput): ChangeImpactResul
     explanation,
     questionsToClarify,
     breakdown,
+    // v7
+    plainExplanationForClient,
+    technicalExplanationForProvider,
+    financialBreakdown,
+    maintenanceImpactMonthly: financialBreakdown.maintenanceMonthlyImpact,
+    legalReferences,
+    parameterSourceKeys: params.loadedKeys,
+    fallbackWarnings: params.fallbackWarnings,
+    freeChangeGuardrailReason,
+    minimumChargeApplied,
   };
 }
 
@@ -304,4 +600,16 @@ export {
   MODE_FACTOR,
   CONTINGENCY_BY_TYPE,
   HIGH_RISK_MODE_FLOOR,
+  // v7
+  DEFAULT_ARTIFACT_WEIGHTS,
+  DEFAULT_CLARITY_FACTOR,
+  DEFAULT_PHASE_FACTOR,
+  DEFAULT_MODE_FACTOR,
+  DEFAULT_CONTINGENCY_BY_TYPE,
+  DEFAULT_HIGH_RISK_MODE_FLOOR,
+  DEFAULT_MAINTENANCE_RATE_BY_RISK,
+  DEFAULT_MINIMUM_CHARGE_MXN,
+  DEFAULT_HOURLY_RATE_MXN,
+  DEFAULT_FREE_CHANGE_LIMIT_MXN,
+  FISCAL_RATES_FALLBACK,
 };

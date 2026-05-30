@@ -115,4 +115,78 @@ export interface ChangeImpactResult {
   questionsToClarify: string[];
 
   breakdown: ChangeImpactBreakdown;
+
+  // === Addendum v7 (opcionales, no rompen tests v6) ===
+
+  /** Explicación en lenguaje claro para el cliente (Ayuntamiento). Sin jerga técnica. */
+  plainExplanationForClient?: string[];
+  /** Explicación técnica para el proveedor: desglose numérico de fórmula. */
+  technicalExplanationForProvider?: string[];
+  /** Desglose fiscal-laboral del costo del cambio. */
+  financialBreakdown?: ChangeFinancialBreakdown;
+  /** Costo mensual adicional que el cambio agregará al mantenimiento. */
+  maintenanceImpactMonthly?: number;
+  /** Referencias legales aplicables (LIVA art.1, LFT art.50, LSS art.106...). */
+  legalReferences?: string[];
+  /** Claves de Parameter usadas en este cálculo (auditoría). */
+  parameterSourceKeys?: string[];
+  /** Claves que NO existían en DB y usaron default. Advierte al usuario. */
+  fallbackWarnings?: string[];
+  /** Si el sistema bloqueó "incluido sin costo", explica por qué. */
+  freeChangeGuardrailReason?: string | null;
+  /** True si el costo subió al mínimo configurado (CHANGE_MINIMUM_CHARGE_MXN). */
+  minimumChargeApplied?: boolean;
+}
+
+/**
+ * Desglose fiscal-laboral del costo del cambio (v7).
+ * Permite mostrar al proveedor cuánto del costo es nómina vs impuestos vs mantenimiento.
+ */
+export interface ChangeFinancialBreakdown {
+  /** Costo de la mano de obra (horas × tarifa). */
+  laborCost: number;
+  /** IMSS patronal estimado (sobre laborCost). */
+  imssEstimated: number;
+  /** ISN Zacatecas + UAZ sobre laborCost. */
+  isnEstimated: number;
+  /** Overhead administrativo (proporcional a laborCost). */
+  adminOverhead: number;
+  /** Contingencia en MXN. */
+  contingencyAmount: number;
+  /** Suma antes del IVA. */
+  subtotalBeforeVat: number;
+  /** IVA 16%. */
+  vat: number;
+  /** Total a facturar (subtotal + IVA). */
+  totalInvoice: number;
+  /** Impacto mensual incremental sobre el costo de mantenimiento. */
+  maintenanceMonthlyImpact: number;
+}
+
+/**
+ * Parámetros del motor de cambios v7. Cargados desde tabla Parameter
+ * con fallback seguro a valores DEFAULT_CHANGE_PARAMETERS si la clave no existe.
+ */
+export interface ChangeImpactParameters {
+  artifactWeights: Record<keyof AffectedArtifactInput, number>;
+  clarityFactor: Record<1 | 2 | 3 | 4 | 5, number>;
+  phaseFactor: Record<ChangePhase, number>;
+  modeFactor: Record<ChangeDevelopmentMode, number>;
+  contingencyByType: Record<ChangeType, number>;
+  highRiskModeFloor: number;
+  /** Costo mínimo en MXN para un change request (evita cobrar nada). */
+  minimumChargeMxn: number;
+  /** Tarifa por hora default si no se entrega. */
+  hourlyRateDefaultMxn: number;
+  /** Tope debajo del cual se puede aceptar "incluido sin costo" sin guardrail. */
+  freeChangeLimitMxn: number;
+  /** % del subtotal que se suma al mantenimiento mensual según riesgo. */
+  maintenanceRateByRisk: Record<ChangeRiskLevel, number>;
+  // === Metadatos de carga ===
+  /** Claves leídas exitosamente desde Parameter. */
+  loadedKeys: string[];
+  /** Claves no encontradas; usaron default. Se muestra como warning. */
+  fallbackWarnings: string[];
+  /** ISO timestamp de la carga. */
+  loadedAt: string;
 }

@@ -147,3 +147,23 @@ export const changeImpactDecisionSchema = z.object({
   comment: z.string().optional(),
   decidedBy: z.string().min(2),
 });
+
+// === Addendum v7 ===
+
+/**
+ * v7: aprobar nueva línea base para un cambio estructural o de nuevo alcance.
+ * Requiere autorizador, comentario de aprobación y la nueva versión.
+ */
+export const approveBaselineSchema = z.object({
+  approvedBy: z.string().min(2),
+  comment: z.string().min(10, "Comentario obligatorio: explica por qué se crea nueva línea base."),
+  newBaselineVersion: z.number().int().positive(),
+});
+
+/**
+ * v7: query schema para listar explicaciones de cálculo.
+ */
+export const calculationExplanationQuerySchema = z.object({
+  entityType: z.enum(["estimate", "change", "cashflow", "team"]).optional(),
+  entityId: z.string().optional(),
+});

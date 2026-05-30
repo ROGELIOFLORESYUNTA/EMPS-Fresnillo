@@ -1,0 +1,25 @@
+{
+  "originalText": "El área de Tesorería solicita agregar una autorización extra para aprobar descuentos y que salga en el reporte mensual.",
+  "currentPhase": "after_testing",
+  "clarityLevel": 2,
+  "urgencyLevel": 4,
+  "developmentMode": "hybrid",
+  "affectedArtifacts": {
+    "uiScreens": 2,
+    "apiEndpoints": 2,
+    "businessRules": 2,
+    "databaseTables": 1,
+    "reports": 1,
+    "rolesPermissions": 2,
+    "externalIntegrations": 0,
+    "dataMigrationObjects": 0,
+    "automatedTests": 2,
+    "manualTestScenarios": 5,
+    "documentsOrTrainingItems": 2
+  },
+  "securityImpact": 2,
+  "dataImpact": 2,
+  "integrationImpact": 0,
+  "testingRequired": true,
+  "clientAvailabilityRisk": 0.2
+}

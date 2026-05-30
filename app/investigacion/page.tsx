@@ -124,6 +124,12 @@ export default async function InvestigacionPage() {
           badge={projectsCount}
         />
         <ResearchCard
+          href="/investigacion/exportar-cambios"
+          icon={<FileBarChart className="w-5 h-5" />}
+          title="Exportar evidencia de cambios"
+          description="Descarga JSON o CSV con todas las evaluaciones de impacto de cambios (motor v7) para anexar al artículo o validación externa."
+        />
+        <ResearchCard
           href="/investigacion/usuarios-y-roles"
           icon={<Users className="w-5 h-5" />}
           title="Usuarios y roles"

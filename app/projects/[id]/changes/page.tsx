@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { api, apiPost, apiPut } from "@/lib/api-client";
 import { formatMXN } from "@/lib/utils";
-import { Plus, Check, X, Calculator } from "lucide-react";
+import { Plus, Check, X, Calculator, FileSearch } from "lucide-react";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import {
   computeChangeCost,
@@ -239,16 +239,23 @@ export default function ChangesPage({ params }: { params: Promise<{ id: string }
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {c.decision === "pendiente" && (
-                        <div className="flex gap-1">
-                          <Button size="sm" variant="outline" onClick={() => handleDecision(c.id, "aceptado")} title="Aceptar">
-                            <Check className="w-4 h-4 text-green-600" />
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={() => handleDecision(c.id, "rechazado")} title="Rechazar">
-                            <X className="w-4 h-4 text-destructive" />
-                          </Button>
-                        </div>
-                      )}
+                      <div className="flex gap-1">
+                        <Button size="sm" variant="outline" asChild title="Evaluar impacto con motor v7">
+                          <Link href={`/projects/${projectId}/changes/${c.id}/impact`}>
+                            <FileSearch className="w-4 h-4" />
+                          </Link>
+                        </Button>
+                        {c.decision === "pendiente" && (
+                          <>
+                            <Button size="sm" variant="outline" onClick={() => handleDecision(c.id, "aceptado")} title="Aceptar (decisión rápida sin evaluación detallada)">
+                              <Check className="w-4 h-4 text-green-600" />
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => handleDecision(c.id, "rechazado")} title="Rechazar">
+                              <X className="w-4 h-4 text-destructive" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
