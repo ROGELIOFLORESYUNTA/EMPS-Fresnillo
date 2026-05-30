@@ -60,6 +60,8 @@ async function main() {
       priority: "alta",
       status: "captura",
       notes: "Proyecto piloto que servirá de plantilla para 6 municipios más en Zacatecas. Datos personales: CURP, RFC, dirección.",
+      isTemplate: true,
+      workspaceId: null,
       modules: {
         create: [
           { name: "Predial", type: "transaccional", description: "Cálculo, descuentos, comprobantes y pago en línea.", complexity: 4, clarity: 3, criticality: 5, screensCount: 8, reportsCount: 3, catalogsCount: 2, integrationsCount: 1, sensitiveData: true, rolesPermissions: "Cajero, Supervisor, Auditor" },

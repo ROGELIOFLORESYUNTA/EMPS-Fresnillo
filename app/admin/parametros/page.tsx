@@ -5,8 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Breadcrumbs } from "@/components/breadcrumbs";
-import { Plus, Upload, Pencil, AlertCircle, RefreshCw } from "lucide-react";
+import { Plus, Upload, Pencil, AlertCircle } from "lucide-react";
 import { ClearCacheButton } from "./clear-cache-button";
+import { ParameterManualSheet } from "@/components/parameter-manual-sheet";
+import { getCurrentWorkspaceId } from "@/lib/workspace";
 
 const CATEGORIAS: Record<string, string> = {
   IMSS: "Cuotas IMSS por ramo",
@@ -38,6 +40,13 @@ export default async function AdminParametrosPage() {
   const parameters = await prisma.parameter.findMany({
     orderBy: [{ year: "desc" }, { key: "asc" }],
   });
+
+  // FASE G.I: traer overrides del workspace actual y mapear por parameterKey
+  const workspaceId = await getCurrentWorkspaceId();
+  const overrides = workspaceId
+    ? await prisma.workspaceParameterOverride.findMany({ where: { workspaceId } })
+    : [];
+  const overrideMap = new Map(overrides.map((o) => [o.parameterKey, o]));
 
   const grupos: Record<string, typeof parameters> = {};
   for (const p of parameters) {
@@ -106,17 +115,30 @@ export default async function AdminParametrosPage() {
               <TableBody>
                 {items.map((p) => {
                   const vencido = p.effectiveUntil && p.effectiveUntil < ahora;
+                  const override = overrideMap.get(p.key);
+                  const effectiveValue = override?.value ?? p.value;
                   return (
-                    <TableRow key={p.id}>
+                    <TableRow key={p.id} className={override ? "bg-blue-50/40" : ""}>
                       <TableCell>
-                        <p className="font-mono text-xs">{p.key}</p>
+                        <p className="font-mono text-xs inline-flex items-center">
+                          {p.key}
+                          <ParameterManualSheet parameterKey={p.key} />
+                        </p>
                         {p.notes && <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{p.notes}</p>}
+                        {override && (
+                          <Badge variant="outline" className="text-[10px] text-blue-700 border-blue-300 mt-1">
+                            Editado por ti
+                          </Badge>
+                        )}
                       </TableCell>
                       <TableCell className="text-right">
                         {p.unit === "json" || p.unit === "table" ? (
                           <Badge variant="outline" className="text-xs">JSON</Badge>
                         ) : (
-                          <span className="font-medium">{p.value ?? "—"}</span>
+                          <span className="font-medium">{effectiveValue ?? "—"}</span>
+                        )}
+                        {override && p.value !== override.value && (
+                          <div className="text-[10px] text-muted-foreground line-through">{p.value ?? "—"}</div>
                         )}
                       </TableCell>
                       <TableCell><Badge variant="secondary" className="text-xs">{p.unit}</Badge></TableCell>

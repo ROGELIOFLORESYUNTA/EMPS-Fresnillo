@@ -136,6 +136,8 @@ export function buildParametersSnapshot(rows: LoadedParam[]): string {
 
 // ============================================================
 // Addendum v7 — Loader de parámetros del motor de cambios
+// FASE G.I — Override por workspace: si hay workspaceId, busca primero
+// en WorkspaceParameterOverride; si no, cae al Parameter global.
 // ============================================================
 import type { ChangeImpactParameters } from "./engine/change-types";
 import { DEFAULT_CHANGE_PARAMETERS } from "./engine/change-impact";
@@ -172,7 +174,9 @@ const CHANGE_PARAMETER_KEYS = [
 export async function loadChangeImpactParameters(
   year = DEFAULT_YEAR,
   state: string | null = DEFAULT_STATE,
+  workspaceId: string | null = null,
 ): Promise<ChangeImpactParameters> {
+  // 1) Globales desde Parameter
   const rows = await prisma.parameter.findMany({
     where: {
       year,
@@ -184,6 +188,17 @@ export async function loadChangeImpactParameters(
 
   const rowMap = new Map<string, string | null>();
   for (const r of rows) rowMap.set(r.key, r.value);
+
+  // 2) Overrides del workspace (sobreescriben los globales)
+  if (workspaceId) {
+    const overrides = await prisma.workspaceParameterOverride.findMany({
+      where: {
+        workspaceId,
+        parameterKey: { in: [...CHANGE_PARAMETER_KEYS] },
+      },
+    });
+    for (const o of overrides) rowMap.set(o.parameterKey, o.value);
+  }
 
   const loadedKeys: string[] = [];
   const fallbackWarnings: string[] = [];

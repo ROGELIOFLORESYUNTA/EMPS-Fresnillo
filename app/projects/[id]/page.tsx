@@ -34,6 +34,13 @@ export default async function ProjectDetailPage({
     },
   });
   if (!project) notFound();
+  // FASE G.I: aislamiento por workspace. Si el proyecto no es template y pertenece
+  // a otro workspace, devolver 404 para no exponer datos cruzados.
+  if (!project.isTemplate && project.workspaceId) {
+    const { getCurrentWorkspaceId } = await import("@/lib/workspace");
+    const myWorkspace = await getCurrentWorkspaceId();
+    if (project.workspaceId !== myWorkspace) notFound();
+  }
 
   // Tomar último (mode, scenario) único — soporta múltiples versiones por modo.
   // Orden lógico: modos de más lento a más rápido, escenarios optimista→probable→conservador.

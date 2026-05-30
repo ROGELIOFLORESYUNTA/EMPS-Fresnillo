@@ -5,8 +5,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { formatMXN, formatHours, formatWeeks, RISK_LEVELS, DEVELOPMENT_MODES } from "@/lib/utils";
-import { ChevronLeft, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { ChevronLeft, AlertTriangle, CheckCircle2, Clock, ShieldAlert, Cog, GitBranch, Wrench, CalendarClock, Wallet, TrendingDown, TrendingUp } from "lucide-react";
 import { PrintButton } from "@/components/print-button";
+import {
+  computeProviderOpportunityCost,
+  computeProviderViabilityRatio,
+  computeMunicipalQuebrarRisk,
+  computeOnTimeRisk,
+  computeMaintenanceMonthly,
+  computeChangeRangeByType,
+} from "@/lib/engine/reports-insights";
 
 const REPORT_LABELS: Record<string, { title: string; audience: string }> = {
   municipal: { title: "Reporte para Ayuntamiento", audience: "Ayuntamiento de Fresnillo, Zacatecas" },
@@ -49,6 +57,45 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
   const wcap = Number(project.cashflow[0]?.workingCapitalRequired ?? 0);
   const modeLabels = Object.fromEntries(DEVELOPMENT_MODES.map((m) => [m.value, m.label]));
   const meta = REPORT_LABELS[type];
+
+  // ===== Derivaciones G.H (insights para reportes) =====
+  const now = new Date();
+  const totalPrice = probable ? Number(probable.total) : 0;
+  const subtotalAmount = probable ? Number(probable.subtotal) : 0;
+  const directCost = probable ? Number(probable.directCost) : 0;
+  const marginAmount = Math.max(0, subtotalAmount - directCost);
+  const weeksTotal = probable?.weeksTotal ? Number(probable.weeksTotal) : 0;
+  const monthsTotal = weeksTotal / 4.33;
+  const weeklyTeamRate = weeksTotal > 0 ? directCost / weeksTotal : 0;
+
+  // Lead technician salary cascade: lider_tecnico → senior/lead → param → fallback
+  const leadSalary = (() => {
+    const lider = project.team.filter((t) => t.role === "lider_tecnico");
+    if (lider.length > 0) return Math.max(...lider.map((p) => Number(p.monthlySalary)));
+    const seniors = project.team.filter((t) => t.level === "senior" || t.level === "lead");
+    if (seniors.length > 0) return Math.max(...seniors.map((p) => Number(p.monthlySalary)));
+    return 50000; // fallback Glassdoor MX 2026 promedio líder técnico
+  })();
+  const totalMonthsAssigned = project.team.reduce((a, p) => a + Number(p.monthsAssigned), 0);
+  const avgMonthsAssigned = project.team.length > 0
+    ? totalMonthsAssigned / project.team.length
+    : monthsTotal;
+
+  const opportunityCost = computeProviderOpportunityCost(marginAmount, leadSalary, avgMonthsAssigned);
+  const viability = computeProviderViabilityRatio(wcap, marginAmount);
+  const quebrarRisk = computeMunicipalQuebrarRisk(wcap, totalPrice);
+  const onTime = computeOnTimeRisk(weeksTotal, project.targetDate ?? null, now);
+  const maintenance = computeMaintenanceMonthly(totalPrice);
+  const changeRanges = computeChangeRangeByType(weeklyTeamRate);
+
+  // Explicación de cada modo en lenguaje claro al cliente (distinta de DEVELOPMENT_MODES.description que es semi-técnica)
+  const MODE_CLIENT_EXPLANATION: Record<string, string> = {
+    traditional: "El proveedor escribirá todo el código manualmente. Es predecible pero más lento. Pídele evidencia de pruebas y revisión.",
+    ai_assisted: "El proveedor usará IA como asistente, no como reemplazo. Buena combinación calidad/velocidad.",
+    hybrid: "El proveedor mezclará codificación manual con asistencia generativa. Razonable; pídele que diga qué módulos van con cada técnica.",
+    bytecoding_prompts: "El proveedor usará IA para generar código rápido y entregarte una versión funcional pronto. Implica que el código debe ser revisado y endurecido antes de producción; pregúntale qué pruebas va a correr.",
+    low_code: "El proveedor usará una plataforma visual. Rápido para formularios y catálogos, pero ATENCIÓN al licenciamiento mensual y al riesgo de dependencia de la plataforma. Pídele documentación de cómo migrar si la plataforma sube precio.",
+  };
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -115,6 +162,156 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
                 )}
                 {probable && Number(probable.margin) < 0.15 && (
                   <p>Margen objetivo del proveedor &lt;15%. Revisar si la cotización cubre nómina, impuestos y mantenimiento.</p>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* G1 — ¿Va a terminar a tiempo? */}
+          {probable && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-blue-600" />
+                  ¿Va a terminar a tiempo?
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm space-y-2">
+                <p>El proveedor estima <strong>{formatWeeks(onTime.weeksNeeded)}</strong> (~{monthsTotal.toFixed(1)} meses) para terminar el proyecto.</p>
+                {onTime.level === "sin_fecha" && (
+                  <p className="text-muted-foreground">No has capturado fecha objetivo en este proyecto. Agrega una (por ejemplo, fin de la administración municipal) para que el sistema te alerte si el plazo aprieta.</p>
+                )}
+                {onTime.level === "holgado" && onTime.weeksAvailable !== null && (
+                  <p className="text-green-700">Margen sobrado: la fecha objetivo da {formatWeeks(onTime.weeksAvailable)}. Si todo sale bien, termina antes.</p>
+                )}
+                {onTime.level === "apretado" && onTime.weeksAvailable !== null && (
+                  <p className="text-amber-700">⚠ La fecha objetivo da {formatWeeks(onTime.weeksAvailable)}. Apretado pero alcanzable si NO hay cambios. Cualquier modificación al alcance puede atrasarlo.</p>
+                )}
+                {onTime.level === "alto_riesgo" && (
+                  <p className="text-red-700"><strong>⚠ ALTO RIESGO de no terminar a tiempo.</strong> {onTime.weeksAvailable !== null ? `Solo hay ${formatWeeks(onTime.weeksAvailable)} hasta la fecha objetivo y se necesitan ${formatWeeks(onTime.weeksNeeded)}.` : ""} Negocia recortar alcance o mover fecha ANTES de firmar.</p>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* G2 — ¿El proveedor va a aguantar? */}
+          {probable && wcap > 0 && (
+            <Card className={quebrarRisk.level === "alto" ? "border-red-300" : quebrarRisk.level === "medio" ? "border-amber-300" : ""}>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <ShieldAlert className={`w-4 h-4 ${quebrarRisk.level === "alto" ? "text-red-600" : quebrarRisk.level === "medio" ? "text-amber-600" : "text-green-600"}`} />
+                  ¿El proveedor va a aguantar?
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm space-y-2">
+                <p>El proveedor va a financiar <strong>{formatMXN(wcap)}</strong> ({(quebrarRisk.ratio * 100).toFixed(0)}% del precio total) de su bolsa antes de cobrar todo.</p>
+                {quebrarRisk.level === "bajo" && (
+                  <p className="text-green-700">Riesgo bajo. Es manejable si declara que tiene ese capital. Pídele constancia bancaria o estados financieros.</p>
+                )}
+                {quebrarRisk.level === "medio" && (
+                  <p className="text-amber-700">Riesgo medio. Pídele que demuestre capacidad de soportarlo. Si no, va a presionar para que le adelantes más o va a entregar tarde.</p>
+                )}
+                {quebrarRisk.level === "alto" && (
+                  <p className="text-red-700"><strong>⚠ Riesgo alto de que se quede sin caja a media obra</strong> y deje el proyecto inconcluso. NEGOCIA anticipo mayor o pagos por entregable más frecuentes ANTES de firmar.</p>
+                )}
+                <p className="text-xs text-muted-foreground italic mt-3">Esta sección busca proteger la inversión pública, no descalificar al proveedor. Comparte el reporte con él para que ajuste su propuesta.</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* G3 — ¿Qué método va a usar? */}
+          {probable && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Cog className="w-4 h-4 text-blue-600" />
+                  ¿Qué método va a usar el proveedor?
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm space-y-2">
+                <p>El proveedor cotizó con el modo <strong>{modeLabels[probable.mode] ?? probable.mode}</strong>.</p>
+                <p className="text-muted-foreground">{MODE_CLIENT_EXPLANATION[probable.mode] ?? "Modo no documentado en lenguaje cliente."}</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* G4 — Si pides cambios, esto cuesta aparte */}
+          {weeklyTeamRate > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <GitBranch className="w-4 h-4 text-orange-600" />
+                  Si pides cambios, esto cuesta aparte
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm space-y-3">
+                <p className="border-l-4 border-orange-300 bg-orange-50/40 pl-3 py-2 text-orange-900">
+                  Pedir &ldquo;una modificación pequeña&rdquo; sin cotizarla es la causa principal por la que los proveedores abandonan el proyecto a mitad. Al firmar el contrato, asegúrate de que el procedimiento de cambios esté escrito y que sepas cuánto cuesta cada categoría.
+                </p>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Tipo de cambio</TableHead>
+                      <TableHead className="text-right">Costo mínimo</TableHead>
+                      <TableHead className="text-right">Costo máximo</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {changeRanges.map((r) => (
+                      <TableRow key={r.type}>
+                        <TableCell>
+                          <p className="font-medium">{r.etiqueta}</p>
+                          <p className="text-xs text-muted-foreground">{r.description}</p>
+                        </TableCell>
+                        <TableCell className="text-right">{formatMXN(r.minCost)}</TableCell>
+                        <TableCell className="text-right font-medium">{formatMXN(r.maxCost)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* G5 — Mantenimiento mensual estimado */}
+          {totalPrice > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Wrench className="w-4 h-4 text-blue-600" />
+                  Mantenimiento mensual estimado
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm space-y-2">
+                <p>Después de entregar, mantener el sistema funcionando cuesta aprox. <strong>{formatMXN(maintenance.monthlyAmount)} al mes</strong> (~{formatMXN(maintenance.annualAmount)} al año, equivalente al 2% del precio total).</p>
+                <p className="text-amber-800">Si NO se contempla en el contrato, lo más probable es que el proveedor desaparezca tras la entrega y nadie pueda modificar el sistema. <strong>Incluye una cláusula de mantenimiento mínima al firmar.</strong></p>
+                <p className="text-xs text-muted-foreground italic">Heurística PMBOK 7 / ISBSG: 15-30% del costo del proyecto por año en mantenimiento.</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* G6 — ¿Termina antes del cambio de gobierno? */}
+          {probable && project.targetDate && (
+            <Card className={onTime.daysOverDeadline && onTime.daysOverDeadline > 0 ? "border-red-300" : ""}>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <CalendarClock className={`w-4 h-4 ${onTime.daysOverDeadline && onTime.daysOverDeadline > 0 ? "text-red-600" : "text-green-600"}`} />
+                  ¿Termina antes de la fecha objetivo?
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm space-y-2">
+                <p>Estimado de entrega: <strong>{onTime.estimatedEndDate.toLocaleDateString("es-MX", { day: "2-digit", month: "long", year: "numeric" })}</strong>.</p>
+                <p>Fecha objetivo capturada: <strong>{project.targetDate.toLocaleDateString("es-MX", { day: "2-digit", month: "long", year: "numeric" })}</strong>.</p>
+                {onTime.daysOverDeadline !== null && onTime.daysOverDeadline < 0 && (
+                  <p className="text-green-700">Margen de <strong>{Math.abs(onTime.daysOverDeadline)} días</strong> antes de la fecha límite. El proveedor entrega a tiempo si todo sale bien.</p>
+                )}
+                {onTime.daysOverDeadline !== null && onTime.daysOverDeadline === 0 && (
+                  <p className="text-amber-700">Estimado de entrega coincide con tu fecha objetivo. Cero margen para imprevistos.</p>
+                )}
+                {onTime.daysOverDeadline !== null && onTime.daysOverDeadline > 0 && (
+                  <p className="text-red-700">
+                    <strong>⚠ Estimado de entrega posterior a tu fecha objetivo por {onTime.daysOverDeadline} días.</strong> Si esta fecha es porque termina la administración, prácticamente no vas a alcanzar a cumplir la promesa de campaña con este alcance. Recorta alcance o ajusta plazo antes de firmar.
+                  </p>
                 )}
               </CardContent>
             </Card>
@@ -251,6 +448,155 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
               </div>
             </CardContent>
           </Card>
+
+          {/* H1 — ¿Realmente estás ganando? Costo de oportunidad */}
+          <Card className={opportunityCost.level === "perdiendo_mucho" ? "border-red-300" : opportunityCost.level === "perdiendo_poco" ? "border-amber-300" : ""}>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                {opportunityCost.level === "ganas_claro" || opportunityCost.level === "empate" ? (
+                  <TrendingUp className="w-4 h-4 text-green-600" />
+                ) : (
+                  <TrendingDown className="w-4 h-4 text-red-600" />
+                )}
+                ¿Realmente estás ganando? Costo de oportunidad
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm space-y-2">
+              <p>
+                Margen mensual equivalente: <strong>{formatMXN(opportunityCost.marginMonthly)}</strong>
+                {" "}vs líder técnico asalariado: <strong>{formatMXN(opportunityCost.marketMonthly)}</strong>.
+              </p>
+              {opportunityCost.level === "ganas_claro" && (
+                <p className="text-green-700">Estás ganando aprox. <strong>{formatMXN(-opportunityCost.deficit)}</strong> más al mes que un empleo asalariado. El proyecto vale la pena.</p>
+              )}
+              {opportunityCost.level === "empate" && (
+                <p className="text-amber-700">Estás trabajando para mantenerte; no estás capitalizando significativamente sobre un empleo equivalente.</p>
+              )}
+              {opportunityCost.level === "perdiendo_poco" && (
+                <p className="text-orange-700">⚠ Estás dejando aprox. <strong>{formatMXN(opportunityCost.deficit)}</strong> al mes en la mesa. Hubieras ganado más como empleado.</p>
+              )}
+              {opportunityCost.level === "perdiendo_mucho" && (
+                <p className="text-red-700"><strong>⚠ Estás dejando aprox. {formatMXN(opportunityCost.deficit)} al mes en la mesa.</strong> Considera subir precio, recortar alcance, o reducir meses asignados antes de firmar.</p>
+              )}
+              <p className="text-xs text-muted-foreground italic mt-3">Este cálculo no incluye valor estratégico, aprendizaje ni relaciones — es señal financiera pura. Sueldo de referencia: max(salarios de team con rol líder técnico o nivel senior/lead); fallback $50,000 MXN (Glassdoor MX 2026).</p>
+            </CardContent>
+          </Card>
+
+          {/* H2 — ¿Cuándo cobras vs cuándo gastas? */}
+          {project.cashflow.length > 0 && (() => {
+            const cashflowSorted = [...project.cashflow].sort((a, b) => a.monthNumber - b.monthNumber);
+            const maxAbs = Math.max(
+              ...cashflowSorted.map((m) => Math.abs(Number(m.income))),
+              ...cashflowSorted.map((m) => Math.abs(Number(m.payrollOutflow) + Number(m.taxOutflow) + Number(m.toolsOutflow) + Number(m.adminOutflow))),
+              1,
+            );
+            const worstMonth = cashflowSorted.reduce((worst, m) => Number(m.accumulatedFlow) < Number(worst.accumulatedFlow) ? m : worst, cashflowSorted[0]);
+            return (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Wallet className="w-4 h-4 text-blue-600" />
+                    ¿Cuándo cobras vs cuándo gastas?
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm space-y-3">
+                  <div className="space-y-2">
+                    {cashflowSorted.map((m) => {
+                      const ingreso = Number(m.income);
+                      const egreso = Number(m.payrollOutflow) + Number(m.taxOutflow) + Number(m.toolsOutflow) + Number(m.adminOutflow);
+                      const acc = Number(m.accumulatedFlow);
+                      const isWorst = m.monthNumber === worstMonth.monthNumber && acc < 0;
+                      return (
+                        <div key={m.id} className={`text-xs border rounded-md p-2 ${isWorst ? "bg-orange-50 border-orange-300" : ""}`}>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="font-medium">Mes {m.monthNumber}</span>
+                            <span className={acc >= 0 ? "text-green-700 font-medium" : "text-red-700 font-medium"}>
+                              Acumulado: {formatMXN(acc)}{isWorst && " ← peor mes"}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 items-center">
+                            <div>
+                              <div className="text-[10px] text-muted-foreground">↓ Cobro</div>
+                              <div className="h-3 bg-muted rounded overflow-hidden">
+                                <div className="h-full bg-green-500" style={{ width: `${(ingreso / maxAbs) * 100}%` }} />
+                              </div>
+                              <div className="text-[10px] text-green-700">{formatMXN(ingreso)}</div>
+                            </div>
+                            <div>
+                              <div className="text-[10px] text-muted-foreground">↑ Gasto</div>
+                              <div className="h-3 bg-muted rounded overflow-hidden">
+                                <div className="h-full bg-red-500" style={{ width: `${(egreso / maxAbs) * 100}%` }} />
+                              </div>
+                              <div className="text-[10px] text-red-700">{formatMXN(egreso)}</div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {worstMonth && Number(worstMonth.accumulatedFlow) < 0 && (
+                    <p>En el <strong>mes {worstMonth.monthNumber}</strong> tienes el peor saldo: <strong>{formatMXN(Number(worstMonth.accumulatedFlow))}</strong>. Es el punto donde más capital de tu bolsa estás poniendo. A partir del siguiente cobro empiezas a recuperar.</p>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })()}
+
+          {/* H3 — ¿Aguantas este proyecto? */}
+          <Card className={viability.level === "rojo" ? "border-red-300" : viability.level === "apretado" ? "border-amber-300" : ""}>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <ShieldAlert className={`w-4 h-4 ${viability.level === "rojo" ? "text-red-600" : viability.level === "apretado" ? "text-amber-600" : "text-green-600"}`} />
+                ¿Aguantas este proyecto?
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm space-y-2">
+              <p>Bache de caja: <strong>{formatMXN(wcap)}</strong> · Margen: <strong>{formatMXN(marginAmount)}</strong>.</p>
+              {viability.level === "comodo" && (
+                <p className="text-green-700">El bache es {(viability.ratio * 100).toFixed(0)}% de tu margen — el proyecto se aguanta financieramente.</p>
+              )}
+              {viability.level === "apretado" && (
+                <p className="text-amber-700">⚠ Estás financiando del 50% al 100% de tu propio margen — vas a sentir presión de caja a la mitad. Negocia anticipo mayor o pagos por entregable más frecuentes.</p>
+              )}
+              {viability.level === "rojo" && (
+                <p className="text-red-700"><strong>⚠⚠ Estás poniendo MÁS dinero del que vas a ganar.</strong> Si el cliente retrasa un solo pago, quiebras. RENEGOCIA estructura de pago antes de firmar.</p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* H4 — Si surgen cambios, esto sale aproximadamente */}
+          {weeklyTeamRate > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <GitBranch className="w-4 h-4 text-orange-600" />
+                  Si surgen cambios, esto sale aproximadamente
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm space-y-3">
+                <p className="text-muted-foreground">Tabla rápida para cotizar cuando el cliente te pida &ldquo;una modificación pequeña&rdquo;. Si aceptas cambios sin cobrar, eso descuenta directamente de tu margen.</p>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Tipo</TableHead>
+                      <TableHead className="text-right">Mínimo</TableHead>
+                      <TableHead className="text-right">Máximo</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {changeRanges.map((r) => (
+                      <TableRow key={r.type}>
+                        <TableCell><span className="font-medium">{r.etiqueta}</span></TableCell>
+                        <TableCell className="text-right">{formatMXN(r.minCost)}</TableCell>
+                        <TableCell className="text-right font-medium">{formatMXN(r.maxCost)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                <p className="text-xs text-muted-foreground italic">Basado en tu tarifa horaria equivalente ({formatMXN(weeklyTeamRate / 40)}/h, perfiles típicos pequeño/mediano). Para un cambio real, captura el cambio en /changes y obtén la cotización exacta con el motor v7.</p>
+              </CardContent>
+            </Card>
+          )}
 
           <Card>
             <CardHeader><CardTitle className="text-base">Recomendación de forma de pago</CardTitle></CardHeader>

@@ -47,11 +47,14 @@ model Project {
   objective       String
   systemType      String    // crud_interno | portal_ciudadano | integrador | etc.
   responsible     String?
-  estimatedBudget Decimal? 
+  estimatedBudget Decimal?
   targetDate      DateTime?
   priority        String    @default("media")  // baja|media|alta|critica
   status          String    @default("borrador") // borrador|captura|estimado|aprobado|en_ejecucion|cerrado|archivado
   notes           String?
+  // FASE G.I: aislamiento por workspace (cookie). NULL = proyecto template público.
+  workspaceId     String?
+  isTemplate      Boolean   @default(false)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
@@ -60,9 +63,11 @@ model Project {
   estimates      Estimate[]
   changes        ChangeRequest[]
   cashflow       CashFlowLine[]
+  workspace      Workspace?      @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
 
   @@index([status])
   @@index([priority])
+  @@index([workspaceId])
 }
 
 // ============================================================
@@ -733,3 +738,81 @@ model EstimationFeedback {
 
   @@index([estimateId])
 }
+
+// ============================================================
+// FASE G.I — Multi-tenancy por cookie (sin login)
+// ============================================================
+
+/// Cada visitante del sitio recibe un workspace_id en cookie de larga duración (365 días).
+/// Sus proyectos, parámetros editados y actividad quedan asociados a este workspace.
+/// Sin login: si limpia cookies pierde su workspace. Para producción real, futuro upgrade a NextAuth.
+model Workspace {
+  id           String   @id @default(cuid())
+  displayName  String?  // opcional, capturado por el usuario en /mi-workspace
+  notes        String?
+  createdAt    DateTime @default(now())
+  lastSeenAt   DateTime @default(now())
+
+  projects     Project[]
+  overrides    WorkspaceParameterOverride[]
+  activityLog  WorkspaceActivityLog[]
+
+  @@index([lastSeenAt])
+}
+
+/// Override por workspace de un Parameter global. Si existe → el motor lo usa;
+/// si no → cae al global. Permite que cada usuario edite el IVA sin afectar a los demás.
+model WorkspaceParameterOverride {
+  id            String   @id @default(cuid())
+  workspaceId   String
+  parameterKey  String   // ej. "IVA_GENERAL", "CHANGE_PHASE_FACTOR", etc.
+  value         String   // JSON serializado igual que Parameter.value
+  unit          String
+  source        String   @default("Editado en este workspace")
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, parameterKey])
+  @@index([workspaceId])
+  @@index([parameterKey])
+}
+
+/// Manual extendido por cada parámetro. Una sola entrada por clave.
+/// Cargado desde 46_parameter_manuals_2026.json (generado con ChatGPT Pro).
+model ParameterManual {
+  id                  String   @id @default(cuid())
+  parameterKey        String   @unique
+  title               String
+  originSource        String?  // ej. "Ley del Impuesto al Valor Agregado, Art. 1"
+  originUrl           String?  // URL a DOF / SAT / INEGI / CONASAMI / SEFIN
+  originDocument      String?  // ej. "DOF 07-nov-2025 (Reforma Fiscal 2026)"
+  whatItAffects       String?  // markdown: qué calcula afecta y cómo
+  howToModify         String?  // markdown: checklist antes de modificar
+  referencesMarkdown  String?  // markdown: referencias bibliográficas
+  lastReviewedAt      DateTime?
+  sourceTrustLevel    String   @default("oficial") // oficial | secundaria | comunidad
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([sourceTrustLevel])
+}
+
+/// Bitácora ligera de acciones para análisis científico (panel admin).
+/// Sin PII: solo workspaceId (opaco) + tipo de evento + payload JSON.
+model WorkspaceActivityLog {
+  id            String   @id @default(cuid())
+  workspaceId   String
+  eventType     String   // project_created | estimate_run | parameter_overridden | change_evaluated | report_viewed | etc.
+  payloadJson   String?
+  createdAt     DateTime @default(now())
+
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([eventType])
+  @@index([createdAt])
+}
+
