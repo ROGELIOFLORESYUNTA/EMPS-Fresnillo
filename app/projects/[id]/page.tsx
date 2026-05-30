@@ -227,22 +227,22 @@ export default async function ProjectDetailPage({
             }}
           />
           <SummaryCard
-            label="Bache de caja máximo"
+            label={worstAccumulated ? `Te van a deber en el mes ${worstAccumulated.monthNumber}` : "Dinero que tendrás que adelantar"}
             value={formatMXN(Number(workingCapitalRequired))}
             hint={
               worstAccumulated
-                ? `Aparece en el mes ${worstAccumulated.monthNumber} del proyecto (ver tabla "Flujo de efectivo" abajo). Equivale a ${bacheVsPrecioPct.toFixed(0)}% del precio cotizado. Es lo que el proveedor adelanta de su bolsa antes de cobrar el siguiente pago del cliente.`
-                : `Lo que el proveedor debe tener en banco antes de empezar para no quebrar entre pagos del cliente.`
+                ? `Ese mes ya pagaste 3 meses al equipo pero el cliente todavía no te terminó de pagar. Equivale al ${bacheVsPrecioPct.toFixed(0)}% del precio total. Te recuperas al cobrar el último pago en el mes ${project.cashflow.length}.`
+                : `Antes de cobrar el último pago del cliente, vas a estar adelantando este dinero de tu bolsa para pagar al equipo.`
             }
             info={{
-              title: "¿Qué es el bache de caja?",
+              title: "¿Qué significa esta cifra?",
               body: (
                 <>
-                  <p>No es el costo total del proyecto. Es el momento donde el proveedor tiene <strong>más dinero acumulado en negativo</strong> entre dos pagos del cliente.</p>
-                  <p>Ejemplo del proyecto actual: el cliente paga un anticipo, después pagos mensuales y al final el pago de cierre. Pero el proveedor paga nómina cada mes desde el día uno. Cuando los pagos del cliente están más espaciados, el saldo en banco baja a su punto más profundo. Ese punto es el bache.</p>
-                  <p><strong>Fórmula:</strong> <code>bache = |menor(saldo_acumulado, 0)|</code>.</p>
+                  <p><strong>NO es el costo total del proyecto.</strong> Es el peor momento del flujo de caja para el proveedor.</p>
+                  <p>Pasa así: el cliente te paga un anticipo al inicio, después algunos pagos parciales, y al final el pago de cierre. Tú pagas al equipo cada mes desde el día uno. En algún mes los pagos del cliente no te alcanzan para cubrir lo que ya gastaste. Ese mes es el peor.</p>
+                  <p><strong>Por qué importa:</strong> si no tienes este dinero en banco al arrancar, te quedas sin liquidez a mitad del proyecto y no puedes pagar al equipo, aunque al final del proyecto el cliente te pague todo.</p>
                   <p><strong>Para reducirlo:</strong> pedir más anticipo, fragmentar el contrato en pagos parciales mensuales, reducir tamaño del equipo, o cobrar antes contra entregables.</p>
-                  <p className="text-[10px]">Fuente: Konfío y BBVA México (capital de trabajo PyME).</p>
+                  <p className="text-[10px]">Concepto contable: capital de trabajo. Lenguaje empresarial: Konfío y BBVA México (PyMEs).</p>
                 </>
               ),
             }}
@@ -350,11 +350,15 @@ export default async function ProjectDetailPage({
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle className="text-base flex items-center gap-2">
-              <Layers className="w-4 h-4" />Módulos ({project.modules.length})
+              <Layers className="w-4 h-4" />Qué se va a construir ({project.modules.length} módulos)
             </CardTitle>
-            <CardDescription>Descomposición funcional del alcance.</CardDescription>
+            <CardDescription className="max-w-3xl mt-1">
+              Cada módulo es una pieza del sistema que el proveedor va a entregar. Los números de cada columna NO son costos. Son características técnicas que TÚ capturas y que el motor usa para calcular cuántas horas tomará construir todo.
+            </CardDescription>
           </div>
-          <Button size="sm" variant="outline" asChild><Link href={`/projects/${id}/modules`}>Gestionar</Link></Button>
+          <Button size="sm" variant="outline" asChild>
+            <Link href={`/projects/${id}/modules`}>Agregar / editar módulos</Link>
+          </Button>
         </CardHeader>
         <CardContent className="p-0">
           {project.modules.length === 0 ? (
@@ -364,14 +368,78 @@ export default async function ProjectDetailPage({
               <TableHeader>
                 <TableRow>
                   <TableHead>Módulo</TableHead>
-                  <TableHead className="text-center">Complejidad</TableHead>
-                  <TableHead className="text-center">Claridad</TableHead>
-                  <TableHead className="text-center">Criticidad</TableHead>
-                  <TableHead className="text-center">Pantallas</TableHead>
-                  <TableHead className="text-center">Reportes</TableHead>
-                  <TableHead className="text-center">Integraciones</TableHead>
-                  <TableHead>Datos sensibles</TableHead>
-                  <TableHead className="text-center">Historias</TableHead>
+                  <TableHead className="text-center">
+                    <span className="inline-flex items-center">
+                      Complejidad
+                      <InfoTip title="Complejidad técnica (1-5)">
+                        <p>Qué tan difícil es construir el módulo. <strong>1</strong> = formulario simple, <strong>5</strong> = lógica de negocio compleja con muchas reglas y excepciones.</p>
+                        <p>El motor multiplica las horas base por este número. Subir de 3 a 5 puede duplicar el costo del módulo.</p>
+                      </InfoTip>
+                    </span>
+                  </TableHead>
+                  <TableHead className="text-center">
+                    <span className="inline-flex items-center">
+                      Claridad
+                      <InfoTip title="Claridad del requisito (1-5)">
+                        <p>Qué tan claro es lo que el cliente pidió. <strong>1</strong> = solo una frase suelta, <strong>5</strong> = requisito con criterios de aceptación validados.</p>
+                        <p>Si la claridad es baja, el motor agrega tiempo extra porque va a haber idas y vueltas con el cliente.</p>
+                      </InfoTip>
+                    </span>
+                  </TableHead>
+                  <TableHead className="text-center">
+                    <span className="inline-flex items-center">
+                      Criticidad
+                      <InfoTip title="Criticidad operativa (1-5)">
+                        <p>Qué tan grave es si el módulo falla en producción. <strong>1</strong> = puede esperar al día siguiente, <strong>5</strong> = corte de servicio crítico al ciudadano.</p>
+                        <p>A mayor criticidad, el motor agrega más pruebas y revisión para reducir el riesgo de errores.</p>
+                      </InfoTip>
+                    </span>
+                  </TableHead>
+                  <TableHead className="text-center">
+                    <span className="inline-flex items-center">
+                      Pantallas
+                      <InfoTip title="Cantidad de pantallas">
+                        <p>Cuántas pantallas distintas verá el usuario en este módulo (formularios, listados, dashboards).</p>
+                        <p>Cada pantalla suma ~16 horas de trabajo (diseño + frontend + validación + pruebas + accesibilidad).</p>
+                      </InfoTip>
+                    </span>
+                  </TableHead>
+                  <TableHead className="text-center">
+                    <span className="inline-flex items-center">
+                      Reportes
+                      <InfoTip title="Cantidad de reportes">
+                        <p>Cuántos reportes salen de este módulo (PDF, Excel, tableros).</p>
+                        <p>Cada reporte suma ~24 horas (consulta a la base de datos + filtros + formato + permisos).</p>
+                      </InfoTip>
+                    </span>
+                  </TableHead>
+                  <TableHead className="text-center">
+                    <span className="inline-flex items-center">
+                      Integraciones
+                      <InfoTip title="Integraciones externas">
+                        <p>Cuántos sistemas externos toca este módulo (banco, SAT, padrón, otras dependencias).</p>
+                        <p>Cada integración suma ~50 horas porque implica autenticación, contratos de datos, manejo de errores y pruebas con el sistema externo.</p>
+                      </InfoTip>
+                    </span>
+                  </TableHead>
+                  <TableHead>
+                    <span className="inline-flex items-center">
+                      Datos sensibles
+                      <InfoTip title="¿Maneja datos personales o financieros?">
+                        <p>Marcar como sí si el módulo guarda CURP, RFC, datos bancarios, salud o cualquier dato personal del ciudadano.</p>
+                        <p>Activa overhead de cumplimiento legal (LGPDPPSO para Ayuntamiento, LFPDPPP para proveedor): aviso de privacidad, derechos ARCO, bitácora.</p>
+                      </InfoTip>
+                    </span>
+                  </TableHead>
+                  <TableHead className="text-center">
+                    <span className="inline-flex items-center">
+                      Historias
+                      <InfoTip title="Historias de usuario detalladas">
+                        <p>Cuántas historias de usuario tiene este módulo escritas (formato &quot;Como [rol] necesito [acción] para [beneficio]&quot;).</p>
+                        <p>No afectan el cálculo directamente, pero son indicador de qué tan documentado está el alcance.</p>
+                      </InfoTip>
+                    </span>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -402,10 +470,15 @@ export default async function ProjectDetailPage({
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle className="text-base flex items-center gap-2">
-              <Users className="w-4 h-4" />Equipo ({project.team.length})
+              <Users className="w-4 h-4" />Quién va a trabajar ({project.team.length} {project.team.length === 1 ? "persona" : "personas"})
             </CardTitle>
+            <CardDescription className="max-w-3xl mt-1">
+              Personas que el proveedor asigna al proyecto. El salario, tipo de contrato y meses asignados se usan para calcular el costo real con IMSS, ISN, prestaciones y posibles indemnizaciones LFT.
+            </CardDescription>
           </div>
-          <Button size="sm" variant="outline" asChild><Link href={`/projects/${id}/team`}>Gestionar</Link></Button>
+          <Button size="sm" variant="outline" asChild>
+            <Link href={`/projects/${id}/team`}>Agregar / editar personas</Link>
+          </Button>
         </CardHeader>
         <CardContent className="p-0">
           {project.team.length === 0 ? (
@@ -445,10 +518,15 @@ export default async function ProjectDetailPage({
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
               <CardTitle className="text-base flex items-center gap-2">
-                <GitPullRequest className="w-4 h-4" />Cambios ({project.changes.length})
+                <GitPullRequest className="w-4 h-4" />Solicitudes de cambio ({project.changes.length})
               </CardTitle>
+              <CardDescription className="max-w-3xl mt-1">
+                Cambios que el cliente pidió a mitad del proyecto. Cada uno se evalúa con el motor v7 para decidir si entra en garantía, si requiere cotización adicional, o si cambia la línea base del contrato.
+              </CardDescription>
             </div>
-            <Button size="sm" variant="outline" asChild><Link href={`/projects/${id}/changes`}>Gestionar</Link></Button>
+            <Button size="sm" variant="outline" asChild>
+              <Link href={`/projects/${id}/changes`}>Ver y evaluar cambios</Link>
+            </Button>
           </CardHeader>
           <CardContent className="p-0">
             <Table>
