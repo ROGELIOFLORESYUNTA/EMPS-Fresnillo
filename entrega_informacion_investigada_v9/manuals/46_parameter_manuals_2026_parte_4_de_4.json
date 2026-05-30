@@ -1,0 +1,162 @@
+{
+  "schemaVersion": "1.0",
+  "generatedAt": "2026-05-30",
+  "part": 4,
+  "totalParts": 4,
+  "manuals": {
+    "CHANGE_ARTIFACT_WEIGHTS": {
+      "title": "Pesos artefactos cambio",
+      "originSource": "IFPUG/COSMIC + análisis de impacto + calibración EMPS",
+      "originUrl": "VERIFICAR",
+      "originDocument": "PMBOK 7 + ITIL 4 + análisis de impacto de cambios + calibración EMPS 2026",
+      "whatItAffects": "Asigna peso a pantallas, APIs, reglas, tablas, reportes, permisos, integraciones, migración, pruebas y documentación. Es la base para convertir una solicitud vaga en puntos de impacto.",
+      "howToModify": "- Revisar evidencia metodológica usada para calibrar.\n- No tratarlo como valor legal.\n- Comparar contra casos reales capturados.\n- Cambiar solo con justificación técnica.\n- Registrar versión de calibración.",
+      "referencesMarkdown": "",
+      "sourceTrustLevel": "secundaria",
+      "lastReviewedAt": "2026-05-30"
+    },
+    "CHANGE_CLARITY_FACTOR": {
+      "title": "Factor claridad cambio",
+      "originSource": "Requirements Engineering + calibración EMPS",
+      "originUrl": "VERIFICAR",
+      "originDocument": "PMBOK 7 + ITIL 4 + análisis de impacto de cambios + calibración EMPS 2026",
+      "whatItAffects": "Aumenta el costo cuando el cambio está mal explicado. Obliga a pedir aclaraciones antes de cotizar o ejecutar.",
+      "howToModify": "- Revisar evidencia metodológica usada para calibrar.\n- No tratarlo como valor legal.\n- Comparar contra casos reales capturados.\n- Cambiar solo con justificación técnica.\n- Registrar versión de calibración.",
+      "referencesMarkdown": "",
+      "sourceTrustLevel": "secundaria",
+      "lastReviewedAt": "2026-05-30"
+    },
+    "CHANGE_PHASE_FACTOR": {
+      "title": "Factor fase cambio",
+      "originSource": "Boehm/McConnell + PMBOK + evidencia empírica moderna",
+      "originUrl": "VERIFICAR",
+      "originDocument": "PMBOK 7 + ITIL 4 + análisis de impacto de cambios + calibración EMPS 2026",
+      "whatItAffects": "Aumenta el costo si el cambio llega tarde: después de pruebas, aceptación o producción requiere más retrabajo y validación.",
+      "howToModify": "- Revisar evidencia metodológica usada para calibrar.\n- No tratarlo como valor legal.\n- Comparar contra casos reales capturados.\n- Cambiar solo con justificación técnica.\n- Registrar versión de calibración.",
+      "referencesMarkdown": "",
+      "sourceTrustLevel": "secundaria",
+      "lastReviewedAt": "2026-05-30"
+    },
+    "CHANGE_MODE_FACTOR": {
+      "title": "Factor modo cambio",
+      "originSource": "Productividad IA/low-code + calibración EMPS",
+      "originUrl": "VERIFICAR",
+      "originDocument": "PMBOK 7 + ITIL 4 + análisis de impacto de cambios + calibración EMPS 2026",
+      "whatItAffects": "Ajusta horas según desarrollo tradicional, asistido, híbrido, bytecoding o low-code. No elimina pruebas ni aprobación.",
+      "howToModify": "- Revisar evidencia metodológica usada para calibrar.\n- No tratarlo como valor legal.\n- Comparar contra casos reales capturados.\n- Cambiar solo con justificación técnica.\n- Registrar versión de calibración.",
+      "referencesMarkdown": "",
+      "sourceTrustLevel": "secundaria",
+      "lastReviewedAt": "2026-05-30"
+    },
+    "CHANGE_CONTINGENCY_BY_TYPE": {
+      "title": "Contingencia por tipo",
+      "originSource": "PMBOK reservas de contingencia + calibración EMPS",
+      "originUrl": "VERIFICAR",
+      "originDocument": "PMBOK 7 + ITIL 4 + análisis de impacto de cambios + calibración EMPS 2026",
+      "whatItAffects": "Agrega reserva según corrección, garantía, ajuste, mejora, nuevo alcance o cambio estructural. Evita cotizar cambios sin colchón de riesgo.",
+      "howToModify": "- Revisar evidencia metodológica usada para calibrar.\n- No tratarlo como valor legal.\n- Comparar contra casos reales capturados.\n- Cambiar solo con justificación técnica.\n- Registrar versión de calibración.",
+      "referencesMarkdown": "",
+      "sourceTrustLevel": "secundaria",
+      "lastReviewedAt": "2026-05-30"
+    },
+    "CHANGE_HIGH_RISK_MODE_FLOOR": {
+      "title": "Piso modo alto riesgo",
+      "originSource": "Seguridad/datos/integración + calibración EMPS",
+      "originUrl": "VERIFICAR",
+      "originDocument": "PMBOK 7 + ITIL 4 + análisis de impacto de cambios + calibración EMPS 2026",
+      "whatItAffects": "Evita que bytecoding o low-code descuenten demasiado cuando el cambio toca datos, seguridad o integraciones críticas.",
+      "howToModify": "- Revisar evidencia metodológica usada para calibrar.\n- No tratarlo como valor legal.\n- Comparar contra casos reales capturados.\n- Cambiar solo con justificación técnica.\n- Registrar versión de calibración.",
+      "referencesMarkdown": "",
+      "sourceTrustLevel": "secundaria",
+      "lastReviewedAt": "2026-05-30"
+    },
+    "CHANGE_MINIMUM_CHARGE_MXN": {
+      "title": "Cobro mínimo cambio",
+      "originSource": "Política interna de cotización + calibración EMPS",
+      "originUrl": "VERIFICAR",
+      "originDocument": "PMBOK 7 + ITIL 4 + análisis de impacto de cambios + calibración EMPS 2026",
+      "whatItAffects": "Evita regalar cambios pequeños que consumen análisis, comunicación, pruebas y documentación aunque parezcan simples.",
+      "howToModify": "- Revisar evidencia metodológica usada para calibrar.\n- No tratarlo como valor legal.\n- Comparar contra casos reales capturados.\n- Cambiar solo con justificación técnica.\n- Registrar versión de calibración.",
+      "referencesMarkdown": "",
+      "sourceTrustLevel": "secundaria",
+      "lastReviewedAt": "2026-05-30"
+    },
+    "CHANGE_HOURLY_RATE_DEFAULT_MXN": {
+      "title": "Tarifa hora default",
+      "originSource": "Mercado local + calibración EMPS",
+      "originUrl": "VERIFICAR",
+      "originDocument": "PMBOK 7 + ITIL 4 + análisis de impacto de cambios + calibración EMPS 2026",
+      "whatItAffects": "Sirve cuando el proveedor no captura tarifa por perfil. Debe actualizarse con sueldos reales, margen y mercado local.",
+      "howToModify": "- Revisar evidencia metodológica usada para calibrar.\n- No tratarlo como valor legal.\n- Comparar contra casos reales capturados.\n- Cambiar solo con justificación técnica.\n- Registrar versión de calibración.",
+      "referencesMarkdown": "",
+      "sourceTrustLevel": "secundaria",
+      "lastReviewedAt": "2026-05-30"
+    },
+    "CHANGE_FREE_CHANGE_LIMIT_MXN": {
+      "title": "Tope cambio sin costo",
+      "originSource": "Control de cambios + política EMPS",
+      "originUrl": "VERIFICAR",
+      "originDocument": "PMBOK 7 + ITIL 4 + análisis de impacto de cambios + calibración EMPS 2026",
+      "whatItAffects": "Define cuándo un cambio podría absorberse sin cobro. Si excede el tope, debe justificarse y aprobarse formalmente.",
+      "howToModify": "- Revisar evidencia metodológica usada para calibrar.\n- No tratarlo como valor legal.\n- Comparar contra casos reales capturados.\n- Cambiar solo con justificación técnica.\n- Registrar versión de calibración.",
+      "referencesMarkdown": "",
+      "sourceTrustLevel": "secundaria",
+      "lastReviewedAt": "2026-05-30"
+    },
+    "CHANGE_MAINTENANCE_RATE_BY_RISK": {
+      "title": "Mantenimiento por riesgo",
+      "originSource": "ITIL 4 + soporte postproducción + calibración EMPS",
+      "originUrl": "VERIFICAR",
+      "originDocument": "PMBOK 7 + ITIL 4 + análisis de impacto de cambios + calibración EMPS 2026",
+      "whatItAffects": "Calcula impacto mensual de mantenimiento cuando el cambio aumenta monitoreo, soporte o riesgo operativo.",
+      "howToModify": "- Revisar evidencia metodológica usada para calibrar.\n- No tratarlo como valor legal.\n- Comparar contra casos reales capturados.\n- Cambiar solo con justificación técnica.\n- Registrar versión de calibración.",
+      "referencesMarkdown": "",
+      "sourceTrustLevel": "secundaria",
+      "lastReviewedAt": "2026-05-30"
+    },
+    "RESOURCE_ADMIN_OVERHEAD_DEFAULT": {
+      "title": "Overhead recursos",
+      "originSource": "Contabilidad administrativa + calibración EMPS",
+      "originUrl": "VERIFICAR",
+      "originDocument": "LIVA Art. 5 + LISR Art. 34 + calibración EMPS 2026",
+      "whatItAffects": "Afecta renta, administración, internet, servicios, contabilidad y gestión. Ayuda a no cotizar solo horas de programador.",
+      "howToModify": "- Revisar evidencia metodológica usada para calibrar.\n- No tratarlo como valor legal.\n- Comparar contra casos reales capturados.\n- Cambiar solo con justificación técnica.\n- Registrar versión de calibración.",
+      "referencesMarkdown": "",
+      "sourceTrustLevel": "secundaria",
+      "lastReviewedAt": "2026-05-30"
+    },
+    "RESOURCE_DEFAULT_ALLOCATION_PERCENT": {
+      "title": "Asignación recurso",
+      "originSource": "Costeo por proyecto + calibración EMPS",
+      "originUrl": "VERIFICAR",
+      "originDocument": "LIVA Art. 5 + LISR Art. 34 + calibración EMPS 2026",
+      "whatItAffects": "Define qué porcentaje de un recurso se carga al proyecto. Evita meter todo el costo de una computadora si se usará en varios proyectos.",
+      "howToModify": "- Revisar evidencia metodológica usada para calibrar.\n- No tratarlo como valor legal.\n- Comparar contra casos reales capturados.\n- Cambiar solo con justificación técnica.\n- Registrar versión de calibración.",
+      "referencesMarkdown": "",
+      "sourceTrustLevel": "secundaria",
+      "lastReviewedAt": "2026-05-30"
+    },
+    "RESOURCE_VAT_CREDITABLE_WITH_CFDI_DEFAULT": {
+      "title": "IVA acreditable con CFDI",
+      "originSource": "LIVA Art. 5",
+      "originUrl": "https://www.diputados.gob.mx/LeyesBiblio/pdf/LIVA.pdf",
+      "originDocument": "LIVA, última reforma DOF 12-11-2021",
+      "whatItAffects": "Afecta compras con factura válida relacionadas con el proyecto. Permite estimar IVA acreditable y costo neto real del proveedor.",
+      "howToModify": "- Verificar CFDI válido.\n- Confirmar que la compra sea indispensable para el proyecto.\n- Confirmar que el IVA esté efectivamente pagado.\n- Registrar factura y monto.\n- Recalcular IVA neto.",
+      "referencesMarkdown": "",
+      "sourceTrustLevel": "oficial",
+      "lastReviewedAt": "2026-05-30"
+    },
+    "RESOURCE_VAT_CREDITABLE_WITHOUT_CFDI_DEFAULT": {
+      "title": "IVA sin CFDI",
+      "originSource": "LIVA Art. 5",
+      "originUrl": "https://www.diputados.gob.mx/LeyesBiblio/pdf/LIVA.pdf",
+      "originDocument": "LIVA, última reforma DOF 12-11-2021",
+      "whatItAffects": "Afecta compras sin factura o sin requisitos fiscales. Normalmente no generan IVA acreditable, por lo que encarecen el proyecto para el proveedor.",
+      "howToModify": "- Solicitar CFDI cuando proceda.\n- Si no hay CFDI, marcar como no acreditable.\n- No restar ese IVA del impuesto a pagar.\n- Guardar evidencia de compra.\n- Recalcular costo neto.",
+      "referencesMarkdown": "",
+      "sourceTrustLevel": "oficial",
+      "lastReviewedAt": "2026-05-30"
+    }
+  }
+}

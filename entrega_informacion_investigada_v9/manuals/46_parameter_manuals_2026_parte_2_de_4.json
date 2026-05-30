@@ -1,0 +1,107 @@
+{
+  "schemaVersion": "1.0",
+  "generatedAt": "2026-05-30",
+  "part": 2,
+  "totalParts": 4,
+  "manuals": {
+    "INFONAVIT_PATRON": {
+      "title": "INFONAVIT patrón",
+      "originSource": "Ley INFONAVIT Art. 29 fr. II",
+      "originUrl": "VERIFICAR",
+      "originDocument": "Ley del INFONAVIT; verificar texto vigente",
+      "whatItAffects": "Afecta la aportación patronal de vivienda. Es parte del costo real de tener personal formal y puede hacer inviable una cotización barata si no se considera.",
+      "howToModify": "- Verificar el valor en la Ley INFONAVIT vigente.\n- Guardar evidencia del valor anterior antes de editar.\n- Confirmar desde qué fecha aplica.\n- Recalcular estimaciones afectadas.\n- Registrar el motivo del cambio en bitácora.",
+      "referencesMarkdown": "",
+      "sourceTrustLevel": "oficial",
+      "lastReviewedAt": "2026-05-30"
+    },
+    "ISN_ZACATECAS": {
+      "title": "ISN Zacatecas",
+      "originSource": "Ley de Hacienda del Estado de Zacatecas, Cap. VI Arts. 37-44",
+      "originUrl": "https://sefin.zacatecas.gob.mx/wp-content/uploads/2025/01/IMPUESTO-SOBRE-NOMINAS.pdf",
+      "originDocument": "SEFIN Zacatecas, ficha ISN; tasa desde 2025",
+      "whatItAffects": "Afecta el impuesto estatal sobre remuneraciones. En proyectos con personal en nómina aumenta el costo mensual del proveedor.",
+      "howToModify": "- Verificar el valor en la SEFIN Zacatecas.\n- Guardar evidencia del valor anterior antes de editar.\n- Confirmar desde qué fecha aplica.\n- Recalcular estimaciones afectadas.\n- Registrar el motivo del cambio en bitácora.",
+      "referencesMarkdown": "",
+      "sourceTrustLevel": "oficial",
+      "lastReviewedAt": "2026-05-30"
+    },
+    "IMPUESTO_UAZ": {
+      "title": "Adicional UAZ",
+      "originSource": "Ley de Ingresos del Estado de Zacatecas, rubro adicional UAZ",
+      "originUrl": "https://sefin.zacatecas.gob.mx/wp-content/uploads/2025/01/IMPUESTO-SOBRE-NOMINAS.pdf",
+      "originDocument": "SEFIN Zacatecas, ficha ISN; adicional UAZ",
+      "whatItAffects": "Afecta el adicional estatal sobre impuestos/derechos. En el sistema se aplica sobre el ISN para estimar costo laboral efectivo en Zacatecas.",
+      "howToModify": "- Verificar el valor en la SEFIN Zacatecas.\n- Guardar evidencia del valor anterior antes de editar.\n- Confirmar desde qué fecha aplica.\n- Recalcular estimaciones afectadas.\n- Registrar el motivo del cambio en bitácora.",
+      "referencesMarkdown": "",
+      "sourceTrustLevel": "oficial",
+      "lastReviewedAt": "2026-05-30"
+    },
+    "LFT_AGUINALDO_DIAS_MIN": {
+      "title": "Aguinaldo mínimo",
+      "originSource": "LFT Art. 87",
+      "originUrl": "https://www.diputados.gob.mx/LeyesBiblio/pdf/LFT.pdf",
+      "originDocument": "LFT, última reforma DOF 14-05-2026",
+      "whatItAffects": "Afecta la provisión mensual de aguinaldo. Si el proveedor no lo considera, el costo de nómina queda subestimado.",
+      "howToModify": "- Verificar el valor en la LFT vigente.\n- Guardar evidencia del valor anterior antes de editar.\n- Confirmar desde qué fecha aplica.\n- Recalcular estimaciones afectadas.\n- Registrar el motivo del cambio en bitácora.",
+      "referencesMarkdown": "",
+      "sourceTrustLevel": "oficial",
+      "lastReviewedAt": "2026-05-30"
+    },
+    "LFT_VACACIONES_DIAS_2026": {
+      "title": "Vacaciones 2026",
+      "originSource": "LFT Arts. 76 y 78",
+      "originUrl": "https://www.diputados.gob.mx/LeyesBiblio/pdf/LFT.pdf",
+      "originDocument": "Reforma vacaciones dignas DOF 27-12-2022; LFT vigente 14-05-2026",
+      "whatItAffects": "Afecta la provisión de vacaciones. No es pago opcional: debe considerarse cuando se calcula costo real de personal formal.",
+      "howToModify": "- Verificar el valor en la LFT vigente.\n- Guardar evidencia del valor anterior antes de editar.\n- Confirmar desde qué fecha aplica.\n- Recalcular estimaciones afectadas.\n- Registrar el motivo del cambio en bitácora.",
+      "referencesMarkdown": "",
+      "sourceTrustLevel": "oficial",
+      "lastReviewedAt": "2026-05-30"
+    },
+    "LFT_PRIMA_VACACIONAL_MIN": {
+      "title": "Prima vacacional mínima",
+      "originSource": "LFT Art. 80",
+      "originUrl": "https://www.diputados.gob.mx/LeyesBiblio/pdf/LFT.pdf",
+      "originDocument": "LFT, última reforma DOF 14-05-2026",
+      "whatItAffects": "Afecta el costo anual de vacaciones. Si se omite, la nómina se ve más barata de lo real.",
+      "howToModify": "- Verificar el valor en la LFT vigente.\n- Guardar evidencia del valor anterior antes de editar.\n- Confirmar desde qué fecha aplica.\n- Recalcular estimaciones afectadas.\n- Registrar el motivo del cambio en bitácora.",
+      "referencesMarkdown": "",
+      "sourceTrustLevel": "oficial",
+      "lastReviewedAt": "2026-05-30"
+    },
+    "LFT_PTU_PORCENTAJE": {
+      "title": "PTU porcentaje",
+      "originSource": "LFT Art. 117",
+      "originUrl": "https://www.diputados.gob.mx/LeyesBiblio/pdf/LFT.pdf",
+      "originDocument": "LFT, última reforma DOF 14-05-2026",
+      "whatItAffects": "Afecta el análisis de utilidad del proveedor cuando aplica reparto de utilidades. No se suma como costo directo de cada factura, pero sí influye en rentabilidad.",
+      "howToModify": "- Verificar el valor en la LFT vigente.\n- Guardar evidencia del valor anterior antes de editar.\n- Confirmar desde qué fecha aplica.\n- Recalcular estimaciones afectadas.\n- Registrar el motivo del cambio en bitácora.",
+      "referencesMarkdown": "",
+      "sourceTrustLevel": "oficial",
+      "lastReviewedAt": "2026-05-30"
+    },
+    "DEPRECIACION_COMPUTO_ANUAL": {
+      "title": "Depreciación cómputo",
+      "originSource": "LISR Art. 34 fr. VII",
+      "originUrl": "https://www.diputados.gob.mx/LeyesBiblio/pdf/LISR.pdf",
+      "originDocument": "LISR, última reforma DOF 01-04-2024",
+      "whatItAffects": "Afecta equipo de cómputo nuevo usado para el proyecto. Permite distribuir fiscalmente el costo en el tiempo en lugar de cargarlo todo a un solo proyecto.",
+      "howToModify": "- Verificar el valor en la LISR vigente.\n- Guardar evidencia del valor anterior antes de editar.\n- Confirmar desde qué fecha aplica.\n- Recalcular estimaciones afectadas.\n- Registrar el motivo del cambio en bitácora.",
+      "referencesMarkdown": "",
+      "sourceTrustLevel": "oficial",
+      "lastReviewedAt": "2026-05-30"
+    },
+    "DEPRECIACION_MOBILIARIO_OFICINA_ANUAL": {
+      "title": "Depreciación mobiliario",
+      "originSource": "LISR Art. 34 fr. III",
+      "originUrl": "https://www.diputados.gob.mx/LeyesBiblio/pdf/LISR.pdf",
+      "originDocument": "LISR, última reforma DOF 01-04-2024",
+      "whatItAffects": "Afecta escritorios, sillas y equipo de oficina. Ayuda a separar compra real, deducción fiscal y asignación del recurso al proyecto.",
+      "howToModify": "- Verificar el valor en la LISR vigente.\n- Guardar evidencia del valor anterior antes de editar.\n- Confirmar desde qué fecha aplica.\n- Recalcular estimaciones afectadas.\n- Registrar el motivo del cambio en bitácora.",
+      "referencesMarkdown": "",
+      "sourceTrustLevel": "oficial",
+      "lastReviewedAt": "2026-05-30"
+    }
+  }
+}

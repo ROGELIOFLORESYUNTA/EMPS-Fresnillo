@@ -1,6 +1,6 @@
 /**
  * Capturas de pantalla del estado actual del sistema EMPS Fresnillo,
- * para acompañar el documento Word entregable a ChatGPT Pro.
+ * para acompañar el documento Word de entrega.
  *
  * Cubre las pantallas que el operador y el investigador realmente ven hoy.
  * Las imágenes se guardan en entregable-chatgpt/screenshots/.

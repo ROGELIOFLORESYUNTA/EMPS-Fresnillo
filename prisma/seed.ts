@@ -14,6 +14,7 @@ import seedData from "../17_seed_data_parametros_2026.json";
 import liveSourcesData from "../26_seed_fuentes_vivas_2026.json";
 import changeImpactSeedData from "../31_seed_parametros_control_cambios_2026.json";
 import materialsSeedData from "../addendum-v8-materiales-cambios/56_seed_parametros_materiales_overhead_2026.json";
+import parameterManualsData from "../46_parameter_manuals_2026.json";
 
 const prisma = new PrismaClient();
 
@@ -512,6 +513,54 @@ async function seedMaterialsOverheadParameters() {
   }
 }
 
+/**
+ * Carga los 54 manuales contextuales (uno por parámetro) desde
+ * 46_parameter_manuals_2026.json. Pobla la tabla ParameterManual
+ * que alimenta el drawer ⓘ en /admin/parametros.
+ */
+async function seedParameterManuals() {
+  const manuals = parameterManualsData.manuals as Record<string, {
+    title: string;
+    originSource?: string;
+    originUrl?: string;
+    originDocument?: string;
+    whatItAffects?: string;
+    howToModify?: string;
+    referencesMarkdown?: string;
+    sourceTrustLevel?: string;
+    lastReviewedAt?: string;
+  }>;
+  for (const [key, m] of Object.entries(manuals)) {
+    const lastReviewedAt = m.lastReviewedAt ? new Date(m.lastReviewedAt) : null;
+    await prisma.parameterManual.upsert({
+      where: { parameterKey: key },
+      create: {
+        parameterKey: key,
+        title: m.title,
+        originSource: m.originSource ?? null,
+        originUrl: m.originUrl ?? null,
+        originDocument: m.originDocument ?? null,
+        whatItAffects: m.whatItAffects ?? null,
+        howToModify: m.howToModify ?? null,
+        referencesMarkdown: m.referencesMarkdown ?? null,
+        sourceTrustLevel: m.sourceTrustLevel ?? "oficial",
+        lastReviewedAt,
+      },
+      update: {
+        title: m.title,
+        originSource: m.originSource ?? null,
+        originUrl: m.originUrl ?? null,
+        originDocument: m.originDocument ?? null,
+        whatItAffects: m.whatItAffects ?? null,
+        howToModify: m.howToModify ?? null,
+        referencesMarkdown: m.referencesMarkdown ?? null,
+        sourceTrustLevel: m.sourceTrustLevel ?? "oficial",
+        lastReviewedAt,
+      },
+    });
+  }
+}
+
 async function main() {
   console.log("Sembrando parametros 2026...");
   await seedParameters();
@@ -519,6 +568,8 @@ async function main() {
   await seedChangeImpactParameters();
   console.log("Sembrando parametros v8 materiales/overhead (6)...");
   await seedMaterialsOverheadParameters();
+  console.log("Sembrando manuales contextuales de parametros (54)...");
+  await seedParameterManuals();
   console.log("Sembrando usuarios demo...");
   await seedUsers();
   console.log("Sembrando proyecto demo...");
@@ -542,6 +593,7 @@ async function main() {
     fuentesVivas: await prisma.liveSourceRegistry.count(),
     fiscalVersiones: await prisma.fiscalParameterVersion.count(),
     casosEntrenamiento: await prisma.trainingCase.count(),
+    manualesParametros: await prisma.parameterManual.count(),
     usuarios: await prisma.user.count(),
     proyectos: await prisma.project.count(),
   };

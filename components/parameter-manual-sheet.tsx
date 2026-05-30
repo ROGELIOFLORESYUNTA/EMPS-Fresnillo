@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { Info, X, ExternalLink, FileText, AlertTriangle, BookOpen } from "lucide-react";
+import { Info, X, ExternalLink, FileText, AlertTriangle, BookOpen, Calculator } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface ParameterManual {
@@ -16,6 +16,18 @@ interface ParameterManual {
   sourceTrustLevel: string;
 }
 
+interface ParameterRow {
+  id: string;
+  value: string | null;
+  unit: string;
+  base: string | null;
+  source: string;
+  sourceUrl: string | null;
+  notes: string | null;
+  year: number;
+  effectiveFrom: string;
+}
+
 interface Props {
   parameterKey: string;
 }
@@ -25,11 +37,12 @@ interface Props {
  * (origen oficial, URL, qué afecta, checklist de modificación, referencias).
  *
  * Si no hay manual cargado para esta clave, muestra mensaje pidiéndole al
- * administrador que lo genere con ChatGPT Pro.
+ * administrador que lo cargue.
  */
 export function ParameterManualSheet({ parameterKey }: Props) {
   const [open, setOpen] = useState(false);
   const [manual, setManual] = useState<ParameterManual | null>(null);
+  const [parameter, setParameter] = useState<ParameterRow | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -40,6 +53,7 @@ export function ParameterManualSheet({ parameterKey }: Props) {
     fetch(`/api/parameter-manuals/${encodeURIComponent(parameterKey)}`)
       .then(async (r) => {
         const data = await r.json();
+        setParameter(data.parameter ?? null);
         if (r.ok) {
           setManual(data.manual);
           setMessage(null);
@@ -113,6 +127,60 @@ export function ParameterManualSheet({ parameterKey }: Props) {
                     <span>{message}</span>
                   </p>
                 </div>
+              )}
+
+              {!loading && parameter && (
+                <div className="rounded-lg border-2 border-blue-200 bg-blue-50 p-4">
+                  <p className="text-xs font-semibold text-blue-900 uppercase tracking-wide mb-1">
+                    Valor actual configurado
+                  </p>
+                  <p className="text-2xl font-bold font-mono text-blue-950 break-all">
+                    {formatValue(parameter.value, parameter.unit)}
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2 mt-2 text-xs">
+                    <Badge variant="secondary" className="text-xs">
+                      Unidad: {parameter.unit}
+                    </Badge>
+                    {parameter.base && (
+                      <Badge variant="secondary" className="text-xs">
+                        Base: {parameter.base}
+                      </Badge>
+                    )}
+                    <Badge variant="outline" className="text-xs">
+                      Año {parameter.year}
+                    </Badge>
+                  </div>
+                </div>
+              )}
+
+              {!loading && parameter && (parameter.source || parameter.notes) && (
+                <Section
+                  icon={<Calculator className="w-4 h-4 text-purple-600" />}
+                  title="Cómo se obtuvo este número"
+                >
+                  {parameter.source && (
+                    <p>
+                      <span className="font-medium text-foreground">Fuente registrada:</span>{" "}
+                      {parameter.source}
+                    </p>
+                  )}
+                  {parameter.notes && (
+                    <p className="mt-2">
+                      <span className="font-medium text-foreground">Operación / derivación:</span>{" "}
+                      {parameter.notes}
+                    </p>
+                  )}
+                  {parameter.sourceUrl && (
+                    <a
+                      href={parameter.sourceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-700 hover:underline text-xs inline-flex items-center gap-1 mt-2"
+                    >
+                      Ver fuente registrada <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
+                </Section>
               )}
 
               {!loading && manual && (
@@ -205,6 +273,32 @@ function Section({
       <div className="text-sm text-muted-foreground leading-relaxed">{children}</div>
     </div>
   );
+}
+
+/**
+ * Formatea el valor para humano según el tipo de unidad.
+ */
+function formatValue(value: string | null, unit: string): string {
+  if (value == null || value === "") return "—";
+  if (unit === "json" || unit === "table") {
+    try {
+      const obj = JSON.parse(value);
+      const num = typeof obj === "object" && obj !== null && "value" in obj ? obj.value : null;
+      if (typeof num === "number") return String(num);
+      return "(tabla / objeto — abrir para editar detalles)";
+    } catch {
+      return value.length > 60 ? value.slice(0, 60) + "…" : value;
+    }
+  }
+  if (unit === "rate") {
+    const n = Number(value);
+    if (Number.isFinite(n)) return `${value}  (${(n * 100).toFixed(4)}%)`;
+  }
+  if (unit === "MXN") {
+    const n = Number(value);
+    if (Number.isFinite(n)) return `$${n.toLocaleString("es-MX", { maximumFractionDigits: 2 })} MXN`;
+  }
+  return value;
 }
 
 /**

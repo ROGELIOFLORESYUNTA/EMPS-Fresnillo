@@ -1,5 +1,5 @@
 /**
- * Genera "EMPS_Fresnillo_Estado_Actual.docx" para entregar a ChatGPT Pro.
+ * Genera "EMPS_Fresnillo_Estado_Actual.docx" como documento de entrega del estado.
  *
  * Versión actualizada (mayo 2026, tras G.H + G.I + Addendum v7):
  *   - 12 secciones
@@ -131,7 +131,7 @@ const sections = [
     spacing: { after: 80 },
   }),
   new Paragraph({
-    children: [new TextRun({ text: "Documento para retomar trabajo en ChatGPT Pro", size: 18 })],
+    children: [new TextRun({ text: "Documento de entrega del estado actual del sistema", size: 18 })],
     alignment: AlignmentType.CENTER,
     spacing: { after: 80 },
   }),
@@ -362,12 +362,12 @@ const sections = [
 
   pageBreak(),
 
-  // === 11. INSTRUCCIONES PARA CHATGPT PRO ===
-  H1("11. Instrucciones para ChatGPT Pro"),
+  // === 11. INSTRUCCIONES PARA EL ASISTENTE EXTERNO ===
+  H1("11. Instrucciones para el asistente externo"),
   P("Junto a este documento Word vienen las siguientes carpetas para subir al chat:"),
   bullet("entregable-chatgpt/screenshots/ con las 37 capturas PNG originales."),
   bullet("entregable-chatgpt/codigo-clave/ con el motor (lib/engine/*), schema Prisma, validadores Zod, helpers de workspace y parámetros, seeds JSON."),
-  bullet("entregable-chatgpt/docs/ con HANDOFF_CHATGPT.md, MANUAL.md, SESSION_STATE.md y los addendums v6/v7."),
+  bullet("entregable-chatgpt/docs/ con MANUAL.md, SESSION_STATE.md y los addendums v6/v7."),
 
   H2("Sobre la variable ADMIN_SECRET (configuración para el dueño del despliegue)"),
   P("En el panel del investigador (figura 17 y 18) se pide un código de acceso. Ese código se llama ADMIN_SECRET y vive en un archivo llamado .env en la raíz del proyecto (junto al package.json). El archivo .env es un archivo de texto que el dueño del servidor crea con cualquier editor de texto."),
@@ -378,7 +378,7 @@ const sections = [
   bullet("Ese código secreto es el que se captura en la pantalla /admin-login para entrar al panel del investigador."),
   P("La variable existe para que solo el autor de la investigación (Rogelio) tenga acceso al panel con los datos agregados de todos los usuarios. Sin ese código nadie más puede ver esa parte del sistema."),
 
-  H2("Prompt sugerido para ChatGPT Pro"),
+  H2("Prompt sugerido para el asistente externo"),
   code(`Estoy continuando el proyecto EMPS Fresnillo (estimador municipal de proyectos
 de software, tesis UAZ 2026). Te paso este documento Word con el estado real
 del sistema al 30 de mayo de 2026, incluyendo Addendum v7 (costo de cambios),
@@ -408,7 +408,6 @@ Lo que necesito ahora es: [DESCRIBE AQUÍ LO QUE QUIERAS]`),
   // === 12. CIERRE ===
   H1("12. Pendientes y siguiente paso"),
   H2("Pendientes técnicos visibles"),
-  bullet("Generar 46_parameter_manuals_2026.json con ChatGPT Pro (prompt en el plan G.I.7) para que los botones ⓘ del editor de parámetros muestren manual real en lugar de 'Pendiente'."),
   bullet("Configurar ADMIN_SECRET en .env (ver §11 de este documento)."),
   bullet("Sembrar usuarios reales del Ayuntamiento si se va a desplegar en producción."),
   H2("Pendientes para la investigación"),
@@ -426,7 +425,7 @@ npx tsx prisma/reset-demo-realista.ts   # regenera el demo público`),
 const doc = new Document({
   creator: "EMPS Fresnillo (build-entregable-docx)",
   title: "EMPS Fresnillo - Estado actual del sistema",
-  description: "Documento de entrega para ChatGPT Pro (post G.H + G.I + v7)",
+  description: "Documento de entrega del estado actual del sistema (post G.H + G.I + v7 + v8)",
   styles: {
     default: {
       document: {

@@ -1,0 +1,52 @@
+{
+  "schemaVersion": "1.0",
+  "generatedAt": "2026-05-30",
+  "part": 3,
+  "totalParts": 4,
+  "manuals": {
+    "DEV_MODE_FACTORS": {
+      "title": "Factores por modo",
+      "originSource": "PMBOK 7 + literatura productividad IA + calibración EMPS",
+      "originUrl": "VERIFICAR",
+      "originDocument": "Calibración empírica EMPS-Fresnillo 2026",
+      "whatItAffects": "Distribuye esfuerzo por codificación, revisión, pruebas, documentación y despliegue según modo de desarrollo. Cambia el peso de cada fase del proyecto.",
+      "howToModify": "- Revisar evidencia metodológica usada para calibrar.\n- No tratarlo como valor legal.\n- Comparar contra casos reales capturados.\n- Cambiar solo con justificación técnica.\n- Registrar versión de calibración.",
+      "referencesMarkdown": "",
+      "sourceTrustLevel": "secundaria",
+      "lastReviewedAt": "2026-05-30"
+    },
+    "DEV_MODE_VELOCITY": {
+      "title": "Velocidad por modo",
+      "originSource": "Meta-análisis GenAI 2026 + estudios 2025 + calibración EMPS",
+      "originUrl": "VERIFICAR",
+      "originDocument": "Maier et al. 2026 + Becker et al. 2025 + calibración EMPS",
+      "whatItAffects": "Afecta semanas calendario y velocidad de prototipo. No significa que la calidad aumente; solo modifica la capacidad efectiva por modo.",
+      "howToModify": "- Revisar evidencia metodológica usada para calibrar.\n- No tratarlo como valor legal.\n- Comparar contra casos reales capturados.\n- Cambiar solo con justificación técnica.\n- Registrar versión de calibración.",
+      "referencesMarkdown": "",
+      "sourceTrustLevel": "secundaria",
+      "lastReviewedAt": "2026-05-30"
+    },
+    "SCENARIO_FACTORS": {
+      "title": "Escenarios estimación",
+      "originSource": "Gestión de riesgos PMBOK + calibración EMPS",
+      "originUrl": "VERIFICAR",
+      "originDocument": "PMBOK 7 + datos locales futuros",
+      "whatItAffects": "Genera escenarios optimista, probable y conservador. Permite no vender un solo número cuando hay incertidumbre.",
+      "howToModify": "- Revisar evidencia metodológica usada para calibrar.\n- No tratarlo como valor legal.\n- Comparar contra casos reales capturados.\n- Cambiar solo con justificación técnica.\n- Registrar versión de calibración.",
+      "referencesMarkdown": "",
+      "sourceTrustLevel": "secundaria",
+      "lastReviewedAt": "2026-05-30"
+    },
+    "DEFAULT_CARGA_PATRONAL_ESTIMADA": {
+      "title": "Carga patronal estimada",
+      "originSource": "LSS/LFT/INFONAVIT/ISN agregados + calibración EMPS",
+      "originUrl": "VERIFICAR",
+      "originDocument": "Parámetro agregado EMPS 2026",
+      "whatItAffects": "Afecta el costo laboral cuando no se desglosan IMSS, INFONAVIT, ISN y prestaciones. Es aproximación, no sustituto de cálculo completo.",
+      "howToModify": "- Revisar evidencia metodológica usada para calibrar.\n- No tratarlo como valor legal.\n- Comparar contra casos reales capturados.\n- Cambiar solo con justificación técnica.\n- Registrar versión de calibración.",
+      "referencesMarkdown": "",
+      "sourceTrustLevel": "secundaria",
+      "lastReviewedAt": "2026-05-30"
+    }
+  }
+}

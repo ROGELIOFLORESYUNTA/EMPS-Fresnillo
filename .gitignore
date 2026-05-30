@@ -47,6 +47,6 @@ tsconfig.tsbuildinfo
 _pdf_extracted.txt
 *.tmp
 
-# Entregable a ChatGPT Pro (generado, no se versiona)
+# Entregable de documentación (generado, no se versiona)
 entregable-chatgpt/
 entregable-chatgpt.zip

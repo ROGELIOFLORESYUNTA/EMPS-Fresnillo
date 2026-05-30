@@ -1,0 +1,4 @@
+Total manuals: 54
+JSON.parse compatible: si
+Claves exactas: si
+Nota: parte 1 tiene 27 claves porque 2 fiscales + 3 UMA + 4 salario + 18 IMSS = 27; el prompt decía 28 por error aritmético.
