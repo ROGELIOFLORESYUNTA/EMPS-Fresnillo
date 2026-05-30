@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import Link from "next/link";
 import "./globals.css";
+import { isAdmin } from "@/lib/admin-auth";
+import { AdminRibbon } from "@/components/admin-ribbon";
+import { WorkspaceBadge } from "@/components/workspace-badge";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
@@ -23,11 +26,13 @@ const NAV_OPERATIVO = [
   { href: "/admin/calibracion", label: "Calibración del motor" },
 ] as const;
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const adminActive = await isAdmin();
   return (
     <html lang="es" className={inter.variable}>
       <body className="font-sans">
         <div className="min-h-screen flex flex-col bg-background">
+          {adminActive && <AdminRibbon />}
           {/* Header fijo arriba */}
           <header className="sticky top-0 z-40 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 no-print">
             <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between gap-4">
@@ -50,6 +55,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     {item.label}
                   </Link>
                 ))}
+                <WorkspaceBadge />
               </nav>
             </div>
           </header>

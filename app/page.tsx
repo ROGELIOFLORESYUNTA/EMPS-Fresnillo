@@ -3,10 +3,12 @@ import { prisma } from "@/lib/db";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, FolderOpen, Plus, Settings, BookOpen, FileText, AlertCircle } from "lucide-react";
+import { ArrowRight, FolderOpen, Plus, Settings, BookOpen, FileText, AlertCircle, User2 } from "lucide-react";
 import { formatMXN } from "@/lib/utils";
+import { getCurrentWorkspace } from "@/lib/workspace";
 
 export default async function HomePage() {
+  const workspace = await getCurrentWorkspace();
   const [projects, totalProjects, paramsCount, pendingChanges] = await Promise.all([
     prisma.project.findMany({
       orderBy: { updatedAt: "desc" },
@@ -27,6 +29,23 @@ export default async function HomePage() {
 
   return (
     <div className="space-y-8">
+      {workspace && !workspace.displayName && (
+        <section>
+          <Link
+            href="/mi-workspace"
+            className="block bg-amber-50 border border-amber-200 rounded-md px-4 py-3 hover:bg-amber-100 transition-colors group"
+          >
+            <p className="text-sm flex items-center gap-2 text-amber-950">
+              <User2 className="w-4 h-4 shrink-0" />
+              <span>
+                <strong>Tu workspace está anónimo.</strong> Ponle un nombre para reconocerlo después
+                <span className="text-amber-700 group-hover:underline ml-1">→ Mi workspace</span>
+              </span>
+            </p>
+          </Link>
+        </section>
+      )}
+
       {/* Acciones principales — bien visibles, una sola fila */}
       <section>
         <h1 className="text-3xl font-bold mb-2">EMPS Fresnillo</h1>

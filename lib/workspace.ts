@@ -24,19 +24,55 @@ export async function getCurrentWorkspaceId(): Promise<string | null> {
 }
 
 /**
+ * Genera un código de recuperación corto (8 chars, alfabeto sin ambiguos).
+ * Formato: XXXX-XXXX, sin O/0/I/1/L para evitar errores al escribirlo.
+ */
+function generateRecoveryCode(): string {
+  const ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+  const pick = () => ALPHABET[Math.floor(Math.random() * ALPHABET.length)];
+  return `${pick()}${pick()}${pick()}${pick()}-${pick()}${pick()}${pick()}${pick()}`;
+}
+
+/**
  * Devuelve el workspace completo, haciendo upsert si la cookie es nueva.
  * Actualiza lastSeenAt en cada llamada para tracking en el panel admin.
+ * Si el workspace no tiene recoveryCode, lo genera (backward compat).
  */
 export async function getCurrentWorkspace() {
   const id = await getCurrentWorkspaceId();
   if (!id) return null;
 
-  const workspace = await prisma.workspace.upsert({
+  let workspace = await prisma.workspace.upsert({
     where: { id },
-    create: { id, lastSeenAt: new Date() },
+    create: { id, lastSeenAt: new Date(), recoveryCode: generateRecoveryCode() },
     update: { lastSeenAt: new Date() },
   });
+
+  if (!workspace.recoveryCode) {
+    // Workspace antiguo sin código: generar uno único (reintentar si colisiona).
+    for (let i = 0; i < 5; i++) {
+      try {
+        workspace = await prisma.workspace.update({
+          where: { id },
+          data: { recoveryCode: generateRecoveryCode() },
+        });
+        break;
+      } catch {
+        // colisión muy improbable, reintenta
+      }
+    }
+  }
   return workspace;
+}
+
+/**
+ * Busca un workspace por su código de recuperación (case-insensitive).
+ * Usado en POST /api/workspace/recover.
+ */
+export async function findWorkspaceByRecoveryCode(code: string) {
+  const normalized = code.trim().toUpperCase();
+  if (!/^[A-Z2-9]{4}-[A-Z2-9]{4}$/.test(normalized)) return null;
+  return prisma.workspace.findUnique({ where: { recoveryCode: normalized } });
 }
 
 /**

@@ -748,17 +748,20 @@ model EstimationFeedback {
 /// Sus proyectos, parámetros editados y actividad quedan asociados a este workspace.
 /// Sin login: si limpia cookies pierde su workspace. Para producción real, futuro upgrade a NextAuth.
 model Workspace {
-  id           String   @id @default(cuid())
-  displayName  String?  // opcional, capturado por el usuario en /mi-workspace
-  notes        String?
-  createdAt    DateTime @default(now())
-  lastSeenAt   DateTime @default(now())
+  id            String   @id @default(cuid())
+  displayName   String?  // opcional, capturado por el usuario en /mi-workspace
+  role          String?  // operador_municipal | proveedor | investigador | explorando | otro
+  recoveryCode  String?  @unique // codigo corto (8 chars) para recuperar workspace en otro dispositivo
+  notes         String?
+  createdAt     DateTime @default(now())
+  lastSeenAt    DateTime @default(now())
 
-  projects     Project[]
-  overrides    WorkspaceParameterOverride[]
-  activityLog  WorkspaceActivityLog[]
+  projects      Project[]
+  overrides     WorkspaceParameterOverride[]
+  activityLog   WorkspaceActivityLog[]
 
   @@index([lastSeenAt])
+  @@index([recoveryCode])
 }
 
 /// Override por workspace de un Parameter global. Si existe → el motor lo usa;
