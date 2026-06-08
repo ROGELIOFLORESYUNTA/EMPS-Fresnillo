@@ -1,17 +1,17 @@
 // EMPS-Fresnillo - Schema canonico
 // Fuente: 06_modelo_datos.md (reconciliado Fase B con PDF §8)
 // Decisiones:
-//  - SQLite para prototipo local; cambiar a postgresql para VPS via DATABASE_URL.
-//  - Strings (no enums) en campos enumerados para portabilidad SQLite/Postgres.
-//  - Decimal precision: 18,4 para montos; 18,6 para tasas/factores.
-//  - JSON para snapshots y tablas (CEAV, vacaciones, parameters_snapshot).
+//  - MySQL/MariaDB en VPS (rama deploy/vps-mariadb); SQLite en main para dev local.
+//  - Strings (no enums) en campos enumerados para portabilidad.
+//  - Decimal default mapea a Decimal(65,30) en MySQL — suficiente para 18,4 y 18,6.
+//  - JSON para snapshots y tablas (CEAV, vacaciones, parameters_snapshot) — String/TEXT.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
