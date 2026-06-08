@@ -27,19 +27,36 @@ export default async function HomePage() {
     prisma.changeRequest.count({ where: { decision: "pendiente" } }),
   ]);
 
+  const isFirstVisit = workspace && !workspace.displayName && totalProjects === 0;
+
   return (
     <div className="space-y-8">
-      {workspace && !workspace.displayName && (
+      {isFirstVisit && (
+        <section>
+          <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-5">
+            <p className="text-base font-semibold text-blue-950 mb-2">👋 Bienvenido al sistema</p>
+            <p className="text-sm text-blue-900 leading-relaxed">
+              <strong>No necesitas registrarte, ni dar tu correo, ni crear contraseña.</strong> El sitio te recuerda automáticamente con una galletita (cookie) en tu navegador. Lo que crees aquí (proyectos, parámetros editados) es <strong>solo tuyo</strong> — los demás visitantes tienen sus propios datos separados.
+            </p>
+            <p className="text-sm text-blue-900 mt-2 leading-relaxed">
+              Si quieres que el sistema sepa tu nombre (en lugar de "anónimo"){" "}
+              <Link href="/mi-cuenta" className="underline font-semibold hover:text-blue-700">identifícate aquí</Link>.
+              Si vas a usar este sitio desde varias computadoras, guarda tu <strong>llave de respaldo</strong> ahí también.
+            </p>
+          </div>
+        </section>
+      )}
+      {workspace && !workspace.displayName && !isFirstVisit && (
         <section>
           <Link
-            href="/mi-workspace"
+            href="/mi-cuenta"
             className="block bg-amber-50 border border-amber-200 rounded-md px-4 py-3 hover:bg-amber-100 transition-colors group"
           >
             <p className="text-sm flex items-center gap-2 text-amber-950">
               <User2 className="w-4 h-4 shrink-0" />
               <span>
-                <strong>Tu workspace está anónimo.</strong> Ponle un nombre para reconocerlo después
-                <span className="text-amber-700 group-hover:underline ml-1">→ Mi workspace</span>
+                <strong>Estás navegando como anónimo.</strong> Pon tu nombre para que el sistema te identifique
+                <span className="text-amber-700 group-hover:underline ml-1">→ Mi cuenta</span>
               </span>
             </p>
           </Link>

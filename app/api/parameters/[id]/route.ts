@@ -46,7 +46,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const workspace = await getCurrentWorkspace();
     if (!workspace) {
       return NextResponse.json(
-        { error: "No se pudo identificar el workspace (cookie faltante). Recarga la página." },
+        { error: "No pudimos identificar tu cuenta (falta la galletita del navegador). Recarga la página." },
         { status: 400 },
       );
     }
@@ -67,7 +67,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         parameterKey: before.key,
         value: newValue,
         unit: before.unit,
-        source: `Editado por este workspace el ${new Date().toISOString().slice(0, 10)}`,
+        source: `Editado por este visitante el ${new Date().toISOString().slice(0, 10)}`,
         notes: data.notes ?? null,
       },
       update: {
@@ -96,7 +96,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({
       parameter: { ...before, value: newValue },
       override,
-      message: "Tu cambio quedó guardado SOLO en tu workspace. No afecta a otros usuarios.",
+      message: "Tu cambio quedó guardado SOLO para ti. Los demás visitantes siguen viendo el valor original del sistema.",
     });
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Error desconocido" }, { status: 400 });
@@ -116,7 +116,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     const workspace = await getCurrentWorkspace();
     if (!workspace) {
       return NextResponse.json(
-        { error: "No se pudo identificar el workspace (cookie faltante)." },
+        { error: "No pudimos identificar tu cuenta (falta la galletita del navegador)." },
         { status: 400 },
       );
     }

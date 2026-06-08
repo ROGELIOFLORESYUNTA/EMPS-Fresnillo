@@ -22,24 +22,24 @@ export function AdminRibbon() {
       <div className="max-w-6xl mx-auto px-6 py-1.5 flex items-center justify-between gap-3 flex-wrap">
         <span className="flex items-center gap-1.5">
           <ShieldCheck className="w-3.5 h-3.5" />
-          <span className="font-medium">Modo investigador activo</span>
-          <span className="text-amber-800/70 hidden sm:inline">— estás viendo el sistema como administrador</span>
+          <span className="font-medium">Modo administrador (investigador) activo</span>
+          <span className="text-amber-800/70 hidden sm:inline">— puedes ver los datos agregados de todos los visitantes</span>
         </span>
         <span className="flex items-center gap-3">
           <Link
             href="/investigacion/admin-datos"
             className="underline hover:text-amber-900 font-medium"
           >
-            Ir al panel
+            Ir al panel del investigador
           </Link>
           <button
             type="button"
             onClick={handleLogout}
             className="inline-flex items-center gap-1 hover:text-amber-900"
-            title="Cerrar sesión de investigador (no afecta tu workspace)"
+            title="Cerrar sesión de administrador (no afecta tu cuenta normal)"
           >
             <LogOut className="w-3 h-3" />
-            Salir
+            Salir del modo admin
           </button>
         </span>
       </div>

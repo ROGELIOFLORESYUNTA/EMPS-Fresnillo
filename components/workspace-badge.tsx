@@ -1,9 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { User2 } from "lucide-react";
+import { User2, UserCircle2 } from "lucide-react";
 
-interface WorkspaceMe {
+interface MyAccountInfo {
   id: string;
   displayName: string | null;
   role: string | null;
@@ -11,30 +11,43 @@ interface WorkspaceMe {
 }
 
 /**
- * Mini badge en el header que muestra el nombre del workspace actual.
- * Si no tiene displayName, sugiere ponerle uno. Click → /mi-workspace.
+ * Mini badge en el header.
+ * - Si el visitante no se ha identificado: muestra "Anónimo · Identifícate"
+ *   con color ámbar para invitar a hacer click.
+ * - Si ya se identificó: muestra su nombre.
+ * Click va a /mi-cuenta (alias visible de /mi-workspace).
  */
 export function WorkspaceBadge() {
-  const [ws, setWs] = useState<WorkspaceMe | null>(null);
+  const [me, setMe] = useState<MyAccountInfo | null>(null);
 
   useEffect(() => {
-    fetch("/api/workspace/me")
-      .then((r) => r.json())
-      .then((d) => setWs(d.workspace))
-      .catch(() => {});
+    const fetchMe = () =>
+      fetch("/api/workspace/me")
+        .then((r) => r.json())
+        .then((d) => setMe(d.workspace))
+        .catch(() => {});
+    fetchMe();
+    // Refresca cuando /mi-cuenta dispara este evento tras guardar
+    window.addEventListener("emps:identity-changed", fetchMe);
+    return () => window.removeEventListener("emps:identity-changed", fetchMe);
   }, []);
 
-  if (!ws) return null;
-  const label = ws.displayName ?? "Sin nombre";
+  if (!me) return null;
+
+  const identified = !!me.displayName;
   return (
     <Link
-      href="/mi-workspace"
-      className="hidden md:inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground border border-border rounded-full px-2.5 py-1 transition-colors"
-      title="Identidad de este navegador. Click para cambiarla."
+      href="/mi-cuenta"
+      className={`hidden md:inline-flex items-center gap-1.5 text-xs rounded-full px-2.5 py-1 transition-colors border ${
+        identified
+          ? "text-foreground hover:bg-accent border-border"
+          : "text-amber-900 bg-amber-50 hover:bg-amber-100 border-amber-300"
+      }`}
+      title={identified ? "Tu cuenta en este sitio. Click para cambiar tu nombre o ver tu llave." : "Estás navegando como anónimo. Click para identificarte y guardar tus datos."}
     >
-      <User2 className="w-3 h-3" />
-      <span className="font-medium">{label}</span>
-      {!ws.displayName && <span className="text-[10px] text-amber-700">Ponle nombre</span>}
+      {identified ? <User2 className="w-3.5 h-3.5" /> : <UserCircle2 className="w-3.5 h-3.5" />}
+      <span className="font-medium">{me.displayName ?? "Anónimo"}</span>
+      {!identified && <span className="text-[10px] uppercase tracking-wide">Identifícate</span>}
     </Link>
   );
 }

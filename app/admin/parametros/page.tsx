@@ -80,15 +80,13 @@ export default async function AdminParametrosPage() {
         </div>
       </div>
 
-      <Card className="border-orange-200 bg-orange-50/30">
+      <Card className="border-blue-200 bg-blue-50/40">
         <CardContent className="py-4 flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" />
+          <AlertCircle className="w-5 h-5 text-blue-700 shrink-0 mt-0.5" />
           <div className="text-sm">
-            <p className="font-medium mb-1">Auditabilidad inviolable</p>
-            <p className="text-muted-foreground">
-              Las estimaciones existentes guardan una copia de los parámetros usados al momento del cálculo. Modificar un parámetro
-              <strong className="text-foreground"> NO altera</strong> estimaciones anteriores. Para usar valores nuevos en un proyecto, abrir el proyecto y
-              presionar &ldquo;Recalcular con parámetros vigentes&rdquo; (genera una nueva versión de estimación).
+            <p className="font-medium mb-1 text-blue-950">Tus cambios son privados — no afectan a otros visitantes</p>
+            <p className="text-blue-900">
+              Cada visitante del sitio tiene <strong>su propia copia</strong> de los parámetros. Si tú cambias el IVA aquí, solo TÚ ves ese cambio en TUS estimaciones futuras. Los demás siguen con el valor original. <strong className="text-foreground">Tus estimaciones anteriores tampoco cambian</strong> — el sistema guarda el valor que se usó en cada cálculo. Para usar tus valores nuevos en un proyecto ya estimado, ábrelo y presiona &ldquo;Recalcular con parámetros vigentes&rdquo;.
             </p>
           </div>
         </CardContent>
