@@ -40,18 +40,18 @@ model User {
 model Project {
   id              String    @id @default(cuid())
   name            String
-  description     String?
+  description     String? @db.Text
   client          String
   clientType      String    // municipal | paramunicipal | externo
   municipalArea   String
-  objective       String
+  objective       String @db.Text
   systemType      String    // crud_interno | portal_ciudadano | integrador | etc.
   responsible     String?
   estimatedBudget Decimal?
   targetDate      DateTime?
   priority        String    @default("media")  // baja|media|alta|critica
   status          String    @default("borrador") // borrador|captura|estimado|aprobado|en_ejecucion|cerrado|archivado
-  notes           String?
+  notes           String? @db.Text
   // FASE G.I: aislamiento por workspace (cookie). NULL = proyecto template público.
   workspaceId     String?
   isTemplate      Boolean   @default(false)
@@ -80,7 +80,7 @@ model Module {
   projectId           String
   name                String
   type                String  // catalogo | transaccional | reporte | integracion | flujo
-  description         String?
+  description         String? @db.Text
   complexity          Int     // 1-5
   clarity             Int     // 1-5
   criticality         Int     // 1-5
@@ -88,9 +88,9 @@ model Module {
   reportsCount        Int     @default(0)
   catalogsCount       Int     @default(0)
   integrationsCount   Int     @default(0)
-  rolesPermissions    String?
+  rolesPermissions    String? @db.Text
   sensitiveData       Boolean @default(false)
-  notes               String?
+  notes               String? @db.Text
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
@@ -109,14 +109,14 @@ model UserStory {
   id                 String   @id @default(cuid())
   moduleId           String
   actor              String
-  need               String
-  benefit            String
-  rules              String?
-  dataRequired       String?
-  acceptanceCriteria String?
-  evidenceExpected   String?
+  need               String @db.Text
+  benefit            String @db.Text
+  rules              String? @db.Text
+  dataRequired       String? @db.Text
+  acceptanceCriteria String? @db.Text
+  evidenceExpected   String? @db.Text
   maturityLevel      Int      @default(1)  // 1-5
-  risks              String?
+  risks              String? @db.Text
   priority           String   @default("media")
   status             String   @default("borrador") // borrador|validada|lista|descartada
   createdAt          DateTime @default(now())
@@ -145,7 +145,7 @@ model TeamProfile {
   productivityFactor  Decimal @default(1.0)
   turnoverRisk        Int     @default(2)  // 1-5
   supervisionRequired Int     @default(2)  // 1-5
-  notes               String?
+  notes               String? @db.Text
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
@@ -164,14 +164,14 @@ model Parameter {
   country        String    @default("Mexico")
   state          String?
   key            String
-  value          String?   // JSON-serialized for tables; numeric strings for scalars
+  value          String? @db.LongText // JSON-serialized for tables; numeric strings for scalars
   unit           String    // rate | MXN | dias_salario | table | etc.
   base           String?   // SBC | UMA | SBC_EXCEDENTE_3_UMA | etc.
-  source         String
-  sourceUrl      String?
+  source         String @db.Text
+  sourceUrl      String? @db.Text
   effectiveFrom  DateTime
   effectiveUntil DateTime?
-  notes          String?
+  notes          String? @db.Text
   createdAt      DateTime  @default(now())
 
   @@unique([year, country, state, key, effectiveFrom])
@@ -220,8 +220,8 @@ model Estimate {
   riskLevel           String   @default("bajo") // bajo|medio|alto|critico
 
   // Auditoria (RNF-03)
-  parametersSnapshot  String   // JSON con copia de los Parameters usados
-  inputsSnapshot      String   // JSON con los inputs usados (modules count, complexities, etc.)
+  parametersSnapshot  String @db.LongText // JSON con copia de los Parameters usados
+  inputsSnapshot      String @db.LongText // JSON con los inputs usados (modules count, complexities, etc.)
 
   createdById         String?
   createdAt           DateTime @default(now())
@@ -243,14 +243,14 @@ model ChangeRequest {
   moduleId             String?
   requesterId          String?
   requesterName        String   // por si no es usuario del sistema
-  description          String
+  description          String @db.Text
   type                 String   // correccion|garantia|ajuste_menor|mejora|nuevo_alcance|cambio_estructural
-  reason               String?
+  reason               String? @db.Text
   timeImpactHours      Decimal?
   costImpact           Decimal?
-  testingImpact        String?
-  trainingImpact       String?
-  documentationImpact  String?
+  testingImpact        String? @db.Text
+  trainingImpact       String? @db.Text
+  documentationImpact  String? @db.Text
   decision             String   @default("pendiente") // pendiente|aceptado|rechazado|incluido|diferido|requires_clarification
   decidedBy            String?
   decidedAt            DateTime?
@@ -286,7 +286,7 @@ model ChangeImpactAssessment {
   changeRequestId            String?  @unique
   estimateId                 String?
 
-  originalText               String
+  originalText               String @db.Text
   suggestedType              String
   finalType                  String?
   currentPhase               String
@@ -294,7 +294,7 @@ model ChangeImpactAssessment {
 
   clarityLevel               Int
   urgencyLevel               Int
-  affectedArtifactsJson      String
+  affectedArtifactsJson      String @db.LongText
 
   artifactPoints             Decimal
   clarityFactor              Decimal
@@ -313,25 +313,25 @@ model ChangeImpactAssessment {
   requiresNewBaseline        Boolean  @default(false)
   requiresFormalApproval     Boolean  @default(false)
   decisionStatus             String   @default("requires_review")
-  decisionComment            String?
+  decisionComment            String? @db.Text
   decidedBy                  String?
   decidedAt                  DateTime?
 
   explanationJson            String
   questionsToClarifyJson     String
-  parametersSnapshot         String
+  parametersSnapshot         String @db.LongText
 
   // === Addendum v7 (campos opcionales, migracion aditiva) ===
-  clientPlainExplanationJson String?   // explicacion en lenguaje claro para el cliente (JSON array)
-  providerTechnicalJson      String?   // desglose tecnico para el proveedor (JSON array)
-  financialBreakdownJson     String?   // laborCost, IMSS, ISN, admin, contingencia, IVA, total
-  legalReferencesJson        String?   // referencias legales aplicables (LIVA, LFT, LSS, LGPDPPSO)
+  clientPlainExplanationJson String? @db.LongText // explicacion en lenguaje claro para el cliente (JSON array)
+  providerTechnicalJson      String? @db.LongText // desglose tecnico para el proveedor (JSON array)
+  financialBreakdownJson     String? @db.LongText // laborCost, IMSS, ISN, admin, contingencia, IVA, total
+  legalReferencesJson        String? @db.LongText // referencias legales aplicables (LIVA, LFT, LSS, LGPDPPSO)
   maintenanceImpactMonthly   Decimal?  @default(0)  // costo mensual adicional en mantenimiento
   minimumChargeApplied       Boolean   @default(false)  // true si el costo subio al minimo
-  freeChangeGuardrailReason  String?   // por que se bloqueo "incluido sin costo"
+  freeChangeGuardrailReason  String? @db.Text // por que se bloqueo "incluido sin costo"
   baselineBeforeVersion      Int?      // version de la linea base antes del cambio
   baselineAfterVersion       Int?      // version de la nueva linea base si fue creada
-  sourceParameterKeysJson    String?   // claves de Parameter usadas (auditoria)
+  sourceParameterKeysJson    String? @db.LongText // claves de Parameter usadas (auditoria)
   lastParameterReviewAt      DateTime? // ultima vez que se reviso si los parametros cambiaron
 
   createdAt                  DateTime @default(now())
@@ -359,9 +359,9 @@ model CalculationExplanation {
   entityId    String
   label       String
   formula     String
-  inputJson   String
-  outputJson  String
-  sourceJson  String
+  inputJson   String @db.LongText
+  outputJson  String @db.LongText
+  sourceJson  String @db.LongText
   createdAt   DateTime @default(now())
 
   @@index([entityType, entityId])
@@ -384,7 +384,7 @@ model CashFlowLine {
   netFlow                  Decimal @default(0)
   accumulatedFlow          Decimal @default(0)
   workingCapitalRequired   Decimal @default(0)
-  notes                    String?
+  notes                    String? @db.Text
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
@@ -402,9 +402,9 @@ model AuditLog {
   entity     String   // Project | Estimate | Parameter | etc.
   entityId   String
   action     String   // create | update | delete | recalculate | export
-  before     String?  // JSON snapshot before
-  after      String?  // JSON snapshot after
-  context    String?  // texto libre describiendo motivo
+  before     String? @db.Text // JSON snapshot before
+  after      String? @db.Text // JSON snapshot after
+  context    String? @db.Text // texto libre describiendo motivo
   createdAt  DateTime @default(now())
 
   user User? @relation(fields: [userId], references: [id])
@@ -430,7 +430,7 @@ model DevModeCatalog {
   id          String   @id @default(cuid())
   code        String   @unique  // traditional | ai_assisted | bytecoding_prompts | low_code | hybrid
   name        String
-  description String?
+  description String? @db.Text
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
 
@@ -469,10 +469,10 @@ model EstimationDatasetSource {
   code          String   @unique  // D1_PUBLIC_JIRA, D2_JOSSE, etc.
   name          String
   sourceType    String   // zenodo | csv | local_capture
-  sourceUrl     String?
+  sourceUrl     String? @db.Text
   doi           String?
   license       String?
-  description   String?
+  description   String? @db.Text
   intendedUse   String?
   lastCheckedAt DateTime?
   createdAt     DateTime @default(now())
@@ -491,7 +491,7 @@ model DatasetImportBatch {
   fileHash        String?
   rowsImported    Int      @default(0)
   status          String   @default("pending")  // pending | running | completed | failed
-  notes           String?
+  notes           String? @db.Text
 
   source         EstimationDatasetSource @relation(fields: [datasetSourceId], references: [id])
   externalTasks  ExternalTaskRecord[]
@@ -508,7 +508,7 @@ model ExternalTaskRecord {
   projectKey          String?
   issueType           String?
   title               String?
-  description         String?
+  description         String? @db.Text
   status              String?
   priority            String?
   storyPoints         Decimal?
@@ -518,7 +518,7 @@ model ExternalTaskRecord {
   changeCount         Int?
   commentCount        Int?
   linkCount           Int?
-  rawJson             String?  // JSONB en Postgres
+  rawJson             String? @db.LongText // JSONB en Postgres
   createdAt           DateTime @default(now())
 
   batch DatasetImportBatch? @relation(fields: [importBatchId], references: [id])
@@ -553,9 +553,9 @@ model TrainingCase {
   maintenanceMonths        Int?
   fiscalLaborRiskScore     Decimal?
   paymentScheme            String?  // ej. "40_40_20"
-  rawFeatures              String?  // JSONB en Postgres
+  rawFeatures              String? @db.LongText // JSONB en Postgres
   labelQuality             String   @default("unknown")  // unknown | weak | moderate | strong
-  notes                    String?
+  notes                    String? @db.Text
   createdAt                DateTime @default(now())
 
   devMode DevModeCatalog? @relation(fields: [devModeCode], references: [code])
@@ -570,9 +570,9 @@ model MLModelRegistry {
   modelKey              String   @unique  // effort_range_model | change_risk_model | cost_deviation_model | mode_factor_model
   modelName             String
   targetVariable        String   // effort_hours | change_risk | cost_deviation | mode_factor
-  algorithm             String   // linear_regression | random_forest | gradient_boosting | ...
+  algorithm             String @db.Text // linear_regression | random_forest | gradient_boosting | ...
   trainingDatasetNotes  String?
-  featureSchema         String?  // JSONB en Postgres
+  featureSchema         String? @db.LongText // JSONB en Postgres
   modelArtifactPath     String?
   status                String   @default("draft")  // draft | trained | approved | retired
   trainedAt             DateTime?
@@ -592,7 +592,7 @@ model MLModelMetric {
   metricName    String   // mae | rmse | mape | r2 | range_coverage_pct | error_by_mode
   metricValue   Decimal
   sampleSize    Int?
-  notes         String?
+  notes         String? @db.Text
   createdAt     DateTime @default(now())
 
   model MLModelRegistry @relation(fields: [modelId], references: [id], onDelete: Cascade)
@@ -612,7 +612,7 @@ model MLPrediction {
   predictedMax      Decimal?
   confidenceScore   Decimal?
   inputFeatures     String?  // JSONB
-  explanation       String?  // JSONB con SHAP/feature_importance si aplica
+  explanation       String? @db.LongText // JSONB con SHAP/feature_importance si aplica
   createdAt         DateTime @default(now())
 
   model MLModelRegistry? @relation(fields: [modelId], references: [id])
@@ -629,12 +629,12 @@ model LiveSourceRegistry {
   sourceName             String
   category               String   // fiscal | fiscal_state | labor | dataset | procurement | research | technology
   officialPriority       Int      @default(1)  // 1 alta | 2 media | 3 baja
-  sourceUrl              String
+  sourceUrl              String @db.Text
   refreshFrequency       String   @default("manual")  // manual | daily | weekly | monthly | quarterly | yearly
   parserType             String   @default("manual_review")  // manual_review | pdf_manual | csv | json | html
   requiresHumanApproval  Boolean  @default(true)
   active                 Boolean  @default(true)
-  notes                  String?
+  notes                  String? @db.Text
   createdAt              DateTime @default(now())
 
   snapshots LiveSourceSnapshot[]
@@ -653,7 +653,7 @@ model LiveSourceSnapshot {
   reviewStatus    String   @default("pending")  // pending | approved | rejected
   reviewedBy      String?
   reviewedAt      DateTime?
-  notes           String?
+  notes           String? @db.Text
 
   liveSource LiveSourceRegistry @relation(fields: [liveSourceId], references: [id], onDelete: Cascade)
   parameterReviews ParameterChangeReview[]
@@ -678,7 +678,7 @@ model FiscalParameterVersion {
   approvalStatus      String   @default("pending")  // pending | approved | rejected | superseded
   approvedBy          String?
   approvedAt          DateTime?
-  notes               String?
+  notes               String? @db.Text
   createdAt           DateTime @default(now())
 
   sourceSnapshot LiveSourceSnapshot? @relation(fields: [sourceSnapshotId], references: [id])
@@ -719,8 +719,8 @@ model ProjectActualResult {
   actualChangeCount        Int?
   actualMaintenanceCostMxn Decimal?
   wasCompleted             Boolean?
-  mainDeviationReason      String?
-  lessonsLearned           String?
+  mainDeviationReason      String? @db.Text
+  lessonsLearned           String? @db.Text
   createdAt                DateTime @default(now())
 
   @@index([projectId])
@@ -733,7 +733,7 @@ model EstimationFeedback {
   estimateId    String?
   reviewerRole  String?  // ayuntamiento | proveedor | auditor | estimador | admin
   feedbackType  String?  // alcance | costo | tiempo | riesgo | parametros | metodologia
-  feedbackText  String
+  feedbackText  String @db.Text
   severity      String   @default("medium")  // low | medium | high
   createdAt     DateTime @default(now())
 
@@ -752,7 +752,7 @@ model Workspace {
   displayName   String?  // opcional, capturado por el usuario en /mi-workspace
   role          String?  // operador_municipal | proveedor | investigador | explorando | otro
   recoveryCode  String?  @unique // codigo corto (8 chars) para recuperar workspace en otro dispositivo
-  notes         String?
+  notes         String? @db.Text
   createdAt     DateTime @default(now())
   lastSeenAt    DateTime @default(now())
 
@@ -770,10 +770,10 @@ model WorkspaceParameterOverride {
   id            String   @id @default(cuid())
   workspaceId   String
   parameterKey  String   // ej. "IVA_GENERAL", "CHANGE_PHASE_FACTOR", etc.
-  value         String   // JSON serializado igual que Parameter.value
+  value         String @db.LongText // JSON serializado igual que Parameter.value
   unit          String
-  source        String   @default("Editado en este workspace")
-  notes         String?
+  source        String @db.Text @default("Editado en este workspace")
+  notes         String? @db.Text
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -790,12 +790,12 @@ model ParameterManual {
   id                  String   @id @default(cuid())
   parameterKey        String   @unique
   title               String
-  originSource        String?  // ej. "Ley del Impuesto al Valor Agregado, Art. 1"
-  originUrl           String?  // URL a DOF / SAT / INEGI / CONASAMI / SEFIN
-  originDocument      String?  // ej. "DOF 07-nov-2025 (Reforma Fiscal 2026)"
-  whatItAffects       String?  // markdown: qué calcula afecta y cómo
-  howToModify         String?  // markdown: checklist antes de modificar
-  referencesMarkdown  String?  // markdown: referencias bibliográficas
+  originSource        String? @db.Text // ej. "Ley del Impuesto al Valor Agregado, Art. 1"
+  originUrl           String? @db.Text // URL a DOF / SAT / INEGI / CONASAMI / SEFIN
+  originDocument      String? @db.Text // ej. "DOF 07-nov-2025 (Reforma Fiscal 2026)"
+  whatItAffects       String? @db.Text // markdown: qué calcula afecta y cómo
+  howToModify         String? @db.Text // markdown: checklist antes de modificar
+  referencesMarkdown  String? @db.Text // markdown: referencias bibliográficas
   lastReviewedAt      DateTime?
   sourceTrustLevel    String   @default("oficial") // oficial | secundaria | comunidad
   createdAt           DateTime @default(now())
@@ -810,7 +810,7 @@ model WorkspaceActivityLog {
   id            String   @id @default(cuid())
   workspaceId   String
   eventType     String   // project_created | estimate_run | parameter_overridden | change_evaluated | report_viewed | etc.
-  payloadJson   String?
+  payloadJson   String? @db.LongText
   createdAt     DateTime @default(now())
 
   workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -833,7 +833,7 @@ model ProjectResourceCost {
   changeRequestId          String?
 
   category                 String   // equipo_computo|mobiliario|software_licencia|cloud|renta|internet|energia_agua|contabilidad_admin|transporte|consultoria|otros
-  description              String
+  description              String @db.Text
   acquisitionMode          String   // existing_owned|used_owned|new_with_invoice|new_without_invoice|rented|financed|subscription
 
   quantity                 Decimal  @default(1)
@@ -853,7 +853,7 @@ model ProjectResourceCost {
   isRecurring              Boolean  @default(false)
   monthlyCostBeforeVat     Decimal?
 
-  notes                    String?
+  notes                    String? @db.Text
   createdAt                DateTime @default(now())
   updatedAt                DateTime @updatedAt
 
@@ -871,10 +871,10 @@ model ResourceCostExplanation {
   projectId                String
   resourceCostId           String?
   calculationType          String   // project_resource|change_resource|cashflow|vat
-  inputSnapshotJson        String
-  resultSnapshotJson       String
-  legalReferencesJson      String?
-  warningsJson             String?
+  inputSnapshotJson        String @db.LongText
+  resultSnapshotJson       String @db.LongText
+  legalReferencesJson      String? @db.LongText
+  warningsJson             String? @db.LongText
   createdAt                DateTime @default(now())
 
   @@index([workspaceId])
