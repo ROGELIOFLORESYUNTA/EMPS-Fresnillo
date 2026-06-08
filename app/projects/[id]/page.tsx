@@ -139,6 +139,65 @@ export default async function ProjectDetailPage({
         </div>
       </div>
 
+      {/* Acerca de este proyecto — campos capturados en /projects/new que
+          antes no se mostraban (description, targetDate, estimatedBudget, responsable, objective). */}
+      {(project.description || project.objective || project.targetDate || project.estimatedBudget || project.responsible || project.notes) && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Acerca de este proyecto</CardTitle>
+            <CardDescription>Lo que se registró cuando se creó el proyecto. Para cambiarlo, editar el proyecto.</CardDescription>
+          </CardHeader>
+          <CardContent className="grid sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+            {project.objective && (
+              <div className="sm:col-span-2">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Objetivo</p>
+                <p className="mt-0.5">{project.objective}</p>
+              </div>
+            )}
+            {project.description && (
+              <div className="sm:col-span-2">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Descripción</p>
+                <p className="mt-0.5 whitespace-pre-wrap">{project.description}</p>
+              </div>
+            )}
+            {project.responsible && (
+              <div>
+                <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Responsable</p>
+                <p className="mt-0.5">{project.responsible}</p>
+              </div>
+            )}
+            {project.targetDate && (
+              <div>
+                <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Fecha objetivo</p>
+                <p className="mt-0.5">{new Date(project.targetDate).toLocaleDateString("es-MX", { year: "numeric", month: "long", day: "numeric" })}</p>
+              </div>
+            )}
+            {project.estimatedBudget != null && (
+              <div>
+                <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">
+                  Presupuesto inicial estimado
+                  <InfoTip title="¿Por qué muestra esto?">
+                    Es el monto que se registró al crear el proyecto, antes de cualquier estimación detallada. Sirve como referencia para comparar contra el "Precio cotizado al cliente" que sale del motor (abajo). Si difieren mucho, hay que entender por qué.
+                  </InfoTip>
+                </p>
+                <p className="mt-0.5 font-mono">{formatMXN(Number(project.estimatedBudget))}</p>
+              </div>
+            )}
+            {project.notes && (
+              <div className="sm:col-span-2">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Notas</p>
+                <p className="mt-0.5 whitespace-pre-wrap text-muted-foreground">{project.notes}</p>
+              </div>
+            )}
+            <div className="sm:col-span-2 pt-2 mt-1 border-t border-dashed">
+              <p className="text-xs text-amber-800">
+                <strong>Aún no se captura:</strong> términos del acuerdo (% anticipo, % parciales, % finiquito, plazo en meses pactado con el cliente). El cashflow asume valores genéricos. Próxima iteración del schema añadirá <code>paymentSchedule</code> al modelo Project para hacerlo explícito.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Banner de perspectiva. Esta pantalla muestra TODO desde el lado del proveedor.
           Para ver el proyecto redactado para otra audiencia (cliente o investigador)
           el sistema genera reportes separados. */}
@@ -254,32 +313,48 @@ export default async function ProjectDetailPage({
               ),
             }}
           />
-          {rangeMultiplier > 1.5 && cheapestMode && mostExpensiveMode ? (
-            <Card className="border-orange-300 bg-orange-50/40">
-              <CardContent className="py-4">
-                <p className="text-xs uppercase tracking-wide text-orange-800 mb-1 font-semibold flex items-center gap-1">
-                  <span>⚠ Riesgo de cotización</span>
-                  <InfoTip title="¿Por qué hay riesgo?">
-                    <p>Es el factor entre el precio del modo de desarrollo más caro y el más barato (en escenario probable).</p>
-                    <p>Si es alto (&gt;1.5×), una mala elección de modo cambia mucho el costo. <strong>Cotizar como bytecoding y ejecutar como tradicional puede llevar al proveedor a quiebra</strong>.</p>
-                    <p><strong>Recomendación:</strong> cotiza al cliente con el modo que realmente vas a usar. Si vas a usar bytecoding, presenta evidencia de pruebas de calidad; si vas a usar tradicional, justifícalo.</p>
-                  </InfoTip>
-                </p>
-                <p className="text-2xl font-bold text-orange-900">{rangeMultiplier.toFixed(1)}× más caro</p>
-                <p className="text-xs text-orange-800 mt-1">
-                  El modo más caro ({modeLabels[mostExpensiveMode.mode]}, {formatMXN(maxProbable)}) cuesta {rangeMultiplier.toFixed(1)} veces más que el más barato ({modeLabels[cheapestMode.mode]}, {formatMXN(minProbable)}).
-                </p>
-              </CardContent>
-            </Card>
+          {cheapestMode && mostExpensiveMode && cheapestMode.mode !== mostExpensiveMode.mode ? (
+            rangeMultiplier > 1.5 ? (
+              <Card className="border-orange-300 bg-orange-50/40">
+                <CardContent className="py-4">
+                  <p className="text-xs uppercase tracking-wide text-orange-800 mb-1 font-semibold flex items-center gap-1">
+                    <span>⚠ Riesgo de cotización</span>
+                    <InfoTip title="¿Por qué hay riesgo?">
+                      <p>Compara los precios del MISMO proyecto en dos modos de desarrollo distintos. El número de arriba es el factor: el modo más caro vale tantas veces el más barato.</p>
+                      <p>Si es alto (&gt;1.5×), una mala elección de modo cambia mucho el costo. <strong>Cotizar como bytecoding y ejecutar como tradicional puede llevar al proveedor a quiebra</strong>.</p>
+                      <p><strong>Recomendación:</strong> cotiza al cliente con el modo que realmente vas a usar. Si vas a usar bytecoding, presenta evidencia de pruebas de calidad; si vas a usar tradicional, justifícalo.</p>
+                    </InfoTip>
+                  </p>
+                  <p className="text-2xl font-bold text-orange-900">{rangeMultiplier.toFixed(1)}×</p>
+                  <p className="text-xs text-orange-900 mt-1 leading-snug">
+                    <strong>{modeLabels[mostExpensiveMode.mode]}</strong>: {formatMXN(maxProbable)}<br />
+                    <strong>{modeLabels[cheapestMode.mode]}</strong>: {formatMXN(minProbable)}<br />
+                    <span className="text-orange-800">El más caro vale {rangeMultiplier.toFixed(1)} veces el más barato.</span>
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <SummaryCard
+                label="Comparación entre modos"
+                value={`${rangeMultiplier.toFixed(1)}× brecha`}
+                hint={`${modeLabels[mostExpensiveMode.mode]} (${formatMXN(maxProbable)}) vs ${modeLabels[cheapestMode.mode]} (${formatMXN(minProbable)}). Brecha baja, la elección de modo no es crítica.`}
+                info={{
+                  title: "Comparación entre modos",
+                  body: (
+                    <p>Factor entre el precio probable del modo más caro y el más barato. Cuando es bajo (&lt;1.5×) la elección del modo no es crítica para el costo total.</p>
+                  ),
+                }}
+              />
+            )
           ) : (
             <SummaryCard
-              label="Diferencia entre modos"
-              value={`${rangeMultiplier.toFixed(1)}× más caro`}
-              hint={`El modo más caro cuesta ${rangeMultiplier.toFixed(1)} veces más que el más barato (${formatMXN(minProbable)} a ${formatMXN(maxProbable)}).`}
+              label="Comparación entre modos"
+              value="Solo 1 modo"
+              hint="Aún no hay estimaciones en otros modos para comparar. Corre la estimación en otro modo para ver la brecha de costo y decidir mejor."
               info={{
-                title: "Comparación entre modos",
+                title: "¿Por qué no hay comparación?",
                 body: (
-                  <p>Factor entre el precio probable del modo más caro y el más barato. Cuando es bajo (&lt;1.5×) la elección del modo no es crítica para el costo total.</p>
+                  <p>Esta tarjeta compara el precio del mismo proyecto bajo dos modos de desarrollo distintos (ej. tradicional vs bytecoding). Solo hay 1 estimación probable registrada hoy, así que no se puede comparar. Genera una estimación adicional en otro modo para ver la diferencia.</p>
                 ),
               }}
             />
@@ -642,13 +717,42 @@ export default async function ProjectDetailPage({
                   <TableHead className="text-right">Herramientas</TableHead>
                   <TableHead className="text-right">Admin</TableHead>
                   <TableHead className="text-right">Saldo del mes</TableHead>
-                  <TableHead className="text-right">Saldo acumulado</TableHead>
+                  <TableHead className="text-right">
+                    <span className="inline-flex items-center">
+                      Saldo acumulado
+                      <InfoTip title="¿Cómo se acumula?">
+                        <p><strong>Saldo acumulado del mes N = Saldo acumulado del mes N-1 + Saldo del mes N.</strong></p>
+                        <p>O sea: cada mes arrastra el resultado del anterior. Si en el mes 1 el saldo acumulado quedó en $50,000 y en el mes 2 el saldo del mes fue de $20,000, entonces el acumulado del mes 2 es $70,000 (el sistema ya lo sumó por ti — la columna "Operación" lo escribe explícito para que lo verifiques sin calculadora).</p>
+                        <p>Por eso el <strong>bache de caja</strong> es el mínimo de esta columna: el peor momento donde el proveedor lleva más dinero gastado de lo que ha cobrado.</p>
+                      </InfoTip>
+                    </span>
+                  </TableHead>
+                  <TableHead className="text-right text-xs">
+                    Operación
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
+                {/* Mes 0: punto de partida explícito */}
+                <TableRow className="bg-muted/40 text-xs">
+                  <TableCell className="font-medium">Mes 0</TableCell>
+                  <TableCell className="italic text-muted-foreground">Punto de partida (antes de arrancar)</TableCell>
+                  <TableCell className="text-right text-muted-foreground">—</TableCell>
+                  <TableCell className="text-right text-muted-foreground">—</TableCell>
+                  <TableCell className="text-right text-muted-foreground">—</TableCell>
+                  <TableCell className="text-right text-muted-foreground">—</TableCell>
+                  <TableCell className="text-right text-muted-foreground">—</TableCell>
+                  <TableCell className="text-right text-muted-foreground">$0</TableCell>
+                  <TableCell className="text-right font-mono">$0</TableCell>
+                  <TableCell className="text-right text-muted-foreground italic">inicio</TableCell>
+                </TableRow>
                 {project.cashflow.map((m, idx) => {
                   const concepto = conceptoDelMes(idx, Number(m.income));
                   const isBacheRow = idx === worstAccIdx && Number(m.accumulatedFlow) < 0;
+                  const acumAnterior = idx === 0 ? 0 : Number(project.cashflow[idx - 1].accumulatedFlow);
+                  const saldoMes = Number(m.netFlow);
+                  const acumNuevo = Number(m.accumulatedFlow);
+                  const operacion = `${formatMXN(acumAnterior)} ${saldoMes >= 0 ? "+" : "−"} ${formatMXN(Math.abs(saldoMes))} = ${formatMXN(acumNuevo)}`;
                   return (
                   <TableRow key={m.id} className={isBacheRow ? "bg-orange-50" : ""}>
                     <TableCell>Mes {m.monthNumber}</TableCell>
@@ -669,16 +773,22 @@ export default async function ProjectDetailPage({
                     <TableCell className="text-right text-muted-foreground">{formatMXN(-Number(m.taxOutflow))}</TableCell>
                     <TableCell className="text-right text-muted-foreground">{formatMXN(-Number(m.toolsOutflow))}</TableCell>
                     <TableCell className="text-right text-muted-foreground">{formatMXN(-Number(m.adminOutflow))}</TableCell>
-                    <TableCell className={`text-right font-medium ${Number(m.netFlow) >= 0 ? "text-green-700" : "text-destructive"}`}>{formatMXN(Number(m.netFlow))}</TableCell>
-                    <TableCell className={`text-right ${Number(m.accumulatedFlow) >= 0 ? "" : "text-destructive font-medium"}`}>
-                      {formatMXN(Number(m.accumulatedFlow))}
+                    <TableCell className={`text-right font-medium ${saldoMes >= 0 ? "text-green-700" : "text-destructive"}`}>{formatMXN(saldoMes)}</TableCell>
+                    <TableCell className={`text-right ${acumNuevo >= 0 ? "" : "text-destructive font-medium"}`}>
+                      {formatMXN(acumNuevo)}
                       {isBacheRow && <span className="block text-[10px] text-orange-700 font-bold mt-0.5">← BACHE DE CAJA</span>}
+                    </TableCell>
+                    <TableCell className="text-right text-[11px] font-mono text-muted-foreground whitespace-nowrap" title="acum mes anterior + saldo de este mes = acum nuevo">
+                      {operacion}
                     </TableCell>
                   </TableRow>
                   );
                 })}
               </TableBody>
             </Table>
+            <div className="px-4 py-3 border-t bg-muted/30 text-xs text-muted-foreground">
+              <p><strong className="text-foreground">Nota:</strong> el saldo acumulado SIEMPRE incluye los meses anteriores. La columna <strong>Operación</strong> muestra la suma explícita (acum mes anterior + saldo de este mes = acum nuevo) para que NO necesites calculadora. Si las cifras no cuadran, hay un bug — repórtalo.</p>
+            </div>
           </CardContent>
         </Card>
         );

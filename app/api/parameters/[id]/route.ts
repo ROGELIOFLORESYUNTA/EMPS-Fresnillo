@@ -18,7 +18,15 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const { id } = await params;
   const parameter = await prisma.parameter.findUnique({ where: { id } });
   if (!parameter) return NextResponse.json({ error: "Parámetro no encontrado" }, { status: 404 });
-  return NextResponse.json({ parameter });
+  // FASE G.I — adjunta el override del workspace si existe, para que la UI
+  // pueda mostrar el valor propio y el global lado a lado.
+  const workspace = await getCurrentWorkspace();
+  const override = workspace
+    ? await prisma.workspaceParameterOverride.findUnique({
+        where: { workspaceId_parameterKey: { workspaceId: workspace.id, parameterKey: parameter.key } },
+      })
+    : null;
+  return NextResponse.json({ parameter, override });
 }
 
 /**

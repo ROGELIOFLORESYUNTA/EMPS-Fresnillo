@@ -8,9 +8,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const { id } = await params;
     const body = await req.json();
     const data = estimateRequestSchema.parse(body);
-    const result = await runEstimate({ projectId: id, ...data });
-
     const workspace = await getCurrentWorkspace();
+    // FASE G.I — pasa workspaceId al motor para que aplique overrides de
+    // parámetros del usuario actual (IVA, IMSS, etc.) en este cálculo.
+    const result = await runEstimate({ projectId: id, ...data, workspaceId: workspace?.id ?? null });
+
     if (workspace) {
       await logWorkspaceActivity(workspace.id, "estimate_run", {
         projectId: id,

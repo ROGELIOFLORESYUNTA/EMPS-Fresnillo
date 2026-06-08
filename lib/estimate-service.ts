@@ -41,6 +41,10 @@ interface EstimateRequest {
   cashFlowAssumptions?: CashFlowAssumptions;
   capitalDeclaredByProvider?: number;
   createdById?: string;
+  /** FASE G.I — si se pasa, las ediciones del workspace en /admin/parametros
+   *  (WorkspaceParameterOverride) sobreescriben los valores globales en este
+   *  cálculo. Sin esto, el estimate usa solo los valores globales (default). */
+  workspaceId?: string | null;
 }
 
 interface EstimateOutput {
@@ -100,7 +104,10 @@ export async function runEstimate(req: EstimateRequest): Promise<EstimateOutput>
     throw new Error("El proyecto no tiene perfiles de equipo. Capture al menos uno antes de estimar.");
   }
 
-  const ctx = await loadAllForEstimate(project.targetDate?.getFullYear() ?? 2026);
+  const ctx = await loadAllForEstimate(
+    project.targetDate?.getFullYear() ?? 2026,
+    req.workspaceId ?? null,
+  );
   const projectInput = projectInputFromDb(
     project.modules.map((m) => ({
       complexity: m.complexity,
