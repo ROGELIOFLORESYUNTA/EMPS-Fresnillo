@@ -93,7 +93,7 @@ export default function EditarParametroPage({ params }: { params: Promise<{ id: 
   }
 
   async function handleRestore() {
-    if (!confirm(`¿Restaurar "${param!.key}" al valor por default del sistema?\n\nTu edición personal se borrará. Las estimaciones que ya corriste con tu valor NO se afectan (conservan snapshot).`)) return;
+    if (!confirm(`¿Restaurar "${param!.key}" al valor original del sistema?\n\nTu edición personal se va a borrar. Las estimaciones que ya corriste con tu valor NO se afectan (conservan el valor que usaron).`)) return;
     setRestoring(true);
     try {
       await apiDelete(`/api/parameters/${id}`);
@@ -128,13 +128,13 @@ export default function EditarParametroPage({ params }: { params: Promise<{ id: 
           <CardContent className="py-4 flex items-start gap-3">
             <UserCheck className="w-5 h-5 text-blue-700 mt-0.5 shrink-0" />
             <div className="flex-1 text-sm">
-              <p className="font-semibold text-blue-950">Estás viendo TU edición personal de este parámetro</p>
+              <p className="font-semibold text-blue-950">Tú editaste este parámetro. Solo te afecta a ti.</p>
               <p className="text-blue-900 mt-1">
-                Valor por default del sistema: <code className="bg-white px-1.5 py-0.5 rounded border border-blue-200 font-mono text-xs">{param.value && override.value !== param.value ? param.value : "(igual a tu edición)"}</code>{" "}
-                Tu valor: <code className="bg-white px-1.5 py-0.5 rounded border border-blue-200 font-mono text-xs">{override.value}</code>
+                Valor original del sistema: <code className="bg-white px-1.5 py-0.5 rounded border border-blue-200 font-mono text-xs">{param.value && override.value !== param.value ? param.value : "(igual a tu valor)"}</code>{" "}
+                · Tu valor: <code className="bg-white px-1.5 py-0.5 rounded border border-blue-200 font-mono text-xs">{override.value}</code>
               </p>
               <p className="text-xs text-blue-800 mt-1">
-                Tu edición solo afecta TUS estimaciones futuras. Otros usuarios siguen viendo el valor global. Para volver al global, usa el botón <strong>"Restaurar al global"</strong> abajo.
+                Los demás visitantes del sitio siguen viendo el valor original. Solo tus propias estimaciones futuras usan TU valor. Para regresar al original, usa el botón <strong>"Restaurar al valor original"</strong> abajo.
               </p>
             </div>
           </CardContent>
@@ -146,7 +146,7 @@ export default function EditarParametroPage({ params }: { params: Promise<{ id: 
           <CardHeader>
             <CardTitle className="text-base">Edición</CardTitle>
             <CardDescription>
-              Tu cambio se guarda SOLO en tu workspace (cookie). NO afecta a otros usuarios ni al valor por default del sistema. Las estimaciones ya creadas conservan el snapshot del valor que se usó.
+              Tu cambio se guarda <strong>solo para ti</strong> (queda en la galletita de tu navegador). Los demás visitantes siguen viendo el valor original. Las estimaciones que ya corriste conservan los valores con los que se calcularon — eso no cambia.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4">
@@ -234,10 +234,10 @@ export default function EditarParametroPage({ params }: { params: Promise<{ id: 
           {override ? (
             <Button type="button" variant="outline" onClick={handleRestore} disabled={restoring} className="border-blue-300 text-blue-800 hover:bg-blue-50">
               <RotateCcw className="w-4 h-4 mr-2" />
-              {restoring ? "Restaurando…" : "Restaurar al valor global del sistema"}
+              {restoring ? "Restaurando…" : "Restaurar al valor original del sistema"}
             </Button>
           ) : (
-            <span className="text-xs text-muted-foreground italic">No tienes edición personal de este parámetro — usas el global.</span>
+            <span className="text-xs text-muted-foreground italic">Aún no has cambiado este parámetro. Estás usando el valor original del sistema.</span>
           )}
           <div className="flex gap-2">
             <Button type="button" variant="outline" asChild>
