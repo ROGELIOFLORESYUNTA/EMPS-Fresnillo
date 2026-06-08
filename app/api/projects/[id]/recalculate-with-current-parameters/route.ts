@@ -39,6 +39,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       };
     };
 
+    const workspace = await getCurrentWorkspace();
+    // FASE G.I — workspaceId al motor para aplicar overrides del usuario
     const result = await runEstimate({
       projectId: id,
       mode: inputs.mode,
@@ -47,6 +49,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       costMode: inputs.costMode,
       scenarios: inputs.scenarios,
       cashFlowAssumptions: inputs.cashFlowAssumptions,
+      workspaceId: workspace?.id ?? null,
     });
 
     await prisma.auditLog.create({
@@ -58,7 +61,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       },
     });
 
-    const workspace = await getCurrentWorkspace();
     if (workspace) {
       await logWorkspaceActivity(workspace.id, "project_recalculated", {
         projectId: id,

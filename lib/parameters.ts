@@ -20,7 +20,10 @@ interface LoadedParam {
   notes: string | null;
 }
 
-async function loadAllForYear(year = DEFAULT_YEAR): Promise<LoadedParam[]> {
+async function loadAllForYear(
+  year = DEFAULT_YEAR,
+  workspaceId: string | null = null,
+): Promise<LoadedParam[]> {
   const rows = await prisma.parameter.findMany({
     where: {
       year,
@@ -28,7 +31,7 @@ async function loadAllForYear(year = DEFAULT_YEAR): Promise<LoadedParam[]> {
       OR: [{ state: DEFAULT_STATE }, { state: null }],
     },
   });
-  return rows.map((r) => ({
+  const base: LoadedParam[] = rows.map((r) => ({
     key: r.key,
     value: r.value,
     unit: r.unit,
@@ -38,6 +41,43 @@ async function loadAllForYear(year = DEFAULT_YEAR): Promise<LoadedParam[]> {
     effectiveUntil: r.effectiveUntil,
     notes: r.notes,
   }));
+
+  // FASE G.I — Override por workspace: si el visitante tiene un valor propio
+  // para una clave fiscal/laboral, lo aplicamos arriba del global. Mantiene
+  // metadata (source, effectiveFrom) del registro original como referencia.
+  if (!workspaceId) return base;
+
+  const overrides = await prisma.workspaceParameterOverride.findMany({
+    where: { workspaceId },
+  });
+  if (overrides.length === 0) return base;
+
+  const overrideByKey = new Map(overrides.map((o) => [o.parameterKey, o]));
+  const baseKeys = new Set(base.map((b) => b.key));
+  return base.map((b) => {
+    const o = overrideByKey.get(b.key);
+    if (!o) return b;
+    return {
+      ...b,
+      value: o.value,
+      unit: o.unit,
+      source: `${o.source} (override workspace; valor global: ${b.value})`,
+      notes: o.notes ?? b.notes,
+    };
+  }).concat(
+    overrides
+      .filter((o) => !baseKeys.has(o.parameterKey))
+      .map((o) => ({
+        key: o.parameterKey,
+        value: o.value,
+        unit: o.unit,
+        source: o.source,
+        sourceUrl: null,
+        effectiveFrom: o.createdAt,
+        effectiveUntil: null,
+        notes: o.notes,
+      })),
+  );
 }
 
 function getNum(rows: LoadedParam[], key: string): number {
@@ -54,8 +94,11 @@ function getJson<T>(rows: LoadedParam[], key: string): T {
   return JSON.parse(row.value) as T;
 }
 
-export async function loadFiscalRates(year = DEFAULT_YEAR): Promise<FiscalRates> {
-  const rows = await loadAllForYear(year);
+export async function loadFiscalRates(
+  year = DEFAULT_YEAR,
+  workspaceId: string | null = null,
+): Promise<FiscalRates> {
+  const rows = await loadAllForYear(year, workspaceId);
   const ceavTable = getJson<{ table: Record<string, number> }>(rows, "IMSS_CEAV_PATRON_2026").table
     ?? getJson<Record<string, number>>(rows, "IMSS_CEAV_PATRON_2026");
 
@@ -91,28 +134,40 @@ export async function loadFiscalRates(year = DEFAULT_YEAR): Promise<FiscalRates>
   };
 }
 
-export async function loadDevModeFactors(year = DEFAULT_YEAR): Promise<DevModeFactors> {
-  const rows = await loadAllForYear(year);
+export async function loadDevModeFactors(
+  year = DEFAULT_YEAR,
+  workspaceId: string | null = null,
+): Promise<DevModeFactors> {
+  const rows = await loadAllForYear(year, workspaceId);
   return getJson<DevModeFactors>(rows, "DEV_MODE_FACTORS");
 }
 
-export async function loadDevModeVelocity(year = DEFAULT_YEAR): Promise<DevModeVelocity> {
-  const rows = await loadAllForYear(year);
+export async function loadDevModeVelocity(
+  year = DEFAULT_YEAR,
+  workspaceId: string | null = null,
+): Promise<DevModeVelocity> {
+  const rows = await loadAllForYear(year, workspaceId);
   return getJson<DevModeVelocity>(rows, "DEV_MODE_VELOCITY");
 }
 
-export async function loadScenarioFactors(year = DEFAULT_YEAR): Promise<ScenarioFactors> {
-  const rows = await loadAllForYear(year);
+export async function loadScenarioFactors(
+  year = DEFAULT_YEAR,
+  workspaceId: string | null = null,
+): Promise<ScenarioFactors> {
+  const rows = await loadAllForYear(year, workspaceId);
   return getJson<ScenarioFactors>(rows, "SCENARIO_FACTORS");
 }
 
-export async function loadAllForEstimate(year = DEFAULT_YEAR) {
+export async function loadAllForEstimate(
+  year = DEFAULT_YEAR,
+  workspaceId: string | null = null,
+) {
   const [rates, factors, velocity, scenarios, raw] = await Promise.all([
-    loadFiscalRates(year),
-    loadDevModeFactors(year),
-    loadDevModeVelocity(year),
-    loadScenarioFactors(year),
-    loadAllForYear(year),
+    loadFiscalRates(year, workspaceId),
+    loadDevModeFactors(year, workspaceId),
+    loadDevModeVelocity(year, workspaceId),
+    loadScenarioFactors(year, workspaceId),
+    loadAllForYear(year, workspaceId),
   ]);
   return { rates, factors, velocity, scenarios, snapshot: raw };
 }

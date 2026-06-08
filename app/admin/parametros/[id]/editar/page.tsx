@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { api, apiPut, apiDelete } from "@/lib/api-client";
-import { ChevronLeft, Save, Trash2, AlertCircle } from "lucide-react";
+import { ChevronLeft, Save, RotateCcw, AlertCircle, UserCheck } from "lucide-react";
 import { ParameterManualSheet } from "@/components/parameter-manual-sheet";
 
 interface ParameterRow {
@@ -28,16 +28,35 @@ interface ParameterRow {
   notes: string | null;
 }
 
+interface OverrideRow {
+  id: string;
+  workspaceId: string;
+  parameterKey: string;
+  value: string;
+  unit: string;
+  source: string;
+  notes: string | null;
+}
+
 export default function EditarParametroPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
   const [param, setParam] = useState<ParameterRow | null>(null);
+  const [override, setOverride] = useState<OverrideRow | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [restoring, setRestoring] = useState(false);
 
   useEffect(() => {
-    api<{ parameter: ParameterRow }>(`/api/parameters/${id}`)
-      .then((res) => setParam(res.parameter))
+    api<{ parameter: ParameterRow; override: OverrideRow | null }>(`/api/parameters/${id}`)
+      .then((res) => {
+        setParam(res.parameter);
+        setOverride(res.override);
+        // Si hay override, precargar el input con tu valor (no el global)
+        if (res.override) {
+          setParam((prev) => prev ? { ...prev, value: res.override!.value } : prev);
+        }
+      })
       .catch((e) => setError(e instanceof Error ? e.message : "Error al cargar"));
   }, [id]);
 
@@ -73,13 +92,15 @@ export default function EditarParametroPage({ params }: { params: Promise<{ id: 
     }
   }
 
-  async function handleDelete() {
-    if (!confirm(`¿Marcar el parámetro "${param!.key}" como vencido? Las estimaciones existentes no se afectan.`)) return;
+  async function handleRestore() {
+    if (!confirm(`¿Restaurar "${param!.key}" al valor por default del sistema?\n\nTu edición personal se borrará. Las estimaciones que ya corriste con tu valor NO se afectan (conservan snapshot).`)) return;
+    setRestoring(true);
     try {
       await apiDelete(`/api/parameters/${id}`);
       router.push("/admin/parametros");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error al eliminar");
+      setError(e instanceof Error ? e.message : "Error al restaurar");
+      setRestoring(false);
     }
   }
 
@@ -102,12 +123,30 @@ export default function EditarParametroPage({ params }: { params: Promise<{ id: 
         </p>
       </div>
 
+      {override && (
+        <Card className="border-blue-300 bg-blue-50/50">
+          <CardContent className="py-4 flex items-start gap-3">
+            <UserCheck className="w-5 h-5 text-blue-700 mt-0.5 shrink-0" />
+            <div className="flex-1 text-sm">
+              <p className="font-semibold text-blue-950">Estás viendo TU edición personal de este parámetro</p>
+              <p className="text-blue-900 mt-1">
+                Valor por default del sistema: <code className="bg-white px-1.5 py-0.5 rounded border border-blue-200 font-mono text-xs">{param.value && override.value !== param.value ? param.value : "(igual a tu edición)"}</code>{" "}
+                Tu valor: <code className="bg-white px-1.5 py-0.5 rounded border border-blue-200 font-mono text-xs">{override.value}</code>
+              </p>
+              <p className="text-xs text-blue-800 mt-1">
+                Tu edición solo afecta TUS estimaciones futuras. Otros usuarios siguen viendo el valor global. Para volver al global, usa el botón <strong>"Restaurar al global"</strong> abajo.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <form onSubmit={handleSave}>
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Edición</CardTitle>
             <CardDescription>
-              Los cambios quedan registrados en la bitácora del sistema. Las estimaciones existentes conservan los valores con los que fueron calculadas.
+              Tu cambio se guarda SOLO en tu workspace (cookie). NO afecta a otros usuarios ni al valor por default del sistema. Las estimaciones ya creadas conservan el snapshot del valor que se usó.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4">
@@ -191,10 +230,15 @@ export default function EditarParametroPage({ params }: { params: Promise<{ id: 
           </CardContent>
         </Card>
 
-        <div className="flex justify-between gap-3 mt-4">
-          <Button type="button" variant="destructive" onClick={handleDelete}>
-            <Trash2 className="w-4 h-4 mr-2" />Marcar como vencido
-          </Button>
+        <div className="flex justify-between gap-3 mt-4 flex-wrap">
+          {override ? (
+            <Button type="button" variant="outline" onClick={handleRestore} disabled={restoring} className="border-blue-300 text-blue-800 hover:bg-blue-50">
+              <RotateCcw className="w-4 h-4 mr-2" />
+              {restoring ? "Restaurando…" : "Restaurar al valor global del sistema"}
+            </Button>
+          ) : (
+            <span className="text-xs text-muted-foreground italic">No tienes edición personal de este parámetro — usas el global.</span>
+          )}
           <div className="flex gap-2">
             <Button type="button" variant="outline" asChild>
               <Link href="/admin/parametros">Cancelar</Link>
