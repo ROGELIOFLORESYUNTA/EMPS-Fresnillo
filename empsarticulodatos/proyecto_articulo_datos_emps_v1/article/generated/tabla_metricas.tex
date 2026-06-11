@@ -1,0 +1,19 @@
+\begin{table}[t]
+\centering
+\caption{M\'etricas de los modelos sobre $\log(1+\text{esfuerzo})$ (conjunto de prueba, partici\'on 75/25).}
+\label{tab:metricas}
+\scriptsize
+\setlength{\tabcolsep}{3.5pt}
+\begin{tabular}{llrrrrr}
+\toprule
+Dataset & Modelo & $n_{ent}$ & $n_{pru}$ & MAE & RMSE & $R^2$ \\
+\midrule
+JOSSE & L\'inea base & 17389 & 5797 & 0.667 & 0.870 & -0.000 \\
+JOSSE & Reg.\ lineal & 17389 & 5797 & 0.486 & 0.680 & 0.389 \\
+JOSSE & Bosque aleat. & 17389 & 5797 & 0.517 & 0.722 & 0.312 \\
+SEERA & L\'inea base & 90 & 30 & 0.982 & 1.175 & -0.239 \\
+SEERA & Reg.\ lineal & 90 & 30 & 0.660 & 0.856 & 0.342 \\
+SEERA & Bosque aleat. & 90 & 30 & 0.363 & 0.462 & 0.808 \\
+\bottomrule
+\end{tabular}
+\end{table}

@@ -1,0 +1,16 @@
+\begin{table}
+\caption{Métricas de modelos de estimación de esfuerzo.}
+\label{tab:model_metrics}
+\begin{tabular}{llrrrrrr}
+\toprule
+dataset & modelo & n_train & n_test & MAE & RMSE & MAPE_pct & R2 \\
+\midrule
+JOSSE & baseline_media & 17389 & 5797 & 0.667 & 0.870 & 127.959 & -0.000 \\
+JOSSE & regresion_lineal & 17389 & 5797 & 0.486 & 0.680 & 82.901 & 0.389 \\
+JOSSE & bosque_aleatorio & 17389 & 5797 & 0.517 & 0.722 & 87.796 & 0.312 \\
+SEERA & baseline_media & 90 & 30 & 0.982 & 1.175 & 10.704 & -0.239 \\
+SEERA & regresion_lineal & 90 & 30 & 0.660 & 0.856 & 7.277 & 0.342 \\
+SEERA & bosque_aleatorio & 90 & 30 & 0.363 & 0.462 & 4.126 & 0.808 \\
+\bottomrule
+\end{tabular}
+\end{table}
