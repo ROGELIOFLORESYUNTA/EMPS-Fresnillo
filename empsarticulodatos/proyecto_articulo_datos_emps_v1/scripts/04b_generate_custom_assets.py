@@ -122,7 +122,7 @@ tabla_disp = (
     "\\begin{table}[t]\n"
     "\\centering\n"
     "\\caption{Esfuerzo real (horas) seg\\'un presencia de t\\'erminos de "
-    f"cambio/mantenimiento en JOSSE. Mann--Whitney $p={pval:.2f}$.}}\n"
+    f"cambio/mantenimiento en JOSSE. Mann-Whitney $p={pval:.2f}$.}}\n"
     "\\label{tab:dispersion}\n"
     "\\scriptsize\n"
     "\\setlength{\\tabcolsep}{3.5pt}\n"

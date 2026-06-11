@@ -17,10 +17,10 @@ Tu sistema EMPS-Fresnillo ya existe, pero todavía no tiene suficientes proyecto
 - **Qué trae cada tarea**: el texto de la solicitud (título + descripción), y las **horas reales** que tomó hacerla (registradas en los worklogs de Jira).
 - **Lo especial**: 4,329 de esas tareas también tienen la **estimación que dio un experto ANTES de hacerlas**. Eso permite comparar "lo que el experto dijo" vs "lo que realmente tomó".
 - **Quién la publicó**: Alhamed y Storer (2022), Universidad de Glasgow, en Zenodo.
-- **Por qué la elegiste**: es de las pocas bases públicas con esfuerzo real Y estimación experta por tarea. Tu hipótesis dice que estimar "a ojo" no basta — esta base lo puede comprobar o refutar.
+- **Por qué la elegiste**: es de las pocas bases públicas con esfuerzo real Y estimación experta por tarea. Tu hipótesis dice que estimar "a ojo" no basta, y esta base lo puede comprobar o refutar.
 
 ### SEERA (el contraste)
-- **Qué es**: 120 proyectos completos de software de 42 organizaciones en entornos con **restricciones técnicas y económicas** (proyectos de Sudán — economías con limitaciones).
+- **Qué es**: 120 proyectos completos de software de 42 organizaciones en entornos con **restricciones técnicas y económicas** (proyectos de Sudán, economías con limitaciones).
 - **Qué trae**: 76 variables por proyecto, incluyendo esfuerzo **estimado al inicio** y esfuerzo **real al final**.
 - **Por qué la elegiste**: el contexto de restricciones económicas se parece más al de un proveedor municipal mexicano que los datos de Google o Microsoft. Y permite ver la desviación estimado-vs-real a nivel PROYECTO (no solo tarea).
 
@@ -37,7 +37,7 @@ Tu sistema EMPS-Fresnillo ya existe, pero todavía no tiene suficientes proyecto
 - En SEERA, el **80.8% de los proyectos costó MÁS esfuerzo del estimado**.
 - La desviación mediana fue **+58.6%**: el proyecto típico costó casi 60% más de lo prometido.
 - Solo el 16.7% de los proyectos quedó dentro de ±15%.
-- En español: si un ayuntamiento acepta una cotización "a ojo", 8 de cada 10 veces el proyecto va a costar más — y típicamente 60% más. ESTE es el argumento de por qué Fresnillo necesita estimación seria.
+- En español: si un ayuntamiento acepta una cotización "a ojo", 8 de cada 10 veces el proyecto va a costar más (y típicamente 60% más). ESTE es el argumento de por qué Fresnillo necesita estimación seria.
 
 ### Resultado 3: "Las variables tempranas SÍ predicen" (H3)
 - Con solo el TEXTO de la solicitud (longitud, palabras, proyecto), una regresión lineal explica el 39% de la variación del esfuerzo en JOSSE (R² = 0.39). La línea base (adivinar el promedio) explica 0%.
@@ -46,7 +46,7 @@ Tu sistema EMPS-Fresnillo ya existe, pero todavía no tiene suficientes proyecto
 
 ### Resultado "bonus": el resultado NULO de H2 (esto es ORO académico)
 - Probaste si las tareas con palabras tipo "change/fix/bug" tienen esfuerzo distinto. Resultado: NO (p = 0.57, no significativo).
-- ¿Eso es malo? NO — es un resultado honesto que además **justifica tu diseño**: detectar cambios por palabras clave NO funciona, por eso EMPS-Fresnillo captura los cambios de forma ESTRUCTURADA (tipo, fase, artefactos afectados) y no adivinándolos del texto.
+- ¿Eso es malo? NO. Es un resultado honesto que además **justifica tu diseño**: detectar cambios por palabras clave NO funciona, por eso EMPS-Fresnillo captura los cambios de forma ESTRUCTURADA (tipo, fase, artefactos afectados) y no adivinándolos del texto.
 - Si la maestra pregunta "¿y salió todo como esperabas?" → "No, la H2 no se confirmó, y eso refinó el diseño del prototipo. Reportarlo es parte de la honestidad metodológica."
 
 ---
@@ -65,7 +65,7 @@ Tu sistema EMPS-Fresnillo ya existe, pero todavía no tiene suficientes proyecto
 | **log(1+esfuerzo)** | Transformación para que los proyectos gigantes no dominen el análisis. Práctica estándar con datos de "cola larga". |
 | **Mann-Whitney** | Prueba estadística para comparar dos grupos sin asumir distribución normal. p < 0.05 = diferencia real; p = 0.57 = no hay evidencia de diferencia. |
 | **Partición 75/25** | El modelo se entrena con 75% de los datos y se evalúa con el 25% que NUNCA vio. Así se evita hacer trampa. |
-| **Fuga de datos (leakage)** | Usar como predictor algo que solo se conoce DESPUÉS (ej. la duración real). En SEERA excluimos esas variables a propósito — puedes presumir esto si te preguntan de rigor. |
+| **Fuga de datos (leakage)** | Usar como predictor algo que solo se conoce DESPUÉS (ej. la duración real). En SEERA excluimos esas variables a propósito; puedes presumir esto si te preguntan de rigor. |
 
 ---
 
@@ -78,7 +78,7 @@ R: JOSSE como principal (23,186 tareas con esfuerzo real, 4,329 con estimación 
 R: En la sección 4.2: comparé línea base, regresión lineal y bosque aleatorio con scikit-learn, partición 75/25, métricas MAE/RMSE/R². Elegí modelos explicables a propósito: para un avance preliminar importa más entender qué variables pesan que maximizar la precisión.
 
 **P: ¿Qué tiene que ver esto con Fresnillo?**
-R: Tres cosas. Primero, demuestra que estimar "a ojo" falla (60-83% fuera del umbral) — que es como se cotizan hoy los proyectos municipales. Segundo, demuestra que capturar variables estructuradas al inicio predice (R² hasta 0.81) — que es lo que hace mi prototipo. Tercero, el contexto de SEERA (restricciones económicas) es el más parecido al de proveedores municipales mexicanos entre las bases públicas disponibles.
+R: Tres cosas. Primero, demuestra que estimar "a ojo" falla (60-83% fuera del umbral), que es como se cotizan hoy los proyectos municipales. Segundo, demuestra que capturar variables estructuradas al inicio predice (R² hasta 0.81), que es lo que hace mi prototipo. Tercero, el contexto de SEERA (restricciones económicas) es el más parecido al de proveedores municipales mexicanos entre las bases públicas disponibles.
 
 **P: ¿Por qué no usaste datos de Fresnillo directamente?**
 R: Porque no existe un historial público de proyectos de software municipales con esfuerzo estimado y real. Eso es precisamente la brecha que mi prototipo ataca: es el instrumento de captura para construir ese dataset local. Este artículo es la fase preliminar con datos públicos; la validación local es la siguiente fase.
@@ -90,7 +90,7 @@ R: No se confirmó con el método de palabras clave (p=0.57). Lo reporto como re
 R: El pipeline es reproducible: scripts de Python que descargan los datos de Zenodo, los preparan, corren los modelos y generan las tablas y figuras del artículo automáticamente. Cualquiera puede repetir el análisis con los mismos scripts (están en la carpeta del proyecto). Los números del PDF salen de los CSVs generados, sin transcripción manual.
 
 **P: ¿Por qué el R² de SEERA (0.81) es tan alto comparado con JOSSE (0.39)?**
-R: SEERA predice a nivel PROYECTO con 21 variables ricas (tamaño estimado, equipo, organización); JOSSE predice a nivel TAREA solo con el texto de la solicitud. Más información estructurada → mejor predicción. Además SEERA es pequeño (30 casos de prueba) así que su R² se reporta con cautela — está dicho en "Amenazas a la validez".
+R: SEERA predice a nivel PROYECTO con 21 variables ricas (tamaño estimado, equipo, organización); JOSSE predice a nivel TAREA solo con el texto de la solicitud. Más información estructurada da mejor predicción. Además SEERA es pequeño (30 casos de prueba) así que su R² se reporta con cautela; está dicho en "Amenazas a la validez".
 
 ---
 
@@ -126,9 +126,9 @@ El PDF queda en `article/main.pdf`. Las tablas en `outputs/tables/`, las figuras
 | **23,186** | tareas de JOSSE |
 | **4,329** | tareas con estimación experta |
 | **120** | proyectos de SEERA |
-| **39.8%** | PRED(15) de los expertos — solo 4 de 10 le atinan a ±15% |
+| **39.8%** | PRED(15) de los expertos: solo 4 de 10 le atinan a ±15% |
 | **80.8%** | proyectos de SEERA subestimados |
 | **+58.6%** | desviación mediana del esfuerzo en SEERA |
 | **0.39** | R² de la regresión lineal en JOSSE (variables de texto) |
 | **0.81** | R² del bosque aleatorio en SEERA (variables tempranas) |
-| **p = 0.57** | la prueba de H2 — sin diferencia significativa (resultado nulo honesto) |
+| **p = 0.57** | la prueba de H2: sin diferencia significativa (resultado nulo honesto) |

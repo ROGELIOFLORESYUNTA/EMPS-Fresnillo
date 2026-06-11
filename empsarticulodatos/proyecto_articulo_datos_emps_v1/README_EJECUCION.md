@@ -1,4 +1,4 @@
-# Proyecto de artículo con datasets públicos — EMPS-Fresnillo
+# Proyecto de artículo con datasets públicos (EMPS-Fresnillo)
 
 Este paquete sirve para producir un artículo científico con análisis de datos sin depender todavía de datos reales capturados por EMPS-Fresnillo.
 
@@ -6,22 +6,22 @@ El objetivo es usar datasets públicos de ingeniería de software para obtener r
 
 ## Datasets seleccionados
 
-1. **JOSSE** — dataset principal para estimación de esfuerzo a nivel tarea.
+1. **JOSSE**: dataset principal para estimación de esfuerzo a nivel tarea.
    - Contiene tareas de desarrollo y mantenimiento de Jira para Apache, JBoss y Spring.
    - Incluye esfuerzo real y una parte de tareas con estimaciones expertas.
    - Sirve para regresión entre estimación temprana y esfuerzo real.
 
-2. **SEERA** — dataset secundario para estimación de esfuerzo a nivel proyecto en entornos restringidos.
+2. **SEERA**: dataset secundario para estimación de esfuerzo a nivel proyecto en entornos restringidos.
    - Contiene 120 proyectos de 42 organizaciones y 76 atributos.
    - Es relevante porque proviene de un entorno técnica y económicamente restringido.
 
-3. **Public Jira Dataset** — opcional por tamaño.
+3. **Public Jira Dataset**: opcional por tamaño.
    - Es fuerte para estudiar cambios, comentarios, links y evolución de issues.
    - No se recomienda para la primera corrida porque pesa varios GB.
 
-## Flujo EJECUTADO (2026-06-11) — pipeline real
+## Flujo EJECUTADO (2026-06-11): pipeline real
 
-El flujo original (scripts 00–04) se ajustó tras inspeccionar los formatos reales
+El flujo original (scripts 00 a 04) se ajustó tras inspeccionar los formatos reales
 de los datasets. Esta es la secuencia que produjo el artículo final:
 
 ```powershell
@@ -33,7 +33,7 @@ py -3 -m venv .venv
 # 2. Descarga desde Zenodo (funcionó tal cual)
 .venv\Scripts\python scripts\00_download_datasets.py
 
-# 3. Descubrimiento de formatos (script 01) — hallazgos clave:
+# 3. Descubrimiento de formatos (script 01). Hallazgos clave:
 #    - JOSSE curado vive en SQLite (josse/JOSSE_18092020.sqlite3, tabla `case`),
 #      NO en los CSVs crudos de Jira de dataset_replication/.
 #    - SEERA limpio vive en el ARFF principal; los Excel tienen headers rotos.
@@ -72,11 +72,22 @@ cd article
 
 ## Qué sale
 
-- `outputs/tables/` — model_metrics, josse_expert_vs_actual, seera_estimate_vs_actual, josse_change_dispersion (+ change_like_stats)
-- `outputs/figures/` — 6 figuras PNG (scatter experto/real, scatter SEERA, predicho/real, 2 distribuciones, boxplot)
-- `article/generated/` — tabla_*.tex, figuras.tex, cifras.tex (macros)
-- `article/main.pdf` — el artículo (6 páginas, 2 columnas, 16 referencias)
-- `docs/04_guia_para_entender_y_defender.md` — guía personal de defensa
+- `outputs/tables/`: model_metrics, josse_expert_vs_actual, seera_estimate_vs_actual, josse_change_dispersion (+ change_like_stats)
+- `outputs/figures/`: 6 figuras PNG (scatter experto/real, scatter SEERA, predicho/real, 2 distribuciones, boxplot)
+- `article/generated/`: tabla_*.tex, figuras.tex, cifras.tex (macros)
+- `article/main.pdf`: el artículo (6 páginas, 2 columnas, 16 referencias)
+- `article/articulo_editable.docx`: el MISMO artículo en Word editable (4 tablas + 6 figuras embebidas + referencias), generado con pandoc desde main.tex. Para editar "cualquier puntito" sin tocar LaTeX.
+- `docs/04_guia_para_entender_y_defender.md` (+ .docx): guía personal de defensa
+
+## Verificación de resultados
+
+`scripts/05_verify_results.py` recalcula desde cero (con código independiente
+del pipeline) cada número que aparece en el artículo y lo compara contra las
+tablas generadas. Última corrida: **26/26 PASS**.
+
+```powershell
+.venv\Scripts\python scripts\05_verify_results.py
+```
 
 ## Desviaciones respecto al plan original
 

@@ -17,7 +17,7 @@
 \large Análisis cuantitativo preliminar con los datasets públicos JOSSE y SEERA}
 \author{Rogelio Flores Rodríguez\\
 \small Ingeniería en Software, Universidad Autónoma de Zacatecas\\
-\small Seminario de Investigación --- Docente: Dra. Julieta Guadalupe Rodríguez Ruiz}
+\small Seminario de Investigación. Docente: Dra. Julieta Guadalupe Rodríguez Ruiz}
 \date{\small Junio de 2026}
 
 \begin{document}
@@ -31,7 +31,7 @@
 \noindent\textbf{Palabras clave:} estimación temprana, esfuerzo de software, control de cambios, gobiernos municipales, datasets públicos, JOSSE, SEERA, Fresnillo.
 
 \section{Introducción}
-El software se ha convertido en infraestructura administrativa para los gobiernos municipales. Un sistema de trámites, recaudación, expedientes o atención ciudadana no es solamente una aplicación: modifica tiempos de respuesta, responsabilidades y evidencia documental. En el caso de Fresnillo, el Plan Municipal de Desarrollo 2025--2027 plantea fortalecer la gestión administrativa mediante procesos innovadores, eficientes y transparentes \cite{fresnillo2025}, lo que vuelve pertinente estudiar cómo se estiman y controlan los proyectos de software antes de que el costo, el calendario y el alcance se vuelvan difíciles de corregir.
+El software se ha convertido en infraestructura administrativa para los gobiernos municipales. Un sistema de trámites, recaudación, expedientes o atención ciudadana no es solamente una aplicación: modifica tiempos de respuesta, responsabilidades y evidencia documental. En el caso de Fresnillo, el Plan Municipal de Desarrollo 2025-2027 plantea fortalecer la gestión administrativa mediante procesos innovadores, eficientes y transparentes \cite{fresnillo2025}, lo que vuelve pertinente estudiar cómo se estiman y controlan los proyectos de software antes de que el costo, el calendario y el alcance se vuelvan difíciles de corregir.
 
 En proyectos municipales la estimación temprana se realiza con información incompleta. Las áreas usuarias expresan necesidades en lenguaje general, sin distinguir si solicitan una pantalla, una regla de negocio, una integración o una obligación de auditoría. El proveedor, a su vez, suele cotizar con base en experiencia informal o presión comercial, sin calcular con precisión los cambios, el mantenimiento, las obligaciones fiscales y laborales mexicanas, ni el flujo de efectivo necesario para sostener el proyecto \cite{jorgensen2007}. El problema aumenta cuando el proyecto cambia: una solicitud aparentemente menor puede afectar arquitectura, datos, pruebas, capacitación y mantenimiento, y la literatura muestra que el costo de un cambio crece conforme avanza la fase del proyecto \cite{boehm1981}.
 
@@ -69,7 +69,7 @@ La precisión de las estimaciones humanas se evaluó con los indicadores clásic
 
 \subsection{Hipótesis operacionales}
 \textbf{H1.} La estimación basada únicamente en juicio experto es insuficiente: se espera que una fracción mayoritaria de las estimaciones expertas (JOSSE) y de proyecto (SEERA) exceda el umbral de $\pm$15\,\%.
-\textbf{H2.} Las tareas asociadas a cambio o mantenimiento presentan distribución de esfuerzo distinta a las demás; se contrasta con la prueba de Mann--Whitney sobre los dos grupos de JOSSE.
+\textbf{H2.} Las tareas asociadas a cambio o mantenimiento presentan distribución de esfuerzo distinta a las demás; se contrasta con la prueba de Mann-Whitney sobre los dos grupos de JOSSE.
 \textbf{H3.} Variables tempranas permiten superar a la línea base de promedio: se espera $R^2$ positivo y reducción de MAE en ambos datasets.
 
 \section{Resultados}
@@ -88,7 +88,7 @@ La Tabla~\ref{tab:metricas} compara los tres modelos. En JOSSE, la regresión li
 \input{generated/tabla_metricas.tex}
 
 \subsection{Tareas asociadas a cambio (H2)}
-La Tabla~\ref{tab:dispersion} contrasta el esfuerzo de las tareas que contienen términos de cambio o mantenimiento en su texto (26\,\% del corpus) contra el resto. Las distribuciones no difieren de forma estadísticamente significativa (Mann--Whitney, $p=\pCambio$) y las medidas de dispersión son comparables. La Figura~\ref{fig:boxplot} confirma visualmente la similitud. Este resultado nulo es informativo: la sola presencia de palabras clave en el texto de una tarea no discrimina su esfuerzo, lo que indica que la detección léxica es una aproximación insuficiente para gestionar cambios.
+La Tabla~\ref{tab:dispersion} contrasta el esfuerzo de las tareas que contienen términos de cambio o mantenimiento en su texto (26\,\% del corpus) contra el resto. Las distribuciones no difieren de forma estadísticamente significativa (Mann-Whitney, $p=\pCambio$) y las medidas de dispersión son comparables. La Figura~\ref{fig:boxplot} confirma visualmente la similitud. Este resultado nulo es informativo: la sola presencia de palabras clave en el texto de una tarea no discrimina su esfuerzo, lo que indica que la detección léxica es una aproximación insuficiente para gestionar cambios.
 
 \input{generated/tabla_dispersion.tex}
 
@@ -97,11 +97,11 @@ La Tabla~\ref{tab:dispersion} contrasta el esfuerzo de las tareas que contienen 
 \section{Discusión}
 Los tres resultados convergen hacia las premisas del modelo de estimación integral propuesto para Fresnillo.
 
-Primero, H1 queda apoyada en ambos datasets. El juicio experto ordena pero no dimensiona: en JOSSE seis de cada diez estimaciones expertas exceden el umbral de $\pm$15\,\%, y en SEERA --- el dataset cuyo contexto de restricciones técnicas y económicas más se parece al de proveedores municipales mexicanos --- ocho de cada diez proyectos costaron más esfuerzo del estimado, con una mediana de +\desvSeera. Para un ayuntamiento, este número tiene lectura directa: una cotización aceptada por intuición tiene alta probabilidad de derivar en sobrecostos, renegociaciones o proyectos abandonados. Para un proveedor, subestimar 59\,\% el esfuerzo puede significar operar varios meses por debajo del costo real.
+Primero, H1 queda apoyada en ambos datasets. El juicio experto ordena pero no dimensiona: en JOSSE seis de cada diez estimaciones expertas exceden el umbral de $\pm$15\,\%, y en SEERA, el dataset cuyo contexto de restricciones técnicas y económicas más se parece al de proveedores municipales mexicanos, ocho de cada diez proyectos costaron más esfuerzo del estimado, con una mediana de +\desvSeera. Para un ayuntamiento, este número tiene lectura directa: una cotización aceptada por intuición tiene alta probabilidad de derivar en sobrecostos, renegociaciones o proyectos abandonados. Para un proveedor, subestimar 59\,\% el esfuerzo puede significar operar varios meses por debajo del costo real.
 
-Segundo, H3 también queda apoyada: variables observables en etapas tempranas --- el texto de la solicitud en JOSSE, las características del proyecto y la organización en SEERA --- superan de forma consistente a la línea base. El $R^2$ de \rdosSeeraRF{} en SEERA indica que una parte sustancial de la variación del esfuerzo es explicable con información disponible antes de ejecutar el proyecto. Esto no implica que un modelo entrenado en datos públicos sea transferible a Fresnillo; implica que capturar variables estructuradas desde el inicio tiene valor predictivo y que un instrumento local de captura es la inversión correcta.
+Segundo, H3 también queda apoyada: las variables observables en etapas tempranas (el texto de la solicitud en JOSSE; las características del proyecto y de la organización en SEERA) superan de forma consistente a la línea base. El $R^2$ de \rdosSeeraRF{} en SEERA indica que una parte sustancial de la variación del esfuerzo es explicable con información disponible antes de ejecutar el proyecto. Esto no implica que un modelo entrenado en datos públicos sea transferible a Fresnillo; implica que capturar variables estructuradas desde el inicio tiene valor predictivo y que un instrumento local de captura es la inversión correcta.
 
-Tercero, el resultado nulo de H2 delimita el diseño: detectar cambios mediante palabras clave en texto libre no funciona. Esto respalda la decisión del prototipo EMPS-Fresnillo de capturar los cambios de forma estructurada --- tipo de cambio, fase del proyecto, artefactos afectados, claridad, riesgo y regla de cobro --- en lugar de inferirlos del lenguaje natural. La consecuencia metodológica es directa: el costo de un cambio se calcula a partir de variables de impacto y se presenta como rango justificado, no como cifra manual ni como inferencia léxica.
+Tercero, el resultado nulo de H2 delimita el diseño: detectar cambios mediante palabras clave en texto libre no funciona. Esto respalda la decisión del prototipo EMPS-Fresnillo de capturar los cambios de forma estructurada (tipo de cambio, fase del proyecto, artefactos afectados, claridad, riesgo y regla de cobro) en lugar de inferirlos del lenguaje natural. La consecuencia metodológica es directa: el costo de un cambio se calcula a partir de variables de impacto y se presenta como rango justificado, no como cifra manual ni como inferencia léxica.
 
 En conjunto, la evidencia pública justifica la siguiente fase de la investigación: el prototipo EMPS-Fresnillo como instrumento de captura local que registra proyectos, módulos, historias, equipo, cambios, parámetros fiscales y laborales mexicanos (IMSS, INFONAVIT, ISN, IVA, ISR), materiales, flujo de efectivo y resultados reales, para contrastar la hipótesis general con casos municipales documentados.
 
