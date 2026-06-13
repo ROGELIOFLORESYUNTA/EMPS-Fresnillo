@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumbs } from "@/components/breadcrumbs";
-import { Plus, MessageSquare } from "lucide-react";
+import { Plus, MessageSquare, Download } from "lucide-react";
 import { api, apiPost } from "@/lib/api-client";
 
 interface ProjectWithEstimates {
@@ -137,9 +137,18 @@ export default function FeedbackEstimacionesPage() {
             Aquí los revisores (ayuntamiento, proveedor, auditor, estimador) dejan comentarios cualitativos sobre estimaciones existentes: si el alcance fue realista, si el costo fue razonable, si los parámetros estuvieron bien aplicados. Es evidencia cualitativa para la tesis.
           </p>
         </div>
-        <Button onClick={() => setShowForm((s) => !s)}>
-          <Plus className="w-4 h-4 mr-2" />{showForm ? "Cancelar" : "Registrar feedback"}
-        </Button>
+        <div className="flex gap-2">
+          {feedbackRows.length > 0 && (
+            <Button variant="outline" asChild>
+              <a href="/api/feedback/export?format=csv" download>
+                <Download className="w-4 h-4 mr-2" />Descargar CSV
+              </a>
+            </Button>
+          )}
+          <Button onClick={() => setShowForm((s) => !s)}>
+            <Plus className="w-4 h-4 mr-2" />{showForm ? "Cancelar" : "Registrar feedback"}
+          </Button>
+        </div>
       </div>
 
       {showForm && (

@@ -104,16 +104,54 @@ export interface HypothesisValidation {
   minSampleRequired: number;
 }
 
+/**
+ * Metricas estandar de precision de estimacion, con los MISMOS nombres del
+ * articulo 1 (Conte et al. 1986 / IFPUG). Se calculan sobre el MRE = |est-real|/real.
+ *   MMRE  = media del MRE
+ *   MdMRE = mediana del MRE (robusta a outliers)
+ *   PRED(x) = fraccion de proyectos con MRE <= x
+ */
+export interface MetricsSummary {
+  n: number;
+  mmreHours: number;     // 0..1+ (media del MRE de horas)
+  mdmreHours: number;    // 0..1+ (mediana)
+  pred15: number;        // 0..1 (fraccion dentro de +/-15%)
+  pred30: number;        // 0..1 (fraccion dentro de +/-30%)
+  mmreCost: number;
+  mdmreCost: number;
+  nAccurate15: number;
+}
+
+/**
+ * Comparacion de dos grupos con la U de Mann-Whitney (no parametrica).
+ * Aqui: MAPE de proyectos con estimacion fiscal integral vs estimacion simple.
+ */
+export interface GroupComparison {
+  label: string;
+  groupAName: string;
+  groupBName: string;
+  nA: number;
+  nB: number;
+  medianA: number;       // mediana del MAPE grupo A
+  medianB: number;       // mediana del MAPE grupo B
+  u: number;             // estadistico U
+  pValueApprox: number;  // aproximacion normal
+  significant: boolean;  // p < 0.05
+  interpretation: string;
+}
+
 export interface FullAnalysisResult {
   generatedAt: string;
   n: number;
   features: string[];
+  metricsSummary: MetricsSummary;
   descriptive: {
     mapeHours: DescriptiveStats;
     mapeCost: DescriptiveStats;
     accuracyRate: number; // % de proyectos con mapeHours <= 15
   };
   correlation: CorrelationPair[];
+  groupComparison: GroupComparison | null;
   regression: RegressionResult | null;
   classification: ClassificationResult | null;
   neuralNet: NeuralNetResult | null;
@@ -470,6 +508,102 @@ export function validateHypothesis(
 }
 
 // ============================================================
+// Metricas del articulo (MMRE / MdMRE / PRED) + Mann-Whitney
+// ============================================================
+
+/** MRE de una fila = MAPE/100 (porque mapeHours ya viene *100). */
+export function metricsSummary(rows: AnalysisRow[]): MetricsSummary {
+  if (rows.length === 0) {
+    return { n: 0, mmreHours: 0, mdmreHours: 0, pred15: 0, pred30: 0, mmreCost: 0, mdmreCost: 0, nAccurate15: 0 };
+  }
+  const mreHours = rows.map((r) => r.mapeHours / 100);
+  const mreCost = rows.filter((r) => r.mapeCost > 0).map((r) => r.mapeCost / 100);
+  const within = (arr: number[], thr: number) => arr.filter((v) => v <= thr).length / arr.length;
+  return {
+    n: rows.length,
+    mmreHours: Number(ss.mean(mreHours).toFixed(4)),
+    mdmreHours: Number(ss.median(mreHours).toFixed(4)),
+    pred15: Number(within(mreHours, 0.15).toFixed(4)),
+    pred30: Number(within(mreHours, 0.30).toFixed(4)),
+    mmreCost: mreCost.length ? Number(ss.mean(mreCost).toFixed(4)) : 0,
+    mdmreCost: mreCost.length ? Number(ss.median(mreCost).toFixed(4)) : 0,
+    nAccurate15: rows.filter((r) => r.isAccurate).length,
+  };
+}
+
+/** Rangos promedio (empates promediados) sobre el arreglo combinado. */
+function averageRanks(values: number[]): number[] {
+  const idx = values.map((v, i) => ({ v, i })).sort((a, b) => a.v - b.v);
+  const ranks = new Array<number>(values.length);
+  let k = 0;
+  while (k < idx.length) {
+    let j = k;
+    while (j + 1 < idx.length && idx[j + 1].v === idx[k].v) j++;
+    const avg = (k + 1 + (j + 1)) / 2; // rangos 1-based
+    for (let m = k; m <= j; m++) ranks[idx[m].i] = avg;
+    k = j + 1;
+  }
+  return ranks;
+}
+
+/** U de Mann-Whitney con aproximacion normal (con correccion de continuidad). */
+export function mannWhitneyU(a: number[], b: number[]): { u: number; pValueApprox: number } {
+  const nA = a.length;
+  const nB = b.length;
+  if (nA === 0 || nB === 0) return { u: 0, pValueApprox: 1 };
+  const all = [...a, ...b];
+  const ranks = averageRanks(all);
+  const rankSumA = ranks.slice(0, nA).reduce((s, r) => s + r, 0);
+  const uA = rankSumA - (nA * (nA + 1)) / 2;
+  const uB = nA * nB - uA;
+  const u = Math.min(uA, uB);
+  const meanU = (nA * nB) / 2;
+  const sdU = Math.sqrt((nA * nB * (nA + nB + 1)) / 12);
+  if (sdU === 0) return { u, pValueApprox: 1 };
+  const z = (Math.abs(u - meanU) - 0.5) / sdU; // correccion de continuidad
+  // p de dos colas via funcion de error
+  const p = 2 * (1 - normalCdf(z));
+  return { u: Number(u.toFixed(2)), pValueApprox: Number(Math.min(1, Math.max(0, p)).toFixed(4)) };
+}
+
+function normalCdf(z: number): number {
+  // Aproximacion de Abramowitz-Stegun para la CDF normal estandar.
+  const t = 1 / (1 + 0.2316419 * Math.abs(z));
+  const d = 0.3989423 * Math.exp(-z * z / 2);
+  const prob =
+    d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+  return z > 0 ? 1 - prob : prob;
+}
+
+/** Compara el MAPE de horas entre estimacion fiscal integral vs simple. */
+export function compareByFiscalDetail(rows: AnalysisRow[]): GroupComparison | null {
+  const a = rows.filter((r) => r.fiscalDetailed).map((r) => r.mapeHours);
+  const b = rows.filter((r) => !r.fiscalDetailed).map((r) => r.mapeHours);
+  if (a.length < 3 || b.length < 3) return null;
+  const { u, pValueApprox } = mannWhitneyU(a, b);
+  const medianA = Number(ss.median(a).toFixed(2));
+  const medianB = Number(ss.median(b).toFixed(2));
+  const significant = pValueApprox < P_VALUE_SIGNIFICANCE;
+  const dir = medianA < medianB ? "menor" : medianA > medianB ? "mayor" : "igual";
+  const interpretation = significant
+    ? `Diferencia significativa (p≈${pValueApprox.toFixed(3)}): la estimacion fiscal integral tiene un MAPE mediano ${dir} (${medianA}% vs ${medianB}%).`
+    : `Sin diferencia significativa (p≈${pValueApprox.toFixed(3)}) entre estimacion integral (mediana ${medianA}%) y simple (mediana ${medianB}%). Con N pequeno, reportar como resultado preliminar.`;
+  return {
+    label: "MAPE: estimacion fiscal integral vs simple",
+    groupAName: "fiscal_detailed=si",
+    groupBName: "fiscal_detailed=no",
+    nA: a.length,
+    nB: b.length,
+    medianA,
+    medianB,
+    u,
+    pValueApprox,
+    significant,
+    interpretation,
+  };
+}
+
+// ============================================================
 // Orquestador
 // ============================================================
 
@@ -479,6 +613,7 @@ export function runFullAnalysis(rows: AnalysisRow[]): FullAnalysisResult {
   const accurateCount = rows.filter((r) => r.isAccurate).length;
 
   const correlation = correlationVsMape(rows);
+  const groupComparison = compareByFiscalDetail(rows);
   const regression = runRegression(rows);
   const classification = runClassification(rows);
   const neuralNet = runNeuralNet(rows);
@@ -488,12 +623,14 @@ export function runFullAnalysis(rows: AnalysisRow[]): FullAnalysisResult {
     generatedAt: new Date().toISOString(),
     n: rows.length,
     features: FEATURE_NAMES,
+    metricsSummary: metricsSummary(rows),
     descriptive: {
       mapeHours: descriptiveStats(mapeHours),
       mapeCost: descriptiveStats(mapeCost),
       accuracyRate: rows.length === 0 ? 0 : Number((accurateCount / rows.length).toFixed(4)),
     },
     correlation,
+    groupComparison,
     regression,
     classification,
     neuralNet,
