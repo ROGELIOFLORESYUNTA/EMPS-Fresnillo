@@ -9,8 +9,15 @@ import { getCurrentWorkspace } from "@/lib/workspace";
 
 export default async function HomePage() {
   const workspace = await getCurrentWorkspace();
+  // FASE G.I — mismo alcance que la API y que la página de detalle: lo del
+  // workspace actual + templates + proyectos legados sin dueño. Sin este filtro
+  // el inicio muestra proyectos ajenos que luego dan 404 al abrirse.
+  const projectScope = workspace
+    ? { OR: [{ workspaceId: workspace.id }, { isTemplate: true }, { workspaceId: null }] }
+    : { OR: [{ isTemplate: true }, { workspaceId: null }] };
   const [projects, totalProjects, paramsCount, pendingChanges] = await Promise.all([
     prisma.project.findMany({
+      where: projectScope,
       orderBy: { updatedAt: "desc" },
       take: 6,
       include: {
@@ -22,9 +29,9 @@ export default async function HomePage() {
         },
       },
     }),
-    prisma.project.count(),
+    prisma.project.count({ where: projectScope }),
     prisma.parameter.count(),
-    prisma.changeRequest.count({ where: { decision: "pendiente" } }),
+    prisma.changeRequest.count({ where: { decision: "pendiente", project: projectScope } }),
   ]);
 
   const isFirstVisit = workspace && !workspace.displayName && totalProjects === 0;
