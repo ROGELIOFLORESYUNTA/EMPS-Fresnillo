@@ -64,6 +64,14 @@ export default async function AdminDatosPage() {
   const changeDecisionCount = new Map<string, number>();
   for (const c of changes) changeDecisionCount.set(c.decision, (changeDecisionCount.get(c.decision) ?? 0) + 1);
 
+  // Solo mostramos workspaces con actividad real: un visitante que solo abrió
+  // la página (sin nombre, 0 proyectos, 0 parámetros, 0 eventos) no representa
+  // a nadie y ensucia el panel. Se cuentan aparte como "sesiones vacías".
+  const workspacesConActividad = workspaces.filter(
+    (w) => !!w.displayName || w._count.projects > 0 || w._count.overrides > 0 || w._count.activityLog > 0,
+  );
+  const sesionesVacias = workspaces.length - workspacesConActividad.length;
+
   const projectsByWorkspace = new Map<string, number>();
   for (const p of projects) {
     if (!p.workspaceId) continue;
@@ -115,7 +123,7 @@ export default async function AdminDatosPage() {
       </div>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <Stat label="Workspaces totales" value={String(totalWorkspaces)} icon={<Users className="w-4 h-4" />} />
+        <Stat label="Usuarios con actividad" value={String(workspacesConActividad.length)} icon={<Users className="w-4 h-4" />} />
         <Stat label="Proyectos (sin templates)" value={String(projects.length)} icon={<Database className="w-4 h-4" />} />
         <Stat label="Estimaciones corridas" value={String(estimates.length)} icon={<Activity className="w-4 h-4" />} />
         <Stat label="Cambios capturados" value={String(changes.length)} icon={<Activity className="w-4 h-4" />} />
@@ -123,12 +131,17 @@ export default async function AdminDatosPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Workspaces activos</CardTitle>
-          <CardDescription>Listado de cada visitante con su actividad asociada.</CardDescription>
+          <CardTitle className="text-base">Usuarios con actividad</CardTitle>
+          <CardDescription>
+            Solo se listan los visitantes que crearon algo o se identificaron.
+            {sesionesVacias > 0 && (
+              <> Se ocultaron <strong>{sesionesVacias}</strong> sesiones vacías (navegadores que solo abrieron la página sin hacer nada).</>
+            )}
+          </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
-          {workspaces.length === 0 ? (
-            <p className="p-6 text-sm text-center text-muted-foreground">Aún no hay workspaces.</p>
+          {workspacesConActividad.length === 0 ? (
+            <p className="p-6 text-sm text-center text-muted-foreground">Aún no hay usuarios con actividad.</p>
           ) : (
             <Table>
               <TableHeader>
@@ -143,7 +156,7 @@ export default async function AdminDatosPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {workspaces.map((w) => (
+                {workspacesConActividad.map((w) => (
                   <TableRow key={w.id}>
                     <TableCell className="font-mono text-xs">{w.id.slice(0, 14)}...</TableCell>
                     <TableCell>{w.displayName ?? <span className="text-muted-foreground italic">sin nombre</span>}</TableCell>

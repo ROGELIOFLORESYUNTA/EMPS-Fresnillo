@@ -34,9 +34,29 @@ function generateRecoveryCode(): string {
 }
 
 /**
+ * Versión de SOLO LECTURA: devuelve el workspace si YA existe la fila, sin
+ * crearla. Para vistas pasivas (inicio, listas, GET de identidad) donde el
+ * simple hecho de navegar NO debe generar un workspace vacío en la BD.
+ * Actualiza lastSeenAt solo si la fila existe. Devuelve null si aún no hay fila.
+ */
+export async function peekWorkspace() {
+  const id = await getCurrentWorkspaceId();
+  if (!id) return null;
+  const workspace = await prisma.workspace.findUnique({ where: { id } });
+  if (!workspace) return null;
+  // Marcar visto sin bloquear: si falla, no importa.
+  prisma.workspace.update({ where: { id }, data: { lastSeenAt: new Date() } }).catch(() => {});
+  return workspace;
+}
+
+/**
  * Devuelve el workspace completo, haciendo upsert si la cookie es nueva.
  * Actualiza lastSeenAt en cada llamada para tracking en el panel admin.
  * Si el workspace no tiene recoveryCode, lo genera (backward compat).
+ *
+ * USAR SOLO en contextos de ESCRITURA (crear proyecto, correr estimación,
+ * editar parámetro, ponerse nombre): ahí sí queremos materializar la fila
+ * porque la persona está actuando. Para lecturas, usar peekWorkspace().
  */
 export async function getCurrentWorkspace() {
   const id = await getCurrentWorkspaceId();
