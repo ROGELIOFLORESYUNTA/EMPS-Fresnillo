@@ -5,10 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, FolderOpen, Plus, Settings, BookOpen, FileText, AlertCircle, User2 } from "lucide-react";
 import { formatMXN } from "@/lib/utils";
-import { getCurrentWorkspace } from "@/lib/workspace";
+import { peekWorkspace } from "@/lib/workspace";
 
 export default async function HomePage() {
-  const workspace = await getCurrentWorkspace();
+  // Lectura: no crear workspace solo por abrir el inicio. Un visitante nuevo
+  // (sin fila todavía) llega como `null` y se trata como anónimo.
+  const workspace = await peekWorkspace();
   // FASE G.I — mismo alcance que la API y que la página de detalle: lo del
   // workspace actual + templates + proyectos legados sin dueño. Sin este filtro
   // el inicio muestra proyectos ajenos que luego dan 404 al abrirse.
@@ -34,7 +36,9 @@ export default async function HomePage() {
     prisma.changeRequest.count({ where: { decision: "pendiente", project: projectScope } }),
   ]);
 
-  const isFirstVisit = workspace && !workspace.displayName && totalProjects === 0;
+  // `workspace` es null para un visitante nuevo (aún sin fila): también es anónimo.
+  const isAnonymous = !workspace || !workspace.displayName;
+  const isFirstVisit = isAnonymous && totalProjects === 0;
 
   return (
     <div className="space-y-8">
@@ -53,7 +57,7 @@ export default async function HomePage() {
           </div>
         </section>
       )}
-      {workspace && !workspace.displayName && !isFirstVisit && (
+      {isAnonymous && !isFirstVisit && (
         <section>
           <Link
             href="/mi-cuenta"

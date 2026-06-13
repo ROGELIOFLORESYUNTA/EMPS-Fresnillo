@@ -8,7 +8,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getCurrentWorkspace, logWorkspaceActivity } from "@/lib/workspace";
+import { getCurrentWorkspace, getCurrentWorkspaceId, peekWorkspace, logWorkspaceActivity } from "@/lib/workspace";
 
 const ROLES_VALIDOS = new Set([
   "operador_municipal",
@@ -19,9 +19,19 @@ const ROLES_VALIDOS = new Set([
 ]);
 
 export async function GET() {
-  const workspace = await getCurrentWorkspace();
+  // Lectura: NO crea la fila. Si el visitante solo está navegando (cookie pero
+  // sin fila), devolvemos una identidad anónima sintética para que el badge
+  // muestre "Identifícate" sin ensuciar la BD. La fila nace cuando se ponen
+  // nombre (PUT) o crean algo.
+  const workspace = await peekWorkspace();
   if (!workspace) {
-    return NextResponse.json({ workspace: null, error: "Sin cookie de workspace." }, { status: 400 });
+    const id = await getCurrentWorkspaceId();
+    if (!id) {
+      return NextResponse.json({ workspace: null }, { status: 200 });
+    }
+    return NextResponse.json({
+      workspace: { id, displayName: null, role: null, recoveryCode: null, createdAt: null, lastSeenAt: null },
+    });
   }
   return NextResponse.json({
     workspace: {

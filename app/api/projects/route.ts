@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { projectCreateSchema } from "@/lib/validators";
-import { getCurrentWorkspace, logWorkspaceActivity } from "@/lib/workspace";
+import { getCurrentWorkspace, peekWorkspace, logWorkspaceActivity } from "@/lib/workspace";
 
 /**
  * GET — FASE G.I: lista solo los proyectos del workspace actual + los templates públicos.
  * Templates (isTemplate=true) sirven como ejemplo a todos los usuarios.
  */
 export async function GET() {
-  const workspace = await getCurrentWorkspace();
+  // Lectura: peekWorkspace no crea fila al solo listar.
+  const workspace = await peekWorkspace();
   const projects = await prisma.project.findMany({
     where: workspace
       ? {

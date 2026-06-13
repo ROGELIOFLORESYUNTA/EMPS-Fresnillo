@@ -6,10 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { formatMXN, RISK_LEVELS } from "@/lib/utils";
 import { Plus } from "lucide-react";
-import { getCurrentWorkspace } from "@/lib/workspace";
+import { peekWorkspace } from "@/lib/workspace";
 
 export default async function ProjectsPage() {
-  const workspace = await getCurrentWorkspace();
+  // Lectura: no crear workspace solo por listar proyectos.
+  const workspace = await peekWorkspace();
   // FASE G.I — mismo alcance que la API y la página de detalle (evita listar
   // proyectos de otros visitantes que después dan 404 al abrirse).
   const projects = await prisma.project.findMany({
