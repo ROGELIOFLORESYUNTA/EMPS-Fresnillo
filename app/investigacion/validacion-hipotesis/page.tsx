@@ -41,7 +41,13 @@ export default async function ValidacionHipotesisPage() {
           <Button asChild variant="outline">
             <a href="/api/research/dataset?format=csv" download>
               <Download className="w-4 h-4 mr-2" />
-              Descargar CSV
+              Dataset CSV
+            </a>
+          </Button>
+          <Button asChild variant="outline">
+            <a href="/api/research/analysis/report?format=csv" download>
+              <Download className="w-4 h-4 mr-2" />
+              Reporte de métricas
             </a>
           </Button>
         </div>

@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { formatMXN, formatHours, formatWeeks, RISK_LEVELS, DEVELOPMENT_MODES } from "@/lib/utils";
-import { FileText, Calculator, Users, Layers, GitPullRequest, TrendingUp, Activity, CheckCircle2, Circle, ArrowRight } from "lucide-react";
+import { FileText, Calculator, Users, Layers, GitPullRequest, TrendingUp, Activity, CheckCircle2, Circle, ArrowRight, ClipboardCheck } from "lucide-react";
 import { RecalcularButton } from "@/components/recalcular-button";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { ModeScenarioSelector } from "@/components/mode-scenario-selector";
@@ -56,6 +56,28 @@ export default async function ProjectDetailPage({
     probable: 1,
     conservative: 2,
   };
+  // FASE H — Resultado real capturado (sin back-relation en Project, query aparte).
+  // Sirve para retroalimentar el modelo y medir precisión (estimado vs real).
+  const actualResult = await prisma.projectActualResult.findFirst({
+    where: { projectId: id },
+    orderBy: { createdAt: "desc" },
+  });
+  const probableEstimate =
+    project.estimates.find((e) => e.scenario === "probable") ?? project.estimates[0];
+  const estHoursTotal = probableEstimate
+    ? Number(probableEstimate.analysisHours) + Number(probableEstimate.designHours) +
+      Number(probableEstimate.codingHours) + Number(probableEstimate.reviewHours) +
+      Number(probableEstimate.testingHours) + Number(probableEstimate.documentationHours) +
+      Number(probableEstimate.deploymentHours) + Number(probableEstimate.trainingHours) +
+      Number(probableEstimate.supportHours) + Number(probableEstimate.hardeningHours)
+    : 0;
+  const estCostTotal = probableEstimate ? Number(probableEstimate.total) : 0;
+  const realHours = actualResult?.actualEffortHours != null ? Number(actualResult.actualEffortHours) : null;
+  const realCost = actualResult?.actualTotalCostMxn != null ? Number(actualResult.actualTotalCostMxn) : null;
+  const mapeHoursReal = realHours && realHours > 0 ? (Math.abs(estHoursTotal - realHours) / realHours) * 100 : null;
+  const mapeCostReal = realCost && realCost > 0 ? (Math.abs(estCostTotal - realCost) / realCost) * 100 : null;
+  const mostrarResultadoReal = project.status === "en_ejecucion" || project.status === "cerrado" || project.status === "archivado" || !!actualResult;
+
   const latestVersion = project.estimates[0]?.version ?? 0;
   const seen = new Set<string>();
   const latestEstimates = project.estimates
@@ -194,6 +216,78 @@ export default async function ProjectDetailPage({
                 <strong>Aún no se captura:</strong> términos del acuerdo (% anticipo, % parciales, % finiquito, plazo en meses pactado con el cliente). El cashflow asume valores genéricos. Próxima iteración del schema añadirá <code>paymentSchedule</code> al modelo Project para hacerlo explícito.
               </p>
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Resultado real del proyecto (FASE H). Aparece cuando el proyecto está en
+          ejecución o cerrado, o si ya hay un resultado capturado. Alimenta la
+          validación de la hipótesis (estimado vs real). */}
+      {mostrarResultadoReal && (
+        <Card className={actualResult ? "border-green-200 bg-green-50/40" : "border-amber-200 bg-amber-50/40"}>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <ClipboardCheck className="w-4 h-4" />
+              Resultado real del proyecto
+            </CardTitle>
+            <CardDescription>
+              {actualResult
+                ? "Lo que costó y tardó de verdad. Esto retroalimenta el modelo y mide qué tan bien estimó el sistema."
+                : "Cuando el proyecto termine, registra aquí las horas y el costo reales. Con esto el sistema mide su propia precisión y alimenta la validación de la hipótesis para tu investigación."}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {actualResult ? (
+              <div className="space-y-4">
+                <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Horas estimadas</p>
+                    <p className="mt-0.5 font-mono">{estHoursTotal > 0 ? formatHours(estHoursTotal) : "—"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Horas reales</p>
+                    <p className="mt-0.5 font-mono">{realHours != null ? formatHours(realHours) : "—"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Costo estimado</p>
+                    <p className="mt-0.5 font-mono">{estCostTotal > 0 ? formatMXN(estCostTotal) : "—"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Costo real</p>
+                    <p className="mt-0.5 font-mono">{realCost != null ? formatMXN(realCost) : "—"}</p>
+                  </div>
+                </div>
+                {(mapeHoursReal != null || mapeCostReal != null) && (
+                  <div className="flex flex-wrap gap-2">
+                    {mapeHoursReal != null && (
+                      <Badge variant={mapeHoursReal <= 15 ? "default" : mapeHoursReal <= 30 ? "secondary" : "outline"}>
+                        Error en horas: {mapeHoursReal.toFixed(1)}% {mapeHoursReal <= 15 ? "(preciso)" : mapeHoursReal <= 30 ? "(aceptable)" : "(impreciso)"}
+                      </Badge>
+                    )}
+                    {mapeCostReal != null && (
+                      <Badge variant={mapeCostReal <= 15 ? "default" : mapeCostReal <= 30 ? "secondary" : "outline"}>
+                        Error en costo: {mapeCostReal.toFixed(1)}%
+                      </Badge>
+                    )}
+                  </div>
+                )}
+                {actualResult.mainDeviationReason && (
+                  <p className="text-sm text-muted-foreground">
+                    <span className="font-semibold">Razón de la desviación:</span> {actualResult.mainDeviationReason}
+                  </p>
+                )}
+                <Button asChild variant="outline" size="sm">
+                  <Link href={`/projects/${id}/resultado-real`}>Editar resultado real</Link>
+                </Button>
+              </div>
+            ) : (
+              <Button asChild>
+                <Link href={`/projects/${id}/resultado-real`}>
+                  <ClipboardCheck className="w-4 h-4 mr-2" />
+                  Registrar resultado real
+                </Link>
+              </Button>
+            )}
           </CardContent>
         </Card>
       )}

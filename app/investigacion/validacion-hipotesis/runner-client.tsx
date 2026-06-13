@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Play, AlertTriangle, CheckCircle2, XCircle, HelpCircle, FlaskConical } from "lucide-react";
+import { Play, AlertTriangle, CheckCircle2, XCircle, HelpCircle, FlaskConical, Download } from "lucide-react";
 import {
   BarChart, Bar, ScatterChart, Scatter, XAxis, YAxis, ResponsiveContainer,
   Tooltip, CartesianGrid, ReferenceLine,
@@ -12,12 +12,33 @@ import {
 interface AnalysisResult {
   generatedAt: string;
   n: number;
+  metricsSummary: {
+    n: number;
+    mmreHours: number;
+    mdmreHours: number;
+    pred15: number;
+    pred30: number;
+    mmreCost: number;
+    mdmreCost: number;
+    nAccurate15: number;
+  };
   descriptive: {
     mapeHours: { n: number; mean: number; median: number; stddev: number; min: number; max: number; q25: number; q75: number };
     mapeCost: { mean: number; median: number; stddev: number };
     accuracyRate: number;
   };
   correlation: Array<{ feature: string; vsMape: number; pValueApprox: number; interpretation: string }>;
+  groupComparison: {
+    label: string;
+    nA: number;
+    nB: number;
+    medianA: number;
+    medianB: number;
+    u: number;
+    pValueApprox: number;
+    significant: boolean;
+    interpretation: string;
+  } | null;
   regression: {
     rSquared: number;
     rmse: number;
@@ -92,10 +113,24 @@ export function ValidacionRunner() {
             />
             Incluir casos sintéticos de desarrollo (sourceKind=simulated_dev_only)
           </label>
-          <Button onClick={runAnalysis} disabled={loading}>
-            <Play className="w-4 h-4 mr-2" />
-            {loading ? "Ejecutando análisis..." : "Correr análisis"}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={runAnalysis} disabled={loading}>
+              <Play className="w-4 h-4 mr-2" />
+              {loading ? "Ejecutando análisis..." : "Correr análisis"}
+            </Button>
+            <Button variant="outline" asChild>
+              <a href={`/api/research/analysis/report?format=csv&includeSynthetic=${includeSynthetic}`}>
+                <Download className="w-4 h-4 mr-2" />
+                Descargar reporte de métricas (CSV)
+              </a>
+            </Button>
+            <Button variant="outline" asChild>
+              <a href={`/api/research/dataset?format=csv&includeSynthetic=${includeSynthetic}`}>
+                <Download className="w-4 h-4 mr-2" />
+                Descargar dataset (CSV)
+              </a>
+            </Button>
+          </div>
           {error && (
             <p className="text-sm text-destructive flex items-center gap-2">
               <AlertTriangle className="w-4 h-4" /> {error}
@@ -135,6 +170,51 @@ function ResultadoCompleto({ result }: { result: AnalysisResult }) {
           <Badge variant="outline">Predictores significativos = {result.hypothesis.significantPredictors}</Badge>
         </div>
       </div>
+
+      {result.n > 0 && result.metricsSummary && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Métricas de precisión (como en el artículo)</CardTitle>
+            <CardDescription>
+              Mismas métricas y nombres que el análisis con datasets públicos. Sobre el error relativo
+              (|estimado − real| / real) de las horas.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <MetricBox label="MMRE" value={result.metricsSummary.mmreHours.toFixed(3)} sub="media del error relativo" />
+              <MetricBox label="MdMRE" value={result.metricsSummary.mdmreHours.toFixed(3)} sub="mediana del error relativo" />
+              <MetricBox label="PRED(15)" value={`${(result.metricsSummary.pred15 * 100).toFixed(1)}%`} sub="dentro de ±15%" />
+              <MetricBox label="PRED(30)" value={`${(result.metricsSummary.pred30 * 100).toFixed(1)}%`} sub="dentro de ±30%" />
+            </div>
+            <p className="text-xs text-muted-foreground mt-3">
+              Para el costo: MMRE = {result.metricsSummary.mmreCost.toFixed(3)} · MdMRE = {result.metricsSummary.mdmreCost.toFixed(3)}.
+              Descarga el reporte de métricas (CSV) de arriba para pegarlo en el artículo.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {result.groupComparison && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Prueba de Mann-Whitney</CardTitle>
+            <CardDescription>{result.groupComparison.label}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            <div className="flex flex-wrap gap-3 text-xs">
+              <Badge variant="outline">U = {result.groupComparison.u.toFixed(1)}</Badge>
+              <Badge variant="outline">p ≈ {result.groupComparison.pValueApprox.toFixed(3)}</Badge>
+              <Badge variant={result.groupComparison.significant ? "default" : "outline"}>
+                {result.groupComparison.significant ? "Significativo (p<0.05)" : "No significativo"}
+              </Badge>
+              <Badge variant="outline">mediana integral = {result.groupComparison.medianA.toFixed(1)}% (n={result.groupComparison.nA})</Badge>
+              <Badge variant="outline">mediana simple = {result.groupComparison.medianB.toFixed(1)}% (n={result.groupComparison.nB})</Badge>
+            </div>
+            <p className="text-xs text-muted-foreground">{result.groupComparison.interpretation}</p>
+          </CardContent>
+        </Card>
+      )}
 
       {result.n > 0 && (
         <Card>
@@ -300,6 +380,16 @@ function ResultadoCompleto({ result }: { result: AnalysisResult }) {
       <div className="text-xs text-muted-foreground border-t pt-3">
         Generado: {new Date(result.generatedAt).toLocaleString("es-MX")} · N = {result.n} casos analizados.
       </div>
+    </div>
+  );
+}
+
+function MetricBox({ label, value, sub }: { label: string; value: string; sub: string }) {
+  return (
+    <div className="border rounded-lg p-3 text-center">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="text-xl font-bold">{value}</p>
+      <p className="text-[11px] text-muted-foreground mt-0.5">{sub}</p>
     </div>
   );
 }
