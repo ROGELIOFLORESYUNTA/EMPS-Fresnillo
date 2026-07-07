@@ -7,6 +7,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { formatMXN, formatHours, formatWeeks, RISK_LEVELS, DEVELOPMENT_MODES, SYSTEM_TYPE_LABELS, SCENARIO_LABELS, ROLE_LABELS, LEVEL_LABELS, labelOf } from "@/lib/utils";
 import { ChevronLeft, AlertTriangle, CheckCircle2, Clock, ShieldAlert, Cog, GitBranch, Wrench, CalendarClock, Wallet, TrendingDown, TrendingUp } from "lucide-react";
 import { PrintButton } from "@/components/print-button";
+import { recommendBestOption } from "@/lib/engine/recommendation";
 import {
   computeProviderOpportunityCost,
   computeProviderViabilityRatio,
@@ -88,6 +89,29 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
   const maintenance = computeMaintenanceMonthly(totalPrice);
   const changeRanges = computeChangeRangeByType(weeklyTeamRate);
 
+  // Recomendación REAL para el reporte municipal (rol forzado: el lector es el
+  // Ayuntamiento). Antes aquí se mostraba el default hybrid como "recomendado".
+  const municipalRecommendation = recommendBestOption({
+    role: "operador_municipal",
+    project: {
+      priority: project.priority,
+      targetDate: project.targetDate,
+      estimatedBudget: project.estimatedBudget !== null ? Number(project.estimatedBudget) : null,
+      systemType: project.systemType,
+    },
+    options: latest.map((e) => ({
+      mode: e.mode,
+      scenario: e.scenario,
+      total: Number(e.total),
+      weeksTotal: e.weeksTotal !== null ? Number(e.weeksTotal) : null,
+      weeksToPrototype: e.weeksToPrototype !== null ? Number(e.weeksToPrototype) : null,
+      riskScore: Number(e.riskScore),
+      riskLevel: e.riskLevel,
+      margin: Number(e.margin),
+    })),
+    workingCapitalRequired: wcap,
+  });
+
   // Explicación de cada modo en lenguaje claro al cliente (distinta de DEVELOPMENT_MODES.description que es semi-técnica)
   const MODE_CLIENT_EXPLANATION: Record<string, string> = {
     traditional: "El proveedor escribirá todo el código manualmente. Es predecible pero más lento. Pídele evidencia de pruebas y revisión.",
@@ -147,7 +171,12 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
                   <p className="text-xs text-muted-foreground">
                     Los tres precios son el MISMO proyecto bajo tres supuestos: <strong>Optimista</strong> = todo sale bien; <strong>Probable</strong> = lo más realista (úselo para presupuestar); <strong>Conservador</strong> = con tropiezos. El precio Probable se compone de {formatMXN(Number(probable.subtotal))} de servicios + {formatMXN(Number(probable.vat))} de IVA (16%) = <strong>{formatMXN(Number(probable.total))}</strong>.
                   </p>
-                  <p className="text-muted-foreground">Modo recomendado: <strong>{modeLabels[probable.mode] ?? probable.mode}</strong>. Riesgo agregado: <Badge className={RISK_LEVELS[probable.riskLevel as keyof typeof RISK_LEVELS]?.bg}>{RISK_LEVELS[probable.riskLevel as keyof typeof RISK_LEVELS]?.label ?? probable.riskLevel}</Badge>
+                  {municipalRecommendation ? (
+                    <p className="text-muted-foreground">
+                      Opción recomendada para presupuestar: <strong>{modeLabels[municipalRecommendation.best.mode] ?? municipalRecommendation.best.mode}</strong> en escenario <strong>{labelOf(SCENARIO_LABELS, municipalRecommendation.best.scenario)}</strong> ({formatMXN(municipalRecommendation.bestOption.total)}). {municipalRecommendation.reasons[1] ?? municipalRecommendation.reasons[0]}
+                    </p>
+                  ) : null}
+                  <p className="text-muted-foreground">Riesgo agregado: <Badge className={RISK_LEVELS[probable.riskLevel as keyof typeof RISK_LEVELS]?.bg}>{RISK_LEVELS[probable.riskLevel as keyof typeof RISK_LEVELS]?.label ?? probable.riskLevel}</Badge>
                     <span className="text-xs"> (combina complejidad técnica, claridad de requisitos, riesgo fiscal-laboral, flujo de efectivo y probabilidad de cambios)</span>
                   </p>
                 </>

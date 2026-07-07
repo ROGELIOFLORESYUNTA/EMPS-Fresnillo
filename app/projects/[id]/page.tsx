@@ -11,6 +11,11 @@ import { RecalcularButton } from "@/components/recalcular-button";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { ModeScenarioSelector } from "@/components/mode-scenario-selector";
 import { InfoTip } from "@/components/info-tip";
+import { RecommendationCard } from "@/components/recommendation-card";
+import { DecisionSection, type DecisionTimelineItem } from "@/components/decision-section";
+import { ElegirOpcionButton } from "@/components/elegir-opcion-button";
+import { recommendBestOption, type RecommendationRole } from "@/lib/engine/recommendation";
+import { getCurrentWorkspaceId, peekWorkspace } from "@/lib/workspace";
 
 export default async function ProjectDetailPage({
   params,
@@ -37,10 +42,13 @@ export default async function ProjectDetailPage({
   // FASE G.I: aislamiento por workspace. Si el proyecto no es template y pertenece
   // a otro workspace, devolver 404 para no exponer datos cruzados.
   if (!project.isTemplate && project.workspaceId) {
-    const { getCurrentWorkspaceId } = await import("@/lib/workspace");
     const myWorkspace = await getCurrentWorkspaceId();
     if (project.workspaceId !== myWorkspace) notFound();
   }
+  // Rol del visitante (para personalizar la recomendación). peekWorkspace NO
+  // crea fila: solo navegar no ensucia la BD.
+  const visitorWorkspace = await peekWorkspace();
+  const visitorRole = (visitorWorkspace?.role ?? null) as RecommendationRole;
 
   // Tomar último (mode, scenario) único — soporta múltiples versiones por modo.
   // Orden lógico: modos de más lento a más rápido, escenarios optimista→probable→conservador.
@@ -116,6 +124,118 @@ export default async function ProjectDetailPage({
   const rangeMultiplier = minProbable > 0 ? maxProbable / minProbable : 1;
   const cheapestMode = probableEstimatesByMode.find((e) => Number(e.total) === minProbable);
   const mostExpensiveMode = probableEstimatesByMode.find((e) => Number(e.total) === maxProbable);
+
+  // ===== Recomendación "¿cuál opción te conviene?" según el rol del visitante =====
+  const recommendation = recommendBestOption({
+    role: visitorRole,
+    project: {
+      priority: project.priority,
+      targetDate: project.targetDate,
+      estimatedBudget: project.estimatedBudget !== null ? Number(project.estimatedBudget) : null,
+      systemType: project.systemType,
+    },
+    options: latestEstimates.map((e) => ({
+      mode: e.mode,
+      scenario: e.scenario,
+      total: Number(e.total),
+      weeksTotal: e.weeksTotal !== null ? Number(e.weeksTotal) : null,
+      weeksToPrototype: e.weeksToPrototype !== null ? Number(e.weeksToPrototype) : null,
+      riskScore: Number(e.riskScore),
+      riskLevel: e.riskLevel,
+      margin: Number(e.margin),
+    })),
+    workingCapitalRequired: Number(workingCapitalRequired),
+  });
+
+  // ===== Decisión activa + cronología de lo que pasó después =====
+  const allDecisions = await prisma.projectDecision.findMany({
+    where: { projectId: id },
+    orderBy: { createdAt: "desc" },
+  });
+  const activeDecision = allDecisions.find((d) => d.supersededAt === null) ?? null;
+  const supersededCount = allDecisions.filter((d) => d.supersededAt !== null).length;
+
+  let decisionTimeline: DecisionTimelineItem[] = [];
+  let decisionCurrentTotal: number | null = null;
+  if (activeDecision) {
+    const sameOptionNow = latestEstimates.find(
+      (e) => e.mode === activeDecision.mode && e.scenario === activeDecision.scenario,
+    );
+    decisionCurrentTotal = sameOptionNow ? Number(sameOptionNow.total) : null;
+
+    if (project.workspaceId) {
+      const events = await prisma.workspaceActivityLog.findMany({
+        where: {
+          workspaceId: project.workspaceId,
+          createdAt: { gt: activeDecision.createdAt },
+          eventType: {
+            in: [
+              "project_recalculated",
+              "estimate_run",
+              "parameter_overridden",
+              "parameter_override_removed",
+              "change_request_created",
+              "change_decided",
+              "module_updated",
+              "module_created",
+              "team_updated",
+            ],
+          },
+        },
+        orderBy: { createdAt: "asc" },
+        take: 60,
+      });
+      const changesById = new Map(project.changes.map((c) => [c.id, c]));
+      for (const ev of events) {
+        let payload: Record<string, unknown> = {};
+        try {
+          payload = ev.payloadJson ? JSON.parse(ev.payloadJson) : {};
+        } catch {
+          // payload ilegible: se omite el detalle
+        }
+        const isParamEvent = ev.eventType === "parameter_overridden" || ev.eventType === "parameter_override_removed";
+        // Los eventos de parámetros son globales del workspace (no traen proyecto);
+        // el resto solo cuenta si es de ESTE proyecto.
+        if (!isParamEvent && payload.projectId !== id) continue;
+
+        let text: string | null = null;
+        switch (ev.eventType) {
+          case "project_recalculated":
+            text = "Se recalculó el proyecto con los parámetros vigentes (nueva versión de la estimación).";
+            break;
+          case "estimate_run":
+            text = `Se corrió una nueva estimación (${modeLabels[String(payload.mode)] ?? payload.mode}).`;
+            break;
+          case "parameter_overridden":
+            text = `Se editó el parámetro ${String(payload.parameterKey ?? "")} (afecta los próximos recálculos, no las cifras ya guardadas).`;
+            break;
+          case "parameter_override_removed":
+            text = `Se restauró el parámetro ${String(payload.parameterKey ?? "")} a su valor oficial.`;
+            break;
+          case "change_request_created": {
+            const cr = payload.changeRequestId ? changesById.get(String(payload.changeRequestId)) : undefined;
+            const desc = cr?.description ? `: “${cr.description.slice(0, 80)}${cr.description.length > 80 ? "…" : ""}”` : "";
+            text = `Se registró una solicitud de cambio${desc}.`;
+            break;
+          }
+          case "change_decided":
+            text = `Se decidió una solicitud de cambio (${String(payload.decision ?? "")}).`;
+            break;
+          case "module_updated":
+            text = `Se editó el módulo “${String(payload.name ?? "")}” (cambia el esfuerzo en el próximo recálculo).`;
+            break;
+          case "module_created":
+            text = `Se agregó el módulo “${String(payload.name ?? payload.type ?? "")}”.`;
+            break;
+          case "team_updated":
+            text = `Se editó al equipo (“${String(payload.name ?? "")}”) — cambia el costo en el próximo recálculo.`;
+            break;
+        }
+        if (text) decisionTimeline.push({ date: ev.createdAt, text });
+      }
+      decisionTimeline = decisionTimeline.slice(0, 20);
+    }
+  }
 
   // Mes donde se materializa el bache de caja (saldo acumulado más bajo)
   const worstAccumulated = project.cashflow.length > 0
@@ -363,7 +483,57 @@ export default async function ProjectDetailPage({
 
       {/* Selector de modo + escenario */}
       {selectedTotal && (
-        <ModeScenarioSelector currentMode={selectedMode} currentScenario={selectedScenario} />
+        <div className="space-y-2">
+          <ModeScenarioSelector currentMode={selectedMode} currentScenario={selectedScenario} />
+          {!project.isTemplate && selectedEstimate && (
+            <div className="flex justify-end">
+              <ElegirOpcionButton
+                projectId={id}
+                mode={selectedEstimate.mode}
+                scenario={selectedEstimate.scenario}
+                modeLabel={modeLabels[selectedEstimate.mode] ?? selectedEstimate.mode}
+                scenarioLabel={scenarioLabels[selectedEstimate.scenario] ?? selectedEstimate.scenario}
+                recommendedMode={recommendation?.best.mode}
+                recommendedScenario={recommendation?.best.scenario}
+                variant="actual"
+              />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Recomendación según quién usa el sistema */}
+      {recommendation && (
+        <RecommendationCard
+          projectId={id}
+          recommendation={recommendation}
+          selectedMode={selectedMode}
+          selectedScenario={selectedScenario}
+        />
+      )}
+
+      {/* Tu decisión y lo que pasó después */}
+      {activeDecision && (
+        <DecisionSection
+          decision={{
+            mode: activeDecision.mode,
+            scenario: activeDecision.scenario,
+            versionAtDecision: activeDecision.versionAtDecision,
+            totalAtDecision: Number(activeDecision.totalAtDecision),
+            weeksAtDecision: activeDecision.weeksAtDecision !== null ? Number(activeDecision.weeksAtDecision) : null,
+            riskLevelAtDecision: activeDecision.riskLevelAtDecision,
+            recommendedMode: activeDecision.recommendedMode,
+            recommendedScenario: activeDecision.recommendedScenario,
+            followedRecommendation: activeDecision.followedRecommendation,
+            decidedByName: activeDecision.decidedByName,
+            note: activeDecision.note,
+            createdAt: activeDecision.createdAt,
+          }}
+          currentTotal={decisionCurrentTotal}
+          latestVersion={latestVersion}
+          timeline={decisionTimeline}
+          supersededCount={supersededCount}
+        />
       )}
 
       {/* Resumen financiero */}
