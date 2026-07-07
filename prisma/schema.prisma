@@ -64,6 +64,7 @@ model Project {
   changes        ChangeRequest[]
   cashflow       CashFlowLine[]
   resources      ProjectResourceCost[]
+  decisions      ProjectDecision[]
   workspace      Workspace?      @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
 
   @@index([status])
@@ -880,4 +881,39 @@ model ResourceCostExplanation {
   @@index([workspaceId])
   @@index([projectId])
   @@index([resourceCostId])
+}
+
+// ============================================================
+// DECISIÓN DEL PROYECTO — la opción (modo × escenario) que el usuario eligió.
+// Histórico multi-decisión: la activa es la de supersededAt = null; al elegir
+// otra opción, la anterior se marca supersedida (nunca se borra).
+// Guarda la FOTO de las cifras al decidir para medir después "qué tanto se
+// movió" (delta contra la última versión) y si el usuario siguió la
+// recomendación del sistema (dato de investigación: recomendado vs elegido).
+// ============================================================
+
+model ProjectDecision {
+  id                     String    @id @default(cuid())
+  projectId              String
+  estimateId             String?   // Estimate exacto (mode+scenario+version) al decidir
+  mode                   String    // traditional|ai_assisted|bytecoding_prompts|low_code|hybrid
+  scenario               String    // optimistic|probable|conservative
+  versionAtDecision      Int
+  totalAtDecision        Decimal
+  weeksAtDecision        Decimal?
+  riskLevelAtDecision    String?   // bajo|medio|alto|critico
+  recommendedMode        String?   // lo que el sistema recomendaba en ese momento
+  recommendedScenario    String?
+  followedRecommendation Boolean?  // null = no había recomendación visible
+  decidedByName          String?
+  note                   String?
+  workspaceId            String?   // workspace que decidió (auditoría; el aislamiento real es vía Project)
+  createdAt              DateTime  @default(now())
+  supersededAt           DateTime? // null = decisión activa
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([projectId, supersededAt])
+  @@index([workspaceId])
 }
