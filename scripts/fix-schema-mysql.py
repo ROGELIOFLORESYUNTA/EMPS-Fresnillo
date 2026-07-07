@@ -33,7 +33,7 @@ TEXT = {
     'originUrl', 'originDocument', 'decisionComment',
     'freeChangeGuardrailReason', 'testingImpact', 'trainingImpact',
     'documentationImpact', 'message', 'source', 'reasonForChange', 'lessons',
-    'mainBlocker', 'algorithm',
+    'mainBlocker', 'algorithm', 'note',
 }
 
 out = []

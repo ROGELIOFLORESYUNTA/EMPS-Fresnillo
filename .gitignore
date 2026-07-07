@@ -22,9 +22,11 @@ dist/
 .env.local
 !.env.example
 
-# Database
+# Database (ninguna base local se versiona)
 prisma/dev.db
 prisma/dev.db-journal
+prisma/prisma/dev.db
+prisma/prisma/dev.db-journal
 prisma/migrations/dev*
 
 # Logs
@@ -50,3 +52,11 @@ _pdf_extracted.txt
 # Entregable de documentación (generado, no se versiona)
 entregable-chatgpt/
 entregable-chatgpt.zip
+
+# Manual personal con la clave de investigador (NO subir a GitHub)
+MANUAL_MODO_INVESTIGADOR.md
+
+# Documentos personales del autor en la raíz (no son parte del sistema;
+# los .docx del subproyecto del artículo SÍ se versionan)
+/*.docx
+empsarticulodatos/**/~$*.docx

@@ -906,7 +906,7 @@ model ProjectDecision {
   recommendedScenario    String?
   followedRecommendation Boolean?  // null = no había recomendación visible
   decidedByName          String?
-  note                   String?
+  note                   String? @db.Text
   workspaceId            String?   // workspace que decidió (auditoría; el aislamiento real es vía Project)
   createdAt              DateTime  @default(now())
   supersededAt           DateTime? // null = decisión activa
