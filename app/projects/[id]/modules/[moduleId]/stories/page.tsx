@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState, use } from "react";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,7 +8,9 @@ import { Select } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { api, apiPost, apiPut, apiDelete } from "@/lib/api-client";
-import { ChevronLeft, Plus, Pencil, Trash2, X, Save } from "lucide-react";
+import { SCALE_GUIDES } from "@/lib/utils";
+import { Breadcrumbs } from "@/components/breadcrumbs";
+import { Plus, Pencil, Trash2, X, Save } from "lucide-react";
 
 interface Story {
   id: string;
@@ -107,16 +108,19 @@ export default function StoriesPage({ params }: { params: Promise<{ id: string; 
 
   return (
     <div className="space-y-6">
-      <div className="text-sm">
-        <Link href={`/projects/${projectId}/modules`} className="text-muted-foreground hover:text-foreground">
-          <ChevronLeft className="w-4 h-4 inline" /> Volver a módulos
-        </Link>
-      </div>
+      <Breadcrumbs items={[
+        { label: "Mis proyectos", href: "/projects" },
+        { label: "Proyecto", href: `/projects/${projectId}` },
+        { label: "Módulos", href: `/projects/${projectId}/modules` },
+        { label: "Historias" },
+      ]} />
 
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Historias de usuario</h1>
-          <p className="text-muted-foreground text-sm">Módulo: <strong>{moduleName}</strong> · {stories.length} historias</p>
+          <p className="text-muted-foreground text-sm">
+            Módulo: <strong>{moduleName}</strong> · {stories.length} historias · cada historia describe algo concreto que alguien necesita hacer en el sistema
+          </p>
         </div>
         {!showForm && (
           <Button onClick={() => { setShowForm(true); setEditingId(null); setForm({ ...FORM_DEFAULT }); }}>
@@ -138,6 +142,7 @@ export default function StoriesPage({ params }: { params: Promise<{ id: string; 
                 <div className="grid gap-2">
                   <Label>Madurez del requerimiento (1-5)</Label>
                   <Input type="number" min={1} max={5} value={form.maturityLevel} onChange={(e) => setForm({ ...form, maturityLevel: +e.target.value })} />
+                  <p className="text-xs text-muted-foreground">{SCALE_GUIDES.maturity}</p>
                 </div>
                 <div className="grid gap-2">
                   <Label>Prioridad</Label>
@@ -160,26 +165,26 @@ export default function StoriesPage({ params }: { params: Promise<{ id: string; 
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label>Reglas de negocio</Label>
-                  <Textarea value={form.rules} onChange={(e) => setForm({ ...form, rules: e.target.value })} rows={3} />
+                  <Textarea value={form.rules} onChange={(e) => setForm({ ...form, rules: e.target.value })} rows={3} placeholder="Qué se permite y qué no. ej. Solo el titular puede solicitar; máximo 3 trámites por día" />
                 </div>
                 <div className="grid gap-2">
                   <Label>Datos requeridos</Label>
-                  <Textarea value={form.dataRequired} onChange={(e) => setForm({ ...form, dataRequired: e.target.value })} rows={3} />
+                  <Textarea value={form.dataRequired} onChange={(e) => setForm({ ...form, dataRequired: e.target.value })} rows={3} placeholder="Qué información se captura. ej. CURP, domicilio, comprobante en PDF" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label>Criterios de aceptación</Label>
-                  <Textarea value={form.acceptanceCriteria} onChange={(e) => setForm({ ...form, acceptanceCriteria: e.target.value })} rows={3} />
+                  <Textarea value={form.acceptanceCriteria} onChange={(e) => setForm({ ...form, acceptanceCriteria: e.target.value })} rows={3} placeholder="Cómo sabremos que quedó bien. ej. Al guardar, se genera folio y llega correo al ciudadano" />
                 </div>
                 <div className="grid gap-2">
                   <Label>Evidencia esperada</Label>
-                  <Textarea value={form.evidenceExpected} onChange={(e) => setForm({ ...form, evidenceExpected: e.target.value })} rows={3} />
+                  <Textarea value={form.evidenceExpected} onChange={(e) => setForm({ ...form, evidenceExpected: e.target.value })} rows={3} placeholder="Qué documento o registro comprueba que funciona. ej. acuse con folio, captura del reporte" />
                 </div>
               </div>
               <div className="grid gap-2">
                 <Label>Riesgos</Label>
-                <Textarea value={form.risks} onChange={(e) => setForm({ ...form, risks: e.target.value })} rows={2} />
+                <Textarea value={form.risks} onChange={(e) => setForm({ ...form, risks: e.target.value })} rows={2} placeholder="Qué podría complicarla. ej. depende de que Tesorería comparta su información" />
               </div>
               {error && <p className="text-sm text-destructive">{error}</p>}
               <div className="flex justify-end gap-2">
@@ -199,7 +204,9 @@ export default function StoriesPage({ params }: { params: Promise<{ id: string; 
       <Card>
         <CardContent className="p-0">
           {stories.length === 0 ? (
-            <p className="p-6 text-center text-muted-foreground">Aún no hay historias para este módulo.</p>
+            <p className="p-6 text-center text-muted-foreground">
+              Aún no hay historias para este módulo. Sirven para aterrizar QUÉ debe hacer exactamente: entre más claras, mejor estimación y menos malentendidos con el cliente. Son opcionales, pero recomendadas para los módulos importantes.
+            </p>
           ) : (
             <div className="divide-y">
               {stories.map((s) => (

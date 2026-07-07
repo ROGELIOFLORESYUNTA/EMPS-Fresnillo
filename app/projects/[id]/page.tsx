@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
-import { formatMXN, formatHours, formatWeeks, RISK_LEVELS, DEVELOPMENT_MODES } from "@/lib/utils";
+import { formatMXN, formatHours, formatWeeks, RISK_LEVELS, DEVELOPMENT_MODES, STATUS_LABELS, PRIORITY_LABELS, SYSTEM_TYPE_LABELS, SCENARIO_LABELS, CONTRACT_LABELS, ROLE_LABELS, LEVEL_LABELS, labelOf } from "@/lib/utils";
 import { FileText, Calculator, Users, Layers, GitPullRequest, TrendingUp, Activity, CheckCircle2, Circle, ArrowRight, ClipboardCheck } from "lucide-react";
 import { RecalcularButton } from "@/components/recalcular-button";
 import { Breadcrumbs } from "@/components/breadcrumbs";
@@ -154,9 +154,9 @@ export default async function ProjectDetailPage({
           <h1 className="text-2xl font-bold">{project.name}</h1>
           <p className="text-muted-foreground">Cliente: {project.client} · {project.municipalArea}</p>
           <div className="flex gap-2 mt-2 flex-wrap">
-            <Badge variant="outline">{project.status}</Badge>
-            <Badge variant="secondary">{project.priority}</Badge>
-            <Badge variant="outline">{project.systemType}</Badge>
+            <Badge variant="outline">{labelOf(STATUS_LABELS, project.status)}</Badge>
+            <Badge variant="secondary">Prioridad {labelOf(PRIORITY_LABELS, project.priority).toLowerCase()}</Badge>
+            <Badge variant="outline">{labelOf(SYSTEM_TYPE_LABELS, project.systemType)}</Badge>
           </div>
         </div>
       </div>
@@ -213,7 +213,7 @@ export default async function ProjectDetailPage({
             )}
             <div className="sm:col-span-2 pt-2 mt-1 border-t border-dashed">
               <p className="text-xs text-amber-800">
-                <strong>Aún no se captura:</strong> términos del acuerdo (% anticipo, % parciales, % finiquito, plazo en meses pactado con el cliente). El cashflow asume valores genéricos. Próxima iteración del schema añadirá <code>paymentSchedule</code> al modelo Project para hacerlo explícito.
+                <strong>Aún no se captura:</strong> los términos del acuerdo con el cliente (% de anticipo, % de pagos parciales, % de pago final y plazo pactado). Mientras tanto, el flujo de efectivo se calcula con valores típicos. Puedes ajustarlos al correr la estimación.
               </p>
             </div>
           </CardContent>
@@ -491,11 +491,21 @@ export default async function ProjectDetailPage({
                   <TableHead>Escenario</TableHead>
                   <TableHead className="text-right">Horas</TableHead>
                   <TableHead className="text-right">Semanas</TableHead>
-                  <TableHead className="text-right">Prototipo</TableHead>
+                  <TableHead className="text-right">
+                    Prototipo
+                    <InfoTip title="¿Qué es el prototipo?">
+                      Semanas para tener una PRIMERA versión funcionando que ya se puede enseñar al área usuaria. El resto de las semanas se usa en terminar, probar y endurecer el sistema.
+                    </InfoTip>
+                  </TableHead>
                   <TableHead className="text-right">Subtotal</TableHead>
                   <TableHead className="text-right">IVA</TableHead>
                   <TableHead className="text-right">Total</TableHead>
-                  <TableHead>Riesgo</TableHead>
+                  <TableHead>
+                    Riesgo
+                    <InfoTip title="¿De dónde sale el riesgo?">
+                      Combina 5 factores del proyecto: qué tan complejo es técnicamente, qué tan claros están los requisitos, el riesgo fiscal-laboral del equipo, el riesgo de flujo de efectivo y la probabilidad de cambios. Bajo = todo en orden; Crítico = varios factores altos a la vez. Para bajarlo: aclara los requisitos (claridad de los módulos), estabiliza al equipo y pacta anticipos suficientes.
+                    </InfoTip>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -504,14 +514,14 @@ export default async function ProjectDetailPage({
                   return (
                     <TableRow key={e.id}>
                       <TableCell><Badge variant="outline">{modeLabels[e.mode] ?? e.mode}</Badge></TableCell>
-                      <TableCell><Badge variant="secondary">{e.scenario}</Badge></TableCell>
+                      <TableCell><Badge variant="secondary">{labelOf(SCENARIO_LABELS, e.scenario)}</Badge></TableCell>
                       <TableCell className="text-right">{formatHours(totalHours)}</TableCell>
                       <TableCell className="text-right">{e.weeksTotal ? formatWeeks(Number(e.weeksTotal)) : "—"}</TableCell>
                       <TableCell className="text-right">{e.weeksToPrototype ? formatWeeks(Number(e.weeksToPrototype)) : "—"}</TableCell>
                       <TableCell className="text-right">{formatMXN(Number(e.subtotal))}</TableCell>
                       <TableCell className="text-right text-muted-foreground">{formatMXN(Number(e.vat))}</TableCell>
                       <TableCell className="text-right font-semibold">{formatMXN(Number(e.total))}</TableCell>
-                      <TableCell><Badge className={RISK_LEVELS[e.riskLevel as keyof typeof RISK_LEVELS]?.bg}>{e.riskLevel}</Badge></TableCell>
+                      <TableCell><Badge className={RISK_LEVELS[e.riskLevel as keyof typeof RISK_LEVELS]?.bg}>{RISK_LEVELS[e.riskLevel as keyof typeof RISK_LEVELS]?.label ?? e.riskLevel}</Badge></TableCell>
                     </TableRow>
                   );
                 })}
@@ -675,11 +685,11 @@ export default async function ProjectDetailPage({
                 {project.team.map((p) => (
                   <TableRow key={p.id}>
                     <TableCell className="font-medium">{p.name}</TableCell>
-                    <TableCell>{p.role} <span className="text-muted-foreground">({p.level})</span></TableCell>
+                    <TableCell>{labelOf(ROLE_LABELS, p.role)} <span className="text-muted-foreground">({labelOf(LEVEL_LABELS, p.level)})</span></TableCell>
                     <TableCell className="text-right">{formatMXN(Number(p.monthlySalary))}</TableCell>
                     <TableCell className="text-center">{p.availabilityPercent}%</TableCell>
                     <TableCell className="text-center">{Number(p.monthsAssigned).toFixed(1)}</TableCell>
-                    <TableCell><Badge variant="outline">{p.contractType}</Badge></TableCell>
+                    <TableCell><Badge variant="outline">{labelOf(CONTRACT_LABELS, p.contractType)}</Badge></TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -697,7 +707,7 @@ export default async function ProjectDetailPage({
                 <GitPullRequest className="w-4 h-4" />Solicitudes de cambio ({project.changes.length})
               </CardTitle>
               <CardDescription className="max-w-3xl mt-1">
-                Cambios que el cliente pidió a mitad del proyecto. Cada uno se evalúa con el motor v7 para decidir si entra en garantía, si requiere cotización adicional, o si cambia la línea base del contrato.
+                Cambios que el cliente pidió a mitad del proyecto. Cada uno se evalúa con la calculadora de impacto para decidir si entra en garantía, si requiere cotización adicional, o si cambia lo pactado en el contrato.
               </CardDescription>
             </div>
             <Button size="sm" variant="outline" asChild>

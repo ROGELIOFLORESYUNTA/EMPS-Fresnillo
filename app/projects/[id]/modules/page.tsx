@@ -10,8 +10,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { api, apiPost, apiPut, apiDelete } from "@/lib/api-client";
+import { MODULE_TYPE_LABELS, SCALE_GUIDES, labelOf } from "@/lib/utils";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { Plus, Trash2, Pencil, X, Save, BookOpen } from "lucide-react";
+
+// Qué es cada tipo de módulo, en lenguaje llano (se muestra bajo el select).
+const MODULE_TYPE_HELP: Record<string, string> = {
+  catalogo: "Listas que se consultan y actualizan poco: colonias, tarifas, dependencias.",
+  transaccional: "Donde se captura y procesa el trabajo diario: solicitudes, pagos, registros.",
+  reporte: "Pantallas o documentos que resumen información para revisar o imprimir.",
+  integracion: "Conecta este sistema con otro (por ejemplo, con el sistema de Tesorería).",
+  flujo: "Procesos con pasos y aprobaciones: una solicitud que pasa por varias manos.",
+};
 
 interface ModuleItem {
   id: string;
@@ -122,7 +132,9 @@ export default function ProjectModulesPage({ params }: { params: Promise<{ id: s
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Módulos del proyecto</h1>
-          <p className="text-muted-foreground text-sm">{modules.length} módulos · descomposición funcional</p>
+          <p className="text-muted-foreground text-sm">
+            {modules.length} módulos · las piezas en que se divide el sistema. De aquí salen las horas estimadas.
+          </p>
         </div>
         {!showForm && (
           <Button onClick={() => { setShowForm(true); setEditingId(null); setForm({ ...FORM_DEFAULT }); }}>
@@ -139,7 +151,7 @@ export default function ProjectModulesPage({ params }: { params: Promise<{ id: s
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label>Nombre</Label>
-                  <Input value={form.name} required onChange={(e) => setForm({ ...form, name: e.target.value })} />
+                  <Input value={form.name} required placeholder="ej. Registro de solicitudes" onChange={(e) => setForm({ ...form, name: e.target.value })} />
                 </div>
                 <div className="grid gap-2">
                   <Label>Tipo</Label>
@@ -150,43 +162,57 @@ export default function ProjectModulesPage({ params }: { params: Promise<{ id: s
                     <option value="integracion">Integración</option>
                     <option value="flujo">Flujo</option>
                   </Select>
+                  <p className="text-xs text-muted-foreground">{MODULE_TYPE_HELP[form.type]}</p>
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="grid gap-2">
                   <Label>Complejidad (1-5)</Label>
                   <Input type="number" min={1} max={5} value={form.complexity} onChange={(e) => setForm({ ...form, complexity: +e.target.value })} />
+                  <p className="text-xs text-muted-foreground">{SCALE_GUIDES.complexity}</p>
                 </div>
                 <div className="grid gap-2">
                   <Label>Claridad del requerimiento (1-5)</Label>
                   <Input type="number" min={1} max={5} value={form.clarity} onChange={(e) => setForm({ ...form, clarity: +e.target.value })} />
+                  <p className="text-xs text-muted-foreground">{SCALE_GUIDES.clarity}</p>
                 </div>
                 <div className="grid gap-2">
                   <Label>Criticidad (1-5)</Label>
                   <Input type="number" min={1} max={5} value={form.criticality} onChange={(e) => setForm({ ...form, criticality: +e.target.value })} />
+                  <p className="text-xs text-muted-foreground">{SCALE_GUIDES.criticality}</p>
                 </div>
               </div>
-              <div className="grid grid-cols-4 gap-4">
+              <p className="text-xs text-muted-foreground bg-muted/50 rounded p-2">
+                Cuenta las piezas de este módulo. Si no estás seguro, deja tu mejor cálculo: se puede corregir después y re-estimar.
+              </p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="grid gap-2">
                   <Label>Pantallas</Label>
                   <Input type="number" min={0} value={form.screensCount} onChange={(e) => setForm({ ...form, screensCount: +e.target.value })} />
+                  <p className="text-xs text-muted-foreground">Vistas donde se captura o consulta</p>
                 </div>
                 <div className="grid gap-2">
                   <Label>Reportes</Label>
                   <Input type="number" min={0} value={form.reportsCount} onChange={(e) => setForm({ ...form, reportsCount: +e.target.value })} />
+                  <p className="text-xs text-muted-foreground">Documentos o resúmenes que genera</p>
                 </div>
                 <div className="grid gap-2">
                   <Label>Catálogos</Label>
                   <Input type="number" min={0} value={form.catalogsCount} onChange={(e) => setForm({ ...form, catalogsCount: +e.target.value })} />
+                  <p className="text-xs text-muted-foreground">Listas que administra (tarifas, áreas…)</p>
                 </div>
                 <div className="grid gap-2">
                   <Label>Integraciones</Label>
                   <Input type="number" min={0} value={form.integrationsCount} onChange={(e) => setForm({ ...form, integrationsCount: +e.target.value })} />
+                  <p className="text-xs text-muted-foreground">Conexiones con OTROS sistemas</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <input type="checkbox" id="sensitive" checked={form.sensitiveData} onChange={(e) => setForm({ ...form, sensitiveData: e.target.checked })} />
-                <Label htmlFor="sensitive">¿Maneja datos personales o sensibles?</Label>
+              <div className="flex items-start gap-2">
+                <input type="checkbox" id="sensitive" className="mt-1" checked={form.sensitiveData} onChange={(e) => setForm({ ...form, sensitiveData: e.target.checked })} />
+                <div>
+                  <Label htmlFor="sensitive">¿Maneja datos personales o sensibles?</Label>
+                  <p className="text-xs text-muted-foreground">CURP, domicilios, datos fiscales o de salud. Marcar sube las horas (protección de datos obligatoria por ley).</p>
+                </div>
               </div>
               <div className="grid gap-2">
                 <Label>Descripción</Label>
@@ -233,7 +259,7 @@ export default function ProjectModulesPage({ params }: { params: Promise<{ id: s
                 {modules.map((m) => (
                   <TableRow key={m.id}>
                     <TableCell className="font-medium">{m.name}</TableCell>
-                    <TableCell><Badge variant="outline">{m.type}</Badge></TableCell>
+                    <TableCell><Badge variant="outline">{labelOf(MODULE_TYPE_LABELS, m.type)}</Badge></TableCell>
                     <TableCell className="text-center">{m.complexity}/5</TableCell>
                     <TableCell className="text-center">{m.clarity}/5</TableCell>
                     <TableCell className="text-center">{m.criticality}/5</TableCell>

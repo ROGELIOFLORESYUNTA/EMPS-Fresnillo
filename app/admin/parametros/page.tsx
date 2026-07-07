@@ -20,10 +20,12 @@ const CATEGORIAS: Record<string, string> = {
   FED: "Federales (IVA, ISR)",
   MODO: "Modos de desarrollo",
   CHANGE: "Motor de control de cambios (v7)",
+  CHATBOT: "Cotizador del chatbot (ROSBECLOUD)",
   OTROS: "Otros",
 };
 
 function categorizar(key: string): keyof typeof CATEGORIAS {
+  if (key.startsWith("CHATBOT_")) return "CHATBOT";
   if (key.startsWith("CHANGE_")) return "CHANGE";
   if (key.startsWith("IMSS_")) return "IMSS";
   if (key.startsWith("UMA_")) return "UMA";
@@ -34,6 +36,16 @@ function categorizar(key: string): keyof typeof CATEGORIAS {
   if (key === "IVA_GENERAL" || key === "ISR_PERSONA_MORAL") return "FED";
   if (key.startsWith("DEV_MODE") || key === "SCENARIO_FACTORS" || key === "DEFAULT_CARGA_PATRONAL_ESTIMADA") return "MODO";
   return "OTROS";
+}
+
+// Convierte la clave interna (IMSS_ENFERMEDAD_MATERNIDAD_FIJA) en un nombre
+// legible (IMSS Enfermedad Maternidad Fija) conservando las siglas conocidas.
+const SIGLAS = new Set(["IMSS", "IVA", "ISR", "ISN", "UMA", "UAZ", "SBC", "PTU", "CEAV", "LFT", "RESICO", "PF", "INFONAVIT", "ZLFN", "CHATBOT", "ROSBECLOUD"]);
+function nombreLegible(key: string): string {
+  return key
+    .split("_")
+    .map((w) => (SIGLAS.has(w) ? w : w.charAt(0) + w.slice(1).toLowerCase()))
+    .join(" ");
 }
 
 export default async function AdminParametrosPage() {
@@ -96,7 +108,9 @@ export default async function AdminParametrosPage() {
         <Card key={cat}>
           <CardHeader>
             <CardTitle className="text-base">{CATEGORIAS[cat] ?? cat}</CardTitle>
-            <CardDescription>{items.length} parámetros en esta categoría</CardDescription>
+            <CardDescription>
+              {items.length} parámetros · haz clic en el símbolo ⓘ de cada uno para ver su manual: qué es, de dónde sale el valor y qué pasa si lo cambias
+            </CardDescription>
           </CardHeader>
           <CardContent className="p-0">
             <Table>
@@ -118,10 +132,11 @@ export default async function AdminParametrosPage() {
                   return (
                     <TableRow key={p.id} className={override ? "bg-blue-50/40" : ""}>
                       <TableCell>
-                        <p className="font-mono text-xs inline-flex items-center">
-                          {p.key}
+                        <p className="text-sm font-medium inline-flex items-center">
+                          {nombreLegible(p.key)}
                           <ParameterManualSheet parameterKey={p.key} />
                         </p>
+                        <p className="font-mono text-[10px] text-muted-foreground">{p.key}</p>
                         {p.notes && <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{p.notes}</p>}
                         {override && (
                           <Badge variant="outline" className="text-[10px] text-blue-700 border-blue-300 mt-1">

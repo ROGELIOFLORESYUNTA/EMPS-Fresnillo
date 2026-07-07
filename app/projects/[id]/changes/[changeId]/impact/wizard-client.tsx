@@ -388,7 +388,7 @@ export function ImpactWizardClient({ projectId, changeId, initialDescription, ex
             <div className="rounded-md border border-orange-400 bg-orange-50 p-3 text-sm text-orange-900 flex items-start gap-2">
               <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
               <div>
-                <p className="font-semibold">Guardrail activo: no se permite "incluido sin costo"</p>
+                <p className="font-semibold">Protección activa: este cambio no se puede marcar como "incluido sin costo"</p>
                 <p className="text-xs mt-1">{guardrailReason}</p>
               </div>
             </div>

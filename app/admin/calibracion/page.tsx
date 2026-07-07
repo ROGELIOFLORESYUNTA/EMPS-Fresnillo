@@ -130,6 +130,12 @@ export default function CalibracionPage() {
         <p className="text-muted-foreground text-sm">Ajusta los multiplicadores de cada modo de desarrollo si las estimaciones no reflejan la realidad de tu equipo.</p>
       </div>
 
+      <div className="border-l-4 border-amber-400 bg-amber-50/60 rounded-md p-3 text-sm text-amber-950">
+        <strong>Zona para expertos.</strong> Si no sabes qué es un multiplicador de velocidad, NO necesitas tocar esta pantalla:
+        el sistema ya viene calibrado con valores respaldados por estudios. Cambiar estos números altera TODAS tus próximas
+        estimaciones. Y como todo aquí, tus cambios solo te afectan a ti y se pueden restaurar.
+      </div>
+
       {/* Explicación de los 3 factores */}
       <Card className="bg-muted/30">
         <CardHeader>

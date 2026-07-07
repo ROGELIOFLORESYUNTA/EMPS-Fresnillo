@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
-import { formatMXN, formatHours, formatWeeks, RISK_LEVELS, DEVELOPMENT_MODES } from "@/lib/utils";
+import { formatMXN, formatHours, formatWeeks, RISK_LEVELS, DEVELOPMENT_MODES, SYSTEM_TYPE_LABELS, SCENARIO_LABELS, ROLE_LABELS, LEVEL_LABELS, labelOf } from "@/lib/utils";
 import { ChevronLeft, AlertTriangle, CheckCircle2, Clock, ShieldAlert, Cog, GitBranch, Wrench, CalendarClock, Wallet, TrendingDown, TrendingUp } from "lucide-react";
 import { PrintButton } from "@/components/print-button";
 import {
@@ -124,7 +124,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
             <div><strong>Proyecto:</strong> {project.name}</div>
             <div><strong>Cliente:</strong> {project.client}</div>
             <div><strong>Área:</strong> {project.municipalArea}</div>
-            <div><strong>Tipo de sistema:</strong> {project.systemType}</div>
+            <div><strong>Tipo de sistema:</strong> {labelOf(SYSTEM_TYPE_LABELS, project.systemType)}</div>
             <div className="col-span-2"><strong>Objetivo:</strong> {project.objective}</div>
           </div>
         </CardContent>
@@ -144,7 +144,12 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
                     <ResumenItem label="Probable" value={probable ? formatMXN(Number(probable.total)) : "—"} sub={probable ? formatWeeks(Number(probable.weeksTotal)) : ""} highlight />
                     <ResumenItem label="Conservador" value={conservative ? formatMXN(Number(conservative.total)) : "—"} sub={conservative ? formatWeeks(Number(conservative.weeksTotal)) : ""} />
                   </div>
-                  <p className="text-muted-foreground">Modo recomendado: <strong>{modeLabels[probable.mode] ?? probable.mode}</strong>. Riesgo agregado: <Badge className={RISK_LEVELS[probable.riskLevel as keyof typeof RISK_LEVELS]?.bg}>{probable.riskLevel}</Badge></p>
+                  <p className="text-xs text-muted-foreground">
+                    Los tres precios son el MISMO proyecto bajo tres supuestos: <strong>Optimista</strong> = todo sale bien; <strong>Probable</strong> = lo más realista (úselo para presupuestar); <strong>Conservador</strong> = con tropiezos. El precio Probable se compone de {formatMXN(Number(probable.subtotal))} de servicios + {formatMXN(Number(probable.vat))} de IVA (16%) = <strong>{formatMXN(Number(probable.total))}</strong>.
+                  </p>
+                  <p className="text-muted-foreground">Modo recomendado: <strong>{modeLabels[probable.mode] ?? probable.mode}</strong>. Riesgo agregado: <Badge className={RISK_LEVELS[probable.riskLevel as keyof typeof RISK_LEVELS]?.bg}>{RISK_LEVELS[probable.riskLevel as keyof typeof RISK_LEVELS]?.label ?? probable.riskLevel}</Badge>
+                    <span className="text-xs"> (combina complejidad técnica, claridad de requisitos, riesgo fiscal-laboral, flujo de efectivo y probabilidad de cambios)</span>
+                  </p>
                 </>
               ) : (
                 <p className="text-muted-foreground">No hay estimaciones registradas. Generar estimación antes de imprimir el reporte.</p>
@@ -269,6 +274,9 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
                     ))}
                   </TableBody>
                 </Table>
+                <p className="text-xs text-muted-foreground italic">
+                  ¿De dónde salen estos rangos? De la tarifa por hora del equipo del proveedor ({formatMXN(weeklyTeamRate / 40)}/h) multiplicada por las horas típicas de cada categoría de cambio, con impuestos y reserva para imprevistos.
+                </p>
               </CardContent>
             </Card>
           )}
@@ -422,7 +430,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
                   {project.team.map((p) => (
                     <TableRow key={p.id}>
                       <TableCell className="font-medium">{p.name}</TableCell>
-                      <TableCell>{p.role} ({p.level})</TableCell>
+                      <TableCell>{labelOf(ROLE_LABELS, p.role)} ({labelOf(LEVEL_LABELS, p.level)})</TableCell>
                       <TableCell className="text-right">{formatMXN(Number(p.monthlySalary))}</TableCell>
                       <TableCell className="text-center">{p.availabilityPercent}%</TableCell>
                       <TableCell className="text-center">{Number(p.monthsAssigned).toFixed(1)}</TableCell>
@@ -435,7 +443,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
 
           <Card>
             <CardHeader><CardTitle className="text-base">Resumen financiero</CardTitle></CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <ResumenItem label="Costo directo" value={formatMXN(Number(probable.directCost))} />
                 <ResumenItem label="Subtotal con margen" value={formatMXN(Number(probable.subtotal))} />
@@ -444,7 +452,14 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
                 <ResumenItem label="ISR estimado" value={formatMXN(Number(probable.isrEstimated))} />
                 <ResumenItem label="Margen aplicado" value={`${(Number(probable.margin) * 100).toFixed(1)}%`} />
                 <ResumenItem label="Capital de trabajo requerido" value={formatMXN(wcap)} />
-                <ResumenItem label="Riesgo agregado" value={probable.riskLevel} />
+                <ResumenItem label="Riesgo agregado" value={RISK_LEVELS[probable.riskLevel as keyof typeof RISK_LEVELS]?.label ?? probable.riskLevel} />
+              </div>
+              <div className="rounded-md bg-muted/50 p-3 text-xs space-y-1">
+                <p className="font-semibold text-sm">Cómo se conectan estas cifras (para no sacar la calculadora):</p>
+                <p><strong>Costo directo</strong> {formatMXN(Number(probable.directCost))} (sueldos + IMSS + INFONAVIT + ISN + prestaciones del equipo) ÷ (1 − margen {(Number(probable.margin) * 100).toFixed(0)}%) = <strong>Subtotal</strong> {formatMXN(Number(probable.subtotal))}</p>
+                <p><strong>Subtotal</strong> {formatMXN(Number(probable.subtotal))} + <strong>IVA 16%</strong> {formatMXN(Number(probable.vat))} = <strong>Total facturable</strong> {formatMXN(Number(probable.total))} (esto es lo que se cotiza al cliente)</p>
+                <p><strong>ISR estimado</strong> {formatMXN(Number(probable.isrEstimated))}: impuesto sobre la utilidad que te va a tocar pagar; el IVA no es tuyo, se traslada al SAT.</p>
+                <p><strong>Capital de trabajo</strong> {formatMXN(wcap)}: lo que vas a poner de tu bolsa en el peor mes, antes de que el cliente te alcance con los pagos (ver la tabla mes a mes de abajo).</p>
               </div>
             </CardContent>
           </Card>
@@ -593,7 +608,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
                     ))}
                   </TableBody>
                 </Table>
-                <p className="text-xs text-muted-foreground italic">Basado en tu tarifa horaria equivalente ({formatMXN(weeklyTeamRate / 40)}/h, perfiles típicos pequeño/mediano). Para un cambio real, captura el cambio en /changes y obtén la cotización exacta con el motor v7.</p>
+                <p className="text-xs text-muted-foreground italic">Basado en tu tarifa horaria equivalente ({formatMXN(weeklyTeamRate / 40)}/h, perfiles típicos pequeño/mediano). Para un cambio real, regístralo en la sección de cambios del proyecto y obtén la cotización exacta con la calculadora de impacto.</p>
               </CardContent>
             </Card>
           )}
@@ -616,7 +631,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
                 <CardHeader>
                   <CardTitle className="text-base">Cambios y su impacto financiero</CardTitle>
                   <p className="text-xs text-muted-foreground">
-                    Costo facturable adicional al contrato base, calculado con el motor v7 (incluye IMSS, ISN y contingencia PMBOK 7).
+                    Costo facturable adicional al contrato base, calculado con la calculadora de impacto (incluye IMSS, ISN y reserva para imprevistos).
                   </p>
                 </CardHeader>
                 <CardContent className="p-0">
@@ -662,7 +677,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
                   <CardHeader>
                     <CardTitle className="text-base flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-orange-600" />Cambios absorbidos sin costo</CardTitle>
                     <p className="text-xs text-muted-foreground">
-                      El proveedor decidió incluir estos cambios sin cobro adicional. Si el motor activó un guardrail, aparece la razón.
+                      El proveedor decidió incluir estos cambios sin cobro adicional. Si el sistema detectó que el cambio era demasiado grande para regalarse, aparece la razón.
                     </p>
                   </CardHeader>
                   <CardContent className="space-y-2 text-sm">
@@ -672,7 +687,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
                         <div key={c.id} className="border-l-2 border-orange-300 pl-2 py-1">
                           <p className="font-medium">{c.clientOriginalText ?? c.description}</p>
                           {c.assessment?.freeChangeGuardrailReason && (
-                            <p className="text-xs text-orange-800 mt-1">Guardrail: {c.assessment.freeChangeGuardrailReason}</p>
+                            <p className="text-xs text-orange-800 mt-1">Advertencia del sistema: {c.assessment.freeChangeGuardrailReason}</p>
                           )}
                         </div>
                       ))}
@@ -710,7 +725,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
                     return (
                       <TableRow key={e.id}>
                         <TableCell>{modeLabels[e.mode] ?? e.mode}</TableCell>
-                        <TableCell><Badge variant="outline">{e.scenario}</Badge></TableCell>
+                        <TableCell><Badge variant="outline">{labelOf(SCENARIO_LABELS, e.scenario)}</Badge></TableCell>
                         <TableCell className="text-right">{formatHours(totalHours)}</TableCell>
                         <TableCell className="text-right">{e.weeksTotal ? formatWeeks(Number(e.weeksTotal)) : "—"}</TableCell>
                         <TableCell className="text-right">{e.weeksToPrototype ? formatWeeks(Number(e.weeksToPrototype)) : "—"}</TableCell>
@@ -804,6 +819,23 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
             </Card>
           )}
         </>
+      )}
+
+      {/* Mini glosario imprimible: los términos de este reporte, en una línea cada uno */}
+      {(type === "municipal" || type === "proveedor") && (
+        <Card className="bg-muted/20">
+          <CardHeader><CardTitle className="text-sm">Términos usados en este reporte</CardTitle></CardHeader>
+          <CardContent className="text-xs text-muted-foreground grid sm:grid-cols-2 gap-x-6 gap-y-1">
+            <p><strong>IVA (16%):</strong> impuesto que se suma al precio; el proveedor lo cobra y lo entrega al SAT, no es ganancia.</p>
+            <p><strong>ISR:</strong> impuesto sobre la utilidad (ganancia) del proveedor.</p>
+            <p><strong>Margen:</strong> porcentaje de utilidad que el proveedor agrega sobre su costo.</p>
+            <p><strong>Capital de trabajo (bache de caja):</strong> dinero que el proveedor pone de su bolsa en el peor mes, antes de que los cobros lo alcancen.</p>
+            <p><strong>Contingencia:</strong> reserva para imprevistos (práctica internacional: 10 a 25%).</p>
+            <p><strong>Escenarios:</strong> el mismo proyecto bajo 3 supuestos: optimista (todo sale bien), probable (realista) y conservador (con tropiezos).</p>
+            <p><strong>Riesgo agregado:</strong> combinación de 5 factores: complejidad técnica, claridad de requisitos, riesgo fiscal-laboral, flujo de efectivo y probabilidad de cambios.</p>
+            <p><strong>Mantenimiento:</strong> costo mensual de mantener el sistema vivo después de la entrega (correcciones, ajustes, soporte).</p>
+          </CardContent>
+        </Card>
       )}
 
       {/* Footer */}

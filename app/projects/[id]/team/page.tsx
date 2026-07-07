@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { api, apiPost, apiPut, apiDelete } from "@/lib/api-client";
-import { formatMXN } from "@/lib/utils";
+import { formatMXN, CONTRACT_LABELS, CONTRACT_HELP, ROLE_LABELS, LEVEL_LABELS, labelOf } from "@/lib/utils";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { Plus, Trash2, Pencil, X, Save } from "lucide-react";
 
@@ -109,7 +109,9 @@ export default function ProjectTeamPage({ params }: { params: Promise<{ id: stri
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Equipo del proyecto</h1>
-          <p className="text-muted-foreground text-sm">{team.length} perfiles asignados</p>
+          <p className="text-muted-foreground text-sm">
+            {team.length} perfiles · las personas que el PROVEEDOR asigna. Su salario es lo que el proveedor les paga (su costo), no lo que cobra al cliente.
+          </p>
         </div>
         {!showForm && (
           <Button onClick={() => { setShowForm(true); setEditingId(null); setForm({ ...FORM_DEFAULT }); }}>
@@ -132,46 +134,67 @@ export default function ProjectTeamPage({ params }: { params: Promise<{ id: stri
                   <Label>Rol</Label>
                   <Select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
                     <option value="lider_tecnico">Líder técnico</option>
-                    <option value="dev_senior">Dev senior</option>
-                    <option value="dev_junior">Dev junior</option>
+                    <option value="dev_senior">Desarrollador senior</option>
+                    <option value="dev_junior">Desarrollador junior</option>
                     <option value="analista">Analista</option>
-                    <option value="tester">Tester</option>
+                    <option value="tester">Probador (tester)</option>
                     <option value="disenador">Diseñador</option>
                     <option value="soporte">Soporte</option>
                   </Select>
                 </div>
                 <div className="grid gap-2">
-                  <Label>Nivel</Label>
+                  <Label>Nivel de experiencia</Label>
                   <Select value={form.level} onChange={(e) => setForm({ ...form, level: e.target.value })}>
-                    <option value="junior">Junior</option>
-                    <option value="mid">Mid</option>
-                    <option value="senior">Senior</option>
-                    <option value="lead">Lead</option>
+                    <option value="junior">Junior (aprendiendo)</option>
+                    <option value="mid">Medio</option>
+                    <option value="senior">Senior (experimentado)</option>
+                    <option value="lead">Líder</option>
                   </Select>
                 </div>
               </div>
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="grid gap-2">
-                  <Label>Salario mensual</Label>
-                  <Input type="number" min={0} value={form.monthlySalary} onChange={(e) => setForm({ ...form, monthlySalary: +e.target.value })} />
+                  <Label>Salario mensual (MXN, bruto)</Label>
+                  <Input type="number" min={0} value={form.monthlySalary} placeholder="ej. 30000" onChange={(e) => setForm({ ...form, monthlySalary: +e.target.value })} />
+                  <p className="text-xs text-muted-foreground">
+                    Lo que el proveedor le paga a esta persona al mes, antes de impuestos.
+                    {form.monthlySalary > 0 && <> ({formatMXN(form.monthlySalary)})</>}
+                  </p>
                 </div>
                 <div className="grid gap-2">
                   <Label>Disponibilidad %</Label>
                   <Input type="number" min={0} max={100} value={form.availabilityPercent} onChange={(e) => setForm({ ...form, availabilityPercent: +e.target.value })} />
+                  <p className="text-xs text-muted-foreground">% de su jornada dedicado a ESTE proyecto. 100 = tiempo completo; 50 = medio tiempo.</p>
                 </div>
                 <div className="grid gap-2">
                   <Label>Meses asignados</Label>
                   <Input type="number" min={0} step={0.5} value={form.monthsAssigned} onChange={(e) => setForm({ ...form, monthsAssigned: +e.target.value })} />
+                  <p className="text-xs text-muted-foreground">Cuántos meses va a trabajar en el proyecto. Acepta medios (2.5).</p>
+                </div>
+              </div>
+              <div className="grid gap-2">
+                <Label>Tipo de contrato</Label>
+                <Select value={form.contractType} onChange={(e) => setForm({ ...form, contractType: e.target.value })}>
+                  <option value="nomina">Nómina</option>
+                  <option value="asimilados">Asimilados a salarios</option>
+                  <option value="honorarios">Honorarios</option>
+                  <option value="resico_pf">RESICO (persona física)</option>
+                  <option value="freelance">Freelance</option>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  {CONTRACT_HELP[form.contractType]} Este dato cambia el costo real del perfil (cargas patronales).
+                </p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label>Riesgo de que renuncie (1-5)</Label>
+                  <Input type="number" min={1} max={5} value={form.turnoverRisk} onChange={(e) => setForm({ ...form, turnoverRisk: +e.target.value })} />
+                  <p className="text-xs text-muted-foreground">1 = persona estable y comprometida · 5 = muy probable que deje el proyecto a medias. Sube el riesgo de la estimación.</p>
                 </div>
                 <div className="grid gap-2">
-                  <Label>Tipo de contrato</Label>
-                  <Select value={form.contractType} onChange={(e) => setForm({ ...form, contractType: e.target.value })}>
-                    <option value="nomina">Nómina</option>
-                    <option value="asimilados">Asimilados</option>
-                    <option value="honorarios">Honorarios</option>
-                    <option value="resico_pf">RESICO PF</option>
-                    <option value="freelance">Freelance</option>
-                  </Select>
+                  <Label>Supervisión que necesita (1-5)</Label>
+                  <Input type="number" min={1} max={5} value={form.supervisionRequired} onChange={(e) => setForm({ ...form, supervisionRequired: +e.target.value })} />
+                  <p className="text-xs text-muted-foreground">1 = trabaja solo sin revisión · 5 = necesita revisión constante de alguien senior (le quita tiempo al líder).</p>
                 </div>
               </div>
               {error && <p className="text-sm text-destructive">{error}</p>}
@@ -210,11 +233,11 @@ export default function ProjectTeamPage({ params }: { params: Promise<{ id: stri
                 {team.map((p) => (
                   <TableRow key={p.id}>
                     <TableCell className="font-medium">{p.name}</TableCell>
-                    <TableCell>{p.role} <span className="text-muted-foreground text-xs">({p.level})</span></TableCell>
+                    <TableCell>{labelOf(ROLE_LABELS, p.role)} <span className="text-muted-foreground text-xs">({labelOf(LEVEL_LABELS, p.level)})</span></TableCell>
                     <TableCell className="text-right">{formatMXN(Number(p.monthlySalary))}</TableCell>
                     <TableCell className="text-center">{p.availabilityPercent}%</TableCell>
                     <TableCell className="text-center">{Number(p.monthsAssigned).toFixed(1)}</TableCell>
-                    <TableCell><Badge variant="outline">{p.contractType}</Badge></TableCell>
+                    <TableCell><Badge variant="outline">{labelOf(CONTRACT_LABELS, p.contractType)}</Badge></TableCell>
                     <TableCell>
                       <div className="flex gap-1">
                         <Button variant="ghost" size="icon" onClick={() => startEdit(p)} title="Editar">
