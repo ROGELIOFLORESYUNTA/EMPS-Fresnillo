@@ -38,7 +38,7 @@ export function WorkspaceBadge() {
   return (
     <Link
       href="/mi-cuenta"
-      className={`hidden md:inline-flex items-center gap-1.5 text-xs rounded-full px-2.5 py-1 transition-colors border ${
+      className={`inline-flex items-center gap-1.5 text-xs rounded-full px-2.5 py-1 transition-colors border ${
         identified
           ? "text-foreground hover:bg-accent border-border"
           : "text-amber-900 bg-amber-50 hover:bg-amber-100 border-amber-300"
@@ -47,7 +47,7 @@ export function WorkspaceBadge() {
     >
       {identified ? <User2 className="w-3.5 h-3.5" /> : <UserCircle2 className="w-3.5 h-3.5" />}
       <span className="font-medium">{me.displayName ?? "Anónimo"}</span>
-      {!identified && <span className="text-[10px] uppercase tracking-wide">Identifícate</span>}
+      {!identified && <span className="text-[10px] uppercase tracking-wide hidden sm:inline">Identifícate</span>}
     </Link>
   );
 }

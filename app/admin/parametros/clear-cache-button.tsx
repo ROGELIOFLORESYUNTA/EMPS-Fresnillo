@@ -20,14 +20,14 @@ export function ClearCacheButton() {
   }
 
   return (
-    <Button variant="outline" size="sm" onClick={handle} disabled={status === "loading"} title="Invalida la caché de parámetros del motor v7 para que los próximos cálculos lean valores frescos">
+    <Button variant="outline" size="sm" onClick={handle} disabled={status === "loading"} title="Descarta los valores guardados en memoria para que los próximos cálculos usen los valores más recientes">
       {status === "ok" ? (
         <>
-          <CheckCircle2 className="w-4 h-4 mr-2 text-green-600" />Caché limpiada
+          <CheckCircle2 className="w-4 h-4 mr-2 text-green-600" />Valores actualizados
         </>
       ) : (
         <>
-          <RefreshCw className={`w-4 h-4 mr-2 ${status === "loading" ? "animate-spin" : ""}`} />Limpiar caché de cambios v7
+          <RefreshCw className={`w-4 h-4 mr-2 ${status === "loading" ? "animate-spin" : ""}`} />Refrescar valores del cálculo
         </>
       )}
     </Button>

@@ -81,7 +81,7 @@ export default async function HowItWorksPage() {
           <Term term="Tres escenarios" def="Optimista (×0.85), Probable (×1.00), Conservador (×1.25 a ×1.80 según incertidumbre acumulada)." />
         </div>
         <p className="text-sm text-muted-foreground mt-3">
-          Glosario completo: <Link href="/glossary" className="text-primary hover:underline">30 términos categorizados</Link>
+          Glosario completo: <Link href="/glossary" className="text-primary hover:underline">todos los términos del sistema, categorizados y explicados</Link>
         </p>
       </section>
 

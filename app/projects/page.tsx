@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
-import { formatMXN, RISK_LEVELS } from "@/lib/utils";
+import { formatMXN, RISK_LEVELS, STATUS_LABELS, SYSTEM_TYPE_LABELS, labelOf } from "@/lib/utils";
 import { Plus } from "lucide-react";
 import { peekWorkspace } from "@/lib/workspace";
 
@@ -63,14 +63,14 @@ export default async function ProjectsPage() {
                     <TableCell>
                       <Link href={`/projects/${p.id}`} className="block">
                         <div className="font-medium">{p.name}</div>
-                        <div className="text-xs text-muted-foreground">{p.systemType}</div>
+                        <div className="text-xs text-muted-foreground">{labelOf(SYSTEM_TYPE_LABELS, p.systemType)}</div>
                       </Link>
                     </TableCell>
                     <TableCell>
                       <div>{p.client}</div>
                       <div className="text-xs text-muted-foreground">{p.municipalArea}</div>
                     </TableCell>
-                    <TableCell><Badge variant="outline">{p.status}</Badge></TableCell>
+                    <TableCell><Badge variant="outline">{labelOf(STATUS_LABELS, p.status)}</Badge></TableCell>
                     <TableCell className="text-center">{p._count.modules}</TableCell>
                     <TableCell className="text-center">{p._count.estimates}</TableCell>
                     <TableCell className="text-center">{p._count.changes}</TableCell>
@@ -80,7 +80,7 @@ export default async function ProjectsPage() {
                     <TableCell>
                       {e ? (
                         <Badge className={RISK_LEVELS[e.riskLevel as keyof typeof RISK_LEVELS]?.bg}>
-                          {e.riskLevel}
+                          {RISK_LEVELS[e.riskLevel as keyof typeof RISK_LEVELS]?.label ?? e.riskLevel}
                         </Badge>
                       ) : <span className="text-muted-foreground text-xs">—</span>}
                     </TableCell>

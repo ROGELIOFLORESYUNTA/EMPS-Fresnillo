@@ -158,7 +158,7 @@ export default function ChangesPage({ params }: { params: Promise<{ id: string }
                     <option value="mitad">{PHASE_LABELS.mitad}</option>
                     <option value="avanzado">{PHASE_LABELS.avanzado}</option>
                   </Select>
-                  <p className="text-xs text-muted-foreground">Cambios tardíos cuestan más (curva de costo del cambio de Boehm, estándar del Project Management Institute).</p>
+                  <p className="text-xs text-muted-foreground">Cambios tardíos cuestan más: entre más avanzado va el proyecto, más trabajo ya hecho hay que ajustar. Es un principio estándar de gestión de proyectos.</p>
                 </div>
               </div>
 
@@ -240,14 +240,14 @@ export default function ChangesPage({ params }: { params: Promise<{ id: string }
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        <Button size="sm" variant="outline" asChild title="Evaluar impacto con motor v7">
+                        <Button size="sm" variant="outline" asChild title="Evaluar cuánto cuesta este cambio (recomendado antes de aceptar)">
                           <Link href={`/projects/${projectId}/changes/${c.id}/impact`}>
                             <FileSearch className="w-4 h-4" />
                           </Link>
                         </Button>
                         {c.decision === "pendiente" && (
                           <>
-                            <Button size="sm" variant="outline" onClick={() => handleDecision(c.id, "aceptado")} title="Aceptar (decisión rápida sin evaluación detallada)">
+                            <Button size="sm" variant="outline" onClick={() => handleDecision(c.id, "aceptado")} title="Aceptar sin evaluar (solo para cambios chicos; los grandes conviene evaluarlos primero)">
                               <Check className="w-4 h-4 text-green-600" />
                             </Button>
                             <Button size="sm" variant="outline" onClick={() => handleDecision(c.id, "rechazado")} title="Rechazar">

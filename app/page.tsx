@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, FolderOpen, Plus, Settings, BookOpen, FileText, AlertCircle, User2 } from "lucide-react";
-import { formatMXN } from "@/lib/utils";
+import { formatMXN, STATUS_LABELS, labelOf } from "@/lib/utils";
 import { peekWorkspace } from "@/lib/workspace";
 
 export default async function HomePage() {
@@ -77,7 +77,10 @@ export default async function HomePage() {
       {/* Acciones principales — bien visibles, una sola fila */}
       <section>
         <h1 className="text-3xl font-bold mb-2">EMPS Fresnillo</h1>
-        <p className="text-muted-foreground mb-6">Estimador municipal de proyectos de software</p>
+        <p className="text-muted-foreground mb-1">Estimador municipal de proyectos de software</p>
+        <p className="text-sm text-foreground/80 mb-6 max-w-2xl">
+          Calcula cuánto cuesta DE VERDAD un sistema de software (con impuestos, nómina, cambios a medio camino y flujo de efectivo) <strong>antes de firmar</strong>. Una cotización que se ve barata puede costar mucho más durante la ejecución; este sistema lo detecta a tiempo.
+        </p>
 
         <div className="grid md:grid-cols-3 gap-4">
           <ActionCard
@@ -98,8 +101,7 @@ export default async function HomePage() {
             href="/admin/parametros"
             icon={<Settings className="w-6 h-6" />}
             title="Editar parámetros"
-            description="UMA, IVA, ISR, IMSS, ISN. Modificar para 2027 u otros cambios"
-            badge={`${paramsCount}`}
+            description={`Configuración avanzada (opcional): impuestos y cuotas como UMA, IVA, ISR, IMSS e ISN. Los ${paramsCount} valores oficiales de 2026 ya vienen cargados; solo entra si necesitas ajustarlos.`}
           />
         </div>
       </section>
@@ -148,12 +150,12 @@ export default async function HomePage() {
                     <CardContent className="py-4">
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <h3 className="font-medium line-clamp-1">{p.name}</h3>
-                        <Badge variant="outline" className="shrink-0 text-xs">{p.status}</Badge>
+                        <Badge variant="outline" className="shrink-0 text-xs">{labelOf(STATUS_LABELS, p.status)}</Badge>
                       </div>
                       <p className="text-xs text-muted-foreground line-clamp-1 mb-3">{p.client} · {p.municipalArea}</p>
                       <div className="flex items-center justify-between text-xs">
                         <span className="text-muted-foreground">
-                          {p._count.modules} mód · {p._count.estimates} est
+                          {p._count.modules} {p._count.modules === 1 ? "módulo" : "módulos"} · {p._count.estimates} {p._count.estimates === 1 ? "estimación" : "estimaciones"}
                         </span>
                         {e ? (
                           <span className="font-semibold text-primary">{formatMXN(Number(e.total))}</span>
@@ -185,7 +187,7 @@ export default async function HomePage() {
             href="/glossary"
             icon={<FileText className="w-5 h-5" />}
             title="Glosario"
-            description="30 términos del sistema explicados"
+            description="Los términos del sistema explicados en lenguaje llano"
           />
         </div>
       </section>
