@@ -94,6 +94,25 @@ function getJson<T>(rows: LoadedParam[], key: string): T {
   return JSON.parse(row.value) as T;
 }
 
+/** Como getNum pero con respaldo: parámetros agregados DESPUÉS del seed
+ *  original no deben tumbar el motor en una BD que aún no se resiembra. */
+function getNumOr(rows: LoadedParam[], key: string, fallback: number): number {
+  const row = rows.find((r) => r.key === key);
+  if (!row || row.value === null) return fallback;
+  const n = Number.parseFloat(row.value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function getJsonOr<T>(rows: LoadedParam[], key: string, fallback: T): T {
+  const row = rows.find((r) => r.key === key);
+  if (!row || !row.value) return fallback;
+  try {
+    return JSON.parse(row.value) as T;
+  } catch {
+    return fallback;
+  }
+}
+
 export async function loadFiscalRates(
   year = DEFAULT_YEAR,
   workspaceId: string | null = null,
@@ -117,6 +136,15 @@ export async function loadFiscalRates(
     UAZ: getNum(rows, "IMPUESTO_UAZ"),
     UMA_DIARIA: getNum(rows, "UMA_DIARIA"),
     INFONAVIT: getNum(rows, "INFONAVIT_PATRON"),
+    // Integración del SBC (LSS Arts. 27-28). Estos parámetros YA estaban
+    // sembrados y nadie los leía; ahora alimentan el factor de integración,
+    // el piso (1 SM) y el tope (25 UMA) del salario base de cotización.
+    SALARIO_MINIMO_DIARIO: getNumOr(rows, "SALARIO_MINIMO_GENERAL_DIARIO", 315.04),
+    SBC_TOPE_UMA: getNumOr(rows, "SBC_TOPE_UMA", 25),
+    AGUINALDO_DIAS: getNumOr(rows, "LFT_AGUINALDO_DIAS_MIN", 15),
+    PRIMA_VACACIONAL: getNumOr(rows, "LFT_PRIMA_VACACIONAL_MIN", 0.25),
+    VACACIONES_TABLA: getJsonOr<Record<string, number>>(
+      rows, "LFT_VACACIONES_DIAS_2026", {}),
     EYM_ESPECIE_FIJA_PATRON: getNum(rows, "IMSS_EYM_ESPECIE_CUOTA_FIJA_PATRON"),
     EYM_ESPECIE_EXCEDENTE_PATRON: getNum(rows, "IMSS_EYM_ESPECIE_EXCEDENTE_PATRON"),
     EYM_ESPECIE_EXCEDENTE_OBRERO: getNum(rows, "IMSS_EYM_ESPECIE_EXCEDENTE_OBRERO"),
