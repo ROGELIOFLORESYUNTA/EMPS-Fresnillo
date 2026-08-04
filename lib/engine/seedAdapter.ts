@@ -31,6 +31,11 @@ function getTable(seed: SeedShape, key: string): Record<string, number> {
   return p.table;
 }
 
+function getTableOr(seed: SeedShape, key: string): Record<string, number> {
+  const p = seed.parameters.find((x) => x.key === key);
+  return p?.table ?? {};
+}
+
 export function loadFiscalRatesFromSeed(seed: SeedShape): FiscalRates {
   const riesgo: Record<IMSSRiskClass, number> = {
     I: getNum(seed, "IMSS_RIESGO_TRABAJO_CLASE_I"),
@@ -46,6 +51,12 @@ export function loadFiscalRatesFromSeed(seed: SeedShape): FiscalRates {
     UAZ: getNum(seed, "IMPUESTO_UAZ"),
     UMA_DIARIA: getNum(seed, "UMA_DIARIA"),
     INFONAVIT: getNum(seed, "INFONAVIT_PATRON"),
+    // Integración del SBC (LSS Arts. 27-28) — ver lib/engine/cost.ts.
+    SALARIO_MINIMO_DIARIO: getNum(seed, "SALARIO_MINIMO_GENERAL_DIARIO", 315.04),
+    SBC_TOPE_UMA: getNum(seed, "SBC_TOPE_UMA", 25),
+    AGUINALDO_DIAS: getNum(seed, "LFT_AGUINALDO_DIAS_MIN", 15),
+    PRIMA_VACACIONAL: getNum(seed, "LFT_PRIMA_VACACIONAL_MIN", 0.25),
+    VACACIONES_TABLA: getTableOr(seed, "LFT_VACACIONES_DIAS_2026"),
     EYM_ESPECIE_FIJA_PATRON: getNum(seed, "IMSS_EYM_ESPECIE_CUOTA_FIJA_PATRON"),
     EYM_ESPECIE_EXCEDENTE_PATRON: getNum(seed, "IMSS_EYM_ESPECIE_EXCEDENTE_PATRON"),
     EYM_ESPECIE_EXCEDENTE_OBRERO: getNum(seed, "IMSS_EYM_ESPECIE_EXCEDENTE_OBRERO"),

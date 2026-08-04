@@ -116,7 +116,11 @@ const DEFAULT_FREE_CHANGE_LIMIT_MXN = 10000;
  */
 const FISCAL_RATES_FALLBACK = {
   iva: 0.16,
-  imssPatronalApprox: 0.265, // ~26.5% promedio EyM + IV + RT + retiro + CEAV + INFONAVIT + guarderías
+  // ~24.5% de carga IMSS+INFONAVIT sobre el salario, calculado con el motor de
+  // cost.ts YA CON el SBC integrado (factor 1.0493) y el tope de 25 UMA:
+  // $15k/mes → 25.7%, $20k → 24.7%, $30k → 23.7%, $50k → 22.9% (el tope pesa).
+  // El 26.5% anterior era una aproximación sin memoria de cálculo.
+  imssPatronalApprox: 0.245,
   isnZacatecasEffective: 0.0385, // ISN 3.5% × (1 + UAZ 10%)
   adminOverheadPct: 0.10, // 10% para gastos administrativos del proveedor
 };

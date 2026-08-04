@@ -168,10 +168,41 @@ describe("Costo fiscal-laboral por perfil", () => {
   it("Modo detallado: incluye todos los ramos IMSS + INFONAVIT + ISN+UAZ", () => {
     const cost = computeProfileCost({ monthlySalary: 30000, riskClass: "I" }, fiscal);
     expect(cost.imssPatronal).toBeGreaterThan(0);
-    expect(cost.infonavit).toBeCloseTo((30000 / 30.4) * 0.05 * 30.4, 0);
-    expect(cost.isnTotal).toBeCloseTo(30000 * 0.035 * 1.10, 1);  // ISN + 10% UAZ
+    // EL SBC VA INTEGRADO (LSS Art. 27): salario diario × factor 1.0493 (año 1,
+    // aguinaldo 15 días + prima vacacional 25% de 12 días). Antes se cotizaba
+    // sobre el salario pelón y TODAS las cuotas salían ~5% cortas. Misma
+    // fórmula que el motor de nómina de ContaCumple validado en producción.
+    expect(cost.factorIntegracion).toBeCloseTo(1.0493, 4);
+    expect(cost.sbcDiario).toBeCloseTo((30000 / 30.4) * 1.0493, 2);
+    expect(cost.infonavit).toBeCloseTo((30000 / 30.4) * 1.0493 * 0.05 * 30.4, 0);
+    expect(cost.isnTotal).toBeCloseTo(30000 * 0.035 * 1.10, 1);  // ISN + 10% UAZ (sobre salario, no SBC)
     expect(cost.imssDetail).toBeDefined();
     expect(cost.imssDetail!.ceav).toBeGreaterThan(0);
+  });
+
+  it("Provisión LFT = factor de integración − 1 (aguinaldo + prima), NO el 12.4% inventado", () => {
+    // La constante vieja (0.0833 + 15/365 ≈ 12.4%) sobreestimaba al triple: los
+    // días de vacaciones NO son costo extra (se pagan como salario normal
+    // trabajado); lo extra es el aguinaldo (15/365) y la prima del 25%
+    // (12 × 0.25 / 365) ≈ 4.93% el primer año.
+    const cost = computeProfileCost({ monthlySalary: 30000 }, fiscal);
+    expect(cost.benefitsProvision).toBeCloseTo(30000 * 0.0493, 0);
+  });
+
+  it("El SBC se TOPA en 25 UMA (LSS Art. 28): un sueldo de $150,000 no cotiza completo", () => {
+    const cost = computeProfileCost({ monthlySalary: 150000 }, fiscal);
+    const topeDiario = 25 * 117.31; // 2,932.75
+    expect(cost.sbcDiario).toBeCloseTo(topeDiario, 2);
+    // INFONAVIT sobre el tope, no sobre el salario:
+    expect(cost.infonavit).toBeCloseTo(topeDiario * 0.05 * 30.4, 0);
+  });
+
+  it("La antigüedad sube el factor: año 5 (20 días de vacaciones) → 1.0548", () => {
+    const y1 = computeProfileCost({ monthlySalary: 30000, seniorityYears: 1 }, fiscal);
+    const y5 = computeProfileCost({ monthlySalary: 30000, seniorityYears: 5 }, fiscal);
+    expect(y1.factorIntegracion).toBeCloseTo(1.0493, 4);
+    expect(y5.factorIntegracion).toBeCloseTo(1.0548, 4);
+    expect(y5.total).toBeGreaterThan(y1.total);
   });
 
   it("Modo factor estimado: total ~ salario * 1.40 + ISN", () => {

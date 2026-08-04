@@ -8,7 +8,7 @@ import { describe, it, expect } from "vitest";
 import { ceavPatronRate } from "@/lib/engine/cost";
 
 const TABLA_2026 = {
-  "hasta_1.00_UMA": 0.0315,
+  "hasta_1_SM": 0.0315,
   "1.01_a_1.50_UMA": 0.03676,
   "1.51_a_2.00_UMA": 0.04851,
   "2.01_a_2.50_UMA": 0.05556,
@@ -19,8 +19,30 @@ const TABLA_2026 = {
 };
 
 describe("ceavPatronRate — tabla escalonada LSS Art. 168 fr. II vigente 2026", () => {
-  it("salario mínimo (1 UMA exacto) usa el rango 'hasta 1 UMA' = 3.15%", () => {
+  it("salario mínimo (1 UMA exacto) usa la banda 1 = 3.15%", () => {
     expect(ceavPatronRate(1.0, TABLA_2026)).toBeCloseTo(0.0315, 5);
+  });
+
+  it("LA BANDA 1 ES «1 SALARIO MÍNIMO», NO «1 UMA»: un trabajador de salario mínimo paga 3.150%", () => {
+    // El SM 2026 ($315.04) equivale a 2.69 UMA. Clasificando solo por UMA, el
+    // trabajador de salario mínimo caía en la banda de 6.026% — el doble de lo
+    // que le toca. La banda 1 se decide comparando el SBC contra el SM diario.
+    const sm = 315.04;
+    expect(
+      ceavPatronRate(sm / 117.31, TABLA_2026, { sbcDiario: sm, salarioMinimoDiario: sm }),
+    ).toBeCloseTo(0.0315, 5);
+    // Y quien gana MÁS del mínimo se clasifica por UMA como siempre:
+    // $400 diarios = 3.41 UMA → banda 3.01–3.50 = 6.361%.
+    expect(
+      ceavPatronRate(400 / 117.31, TABLA_2026, { sbcDiario: 400, salarioMinimoDiario: sm }),
+    ).toBeCloseTo(0.06361, 5);
+  });
+
+  it("la tabla vieja con la llave 'hasta_1.00_UMA' sigue funcionando (compatibilidad)", () => {
+    const vieja = { ...TABLA_2026 } as Record<string, number>;
+    delete vieja["hasta_1_SM"];
+    vieja["hasta_1.00_UMA"] = 0.0315;
+    expect(ceavPatronRate(1.0, vieja)).toBeCloseTo(0.0315, 5);
   });
 
   it("1.5 UMA usa el rango '1.01 a 1.50' = 3.676%", () => {

@@ -20,6 +20,10 @@ const LIMITE_CONTRATO_DETERMINADO_MESES = 6;
 const INDEMNIZACION_DIAS_BASE = 90;          // 3 meses
 const INDEMNIZACION_DIAS_POR_ANIO = 20;
 const PRIMA_ANTIGUEDAD_DIAS_POR_ANIO = 12;
+// A PROPÓSITO 30 y no 30.4: para liquidaciones LFT la práctica (y los
+// tribunales) usan el mes comercial de 30 días para sacar el salario diario.
+// El 30.4 del motor de costo es otra convención (días promedio de calendario
+// para prorratear costos mensuales); no confundirlas ni "unificarlas".
 const DIAS_DE_SALARIO_POR_MES = 30;
 
 export interface ProfileForLFT {

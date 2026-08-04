@@ -140,6 +140,15 @@ export interface FiscalRates {
   UAZ: number;
   UMA_DIARIA: number;
   INFONAVIT: number;
+  // Integración del SBC (traído del motor de nómina de ContaCumple, validado en
+  // producción). El IMSS no cotiza sobre el salario pelón: cotiza sobre el
+  // salario INTEGRADO con aguinaldo y prima vacacional (LSS Art. 27), con piso
+  // de 1 salario mínimo y tope de 25 UMA (LSS Art. 28).
+  SALARIO_MINIMO_DIARIO: number;
+  SBC_TOPE_UMA: number;                     // 25
+  AGUINALDO_DIAS: number;                   // 15 (LFT Art. 87)
+  PRIMA_VACACIONAL: number;                 // 0.25 (LFT Art. 80)
+  VACACIONES_TABLA: Record<string, number>; // días por antigüedad (LFT Art. 76, reforma 2023)
   // Cuotas IMSS (rates sobre SBC excepto donde se indique base diferente)
   EYM_ESPECIE_FIJA_PATRON: number;
   EYM_ESPECIE_EXCEDENTE_PATRON: number;
@@ -164,6 +173,7 @@ export interface ProfileCostInput {
   adminOverhead?: number;
   riskClass?: IMSSRiskClass;        // default "I"
   daysPerMonth?: number;            // default 30.4
+  seniorityYears?: number;          // antigüedad para el factor de integración; default 1 (recién contratado)
   useEstimatedFactor?: boolean;     // si true, usa factor agregado en lugar de detalle por ramo
   estimatedFactor?: number;         // default 0.40
 }
@@ -190,6 +200,9 @@ export interface ProfileCostBreakdown {
     ceav: number;
   };
   obreroDescontado?: number; // suma cuotas obreras (informativo)
+  // Auditoría del SBC: con qué base cotizó de verdad este perfil.
+  sbcDiario?: number;          // ya integrado, con piso (1 SM) y tope (25 UMA)
+  factorIntegracion?: number;  // el factor aplicado (1.0493 año 1, LSS Art. 27)
 }
 
 export interface PricingInput {
