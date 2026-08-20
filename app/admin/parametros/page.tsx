@@ -10,7 +10,7 @@ import { ClearCacheButton } from "./clear-cache-button";
 import { ParameterManualSheet } from "@/components/parameter-manual-sheet";
 import { getCurrentWorkspaceId } from "@/lib/workspace";
 import { isAdmin } from "@/lib/admin-auth";
-import { CATEGORIAS, categorizar, nombreLegible } from "@/lib/parameter-labels";
+import { CATEGORIAS, ORDEN_CATEGORIAS, categorizar, nombreLegible } from "@/lib/parameter-labels";
 
 export default async function AdminParametrosPage() {
   const parameters = await prisma.parameter.findMany({
@@ -29,6 +29,10 @@ export default async function AdminParametrosPage() {
     const cat = categorizar(p.key);
     (grupos[cat] ??= []).push(p);
   }
+  // Mismo orden que la pantalla publica de fuentes.
+  const gruposOrdenados = Object.entries(grupos).sort(
+    ([a], [b]) => ORDEN_CATEGORIAS.indexOf(a) - ORDEN_CATEGORIAS.indexOf(b),
+  );
 
   const ahora = new Date();
   // Las acciones que afectan a todos los visitantes (sembrar un año, calibrar
@@ -74,7 +78,7 @@ export default async function AdminParametrosPage() {
         </CardContent>
       </Card>
 
-      {Object.entries(grupos).map(([cat, items]) => (
+      {gruposOrdenados.map(([cat, items]) => (
         <Card key={cat}>
           <CardHeader>
             <CardTitle className="text-base">{CATEGORIAS[cat] ?? cat}</CardTitle>
