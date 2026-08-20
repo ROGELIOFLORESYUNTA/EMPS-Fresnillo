@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
+import { isAdmin } from "@/lib/admin-auth";
 
 const modeSchema = z.object({
   velocity_factor: z.number().min(0.1).max(20),
@@ -31,6 +32,11 @@ export async function GET() {
 }
 
 export async function PUT(req: NextRequest) {
+  // Esta calibración afecta las estimaciones de TODOS los visitantes, no solo
+  // las de quien la edita: solo el investigador puede cambiarla.
+  if (!(await isAdmin())) {
+    return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+  }
   try {
     const body = await req.json();
     const data = bodySchema.parse(body);

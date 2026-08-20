@@ -45,7 +45,7 @@ export default async function UsersPage() {
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2"><Users className="w-6 h-6" />Usuarios y roles</h1>
         <p className="text-muted-foreground">
-          {users.length} usuarios registrados · 5 roles definidos en [15_seguridad_privacidad.md].
+          {users.length} usuarios de ejemplo sembrados con la instalación. El sistema no usa inicio de sesión: cada visitante se identifica con su propia llave.
         </p>
       </div>
 
@@ -103,9 +103,10 @@ export default async function UsersPage() {
 
       <Card className="bg-muted/30">
         <CardContent className="py-4 text-sm text-muted-foreground">
-          <strong className="text-foreground">Nota del prototipo:</strong> en esta versión, la autenticación está simplificada
-          (sin login/password). Para producción se recomienda integrar NextAuth.js o similar con autenticación por email,
-          y middleware que enforcee los permisos por rol en cada ruta API. La estructura de roles ya está sembrada.
+          <strong className="text-foreground">Para qué sirve esta tabla:</strong> son los perfiles de ejemplo que se
+          sembraron con la instalación, y sirven de referencia de los roles previstos en el diseño. El sistema en
+          operación no usa inicio de sesión: cada visitante trabaja con su propia llave y sus datos quedan separados
+          de los demás.
         </CardContent>
       </Card>
     </div>

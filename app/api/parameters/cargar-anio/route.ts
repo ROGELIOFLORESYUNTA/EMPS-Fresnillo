@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
+import { isAdmin } from "@/lib/admin-auth";
 
 /**
  * Carga masiva de parámetros para un año fiscal.
@@ -32,6 +33,10 @@ const bodySchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  // Sembrar un año completo crea parámetros globales: solo el investigador.
+  if (!(await isAdmin())) {
+    return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+  }
   try {
     const body = await req.json();
     const data = bodySchema.parse(body);

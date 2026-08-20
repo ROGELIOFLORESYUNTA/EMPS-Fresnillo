@@ -68,7 +68,7 @@ export default function CargarAnioPage() {
         <h1 className="text-2xl font-bold">Carga masiva por año</h1>
         <p className="text-sm text-muted-foreground">
           Subir un archivo JSON con los parámetros de un año fiscal completo (ej. 2027).
-          La estructura debe ser idéntica a <code className="bg-muted px-1 rounded text-xs">17_seed_data_parametros_2026.json</code>.
+          La estructura debe ser idéntica a la del catálogo de parámetros que ya trae el sistema.
         </p>
       </div>
 

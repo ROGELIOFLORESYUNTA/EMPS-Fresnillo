@@ -6,9 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { ChevronRight, FileText, Users, Layers, Calculator, BarChart3, Wrench, AlertTriangle, CheckCircle2 } from "lucide-react";
 
 export default async function HowItWorksPage() {
+  // Se busca por la marca de ejemplo público, no por el nombre: así el botón
+  // sigue funcionando aunque el proyecto de ejemplo cambie de título.
   const demoProject = await prisma.project.findFirst({
-    where: { name: "Demo Sistema CRUD interno" },
-    select: { id: true },
+    where: { isTemplate: true },
+    select: { id: true, name: true },
   });
 
   return (
@@ -89,7 +91,11 @@ export default async function HowItWorksPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="font-semibold">Acciones</h2>
-            <p className="text-sm text-muted-foreground">Crear un proyecto nuevo o abrir el demo capturado.</p>
+            <p className="text-sm text-muted-foreground">
+              {demoProject
+                ? "Crear un proyecto nuevo, o abrir el ejemplo ya capturado para verlo funcionando."
+                : "Crear un proyecto nuevo para empezar."}
+            </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button asChild>
@@ -97,7 +103,7 @@ export default async function HowItWorksPage() {
             </Button>
             {demoProject && (
               <Button variant="outline" asChild>
-                <Link href={`/projects/${demoProject.id}`}>Abrir proyecto demo</Link>
+                <Link href={`/projects/${demoProject.id}`}>Ver el ejemplo: {demoProject.name}</Link>
               </Button>
             )}
           </div>
