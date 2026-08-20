@@ -15,7 +15,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { ShieldCheck, Sliders, BookOpenCheck } from "lucide-react";
 import { ParameterManualSheet } from "@/components/parameter-manual-sheet";
-import { CATEGORIAS, FUENTE_POR_CATEGORIA, ORDEN_CATEGORIAS, categorizar, nombreLegible, fuenteLegible } from "@/lib/parameter-labels";
+import { CATEGORIAS, FUENTE_POR_CATEGORIA, ORDEN_CATEGORIAS, categorizar, nombreLegible, fuenteLegible, valorLegible } from "@/lib/parameter-labels";
 
 export const metadata = {
   title: "De dónde salen los números | EMPS Fresnillo",
@@ -111,7 +111,9 @@ export default async function FuentesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {items.map((p) => (
+                {items.map((p) => {
+                  const legible = valorLegible(p.value, p.unit);
+                  return (
                   <TableRow key={p.id}>
                     <TableCell>
                       <span className="text-sm font-medium inline-flex items-center">
@@ -120,12 +122,12 @@ export default async function FuentesPage() {
                       </span>
                       {p.notes && <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{p.notes}</p>}
                     </TableCell>
-                    <TableCell className="text-right font-medium">
-                      {p.unit === "json" || p.unit === "table"
+                    <TableCell className="text-right font-medium whitespace-nowrap">
+                      {legible.valor === "tabla"
                         ? <Badge variant="outline" className="text-xs">tabla</Badge>
-                        : (p.value ?? "—")}
+                        : legible.valor}
                     </TableCell>
-                    <TableCell><Badge variant="secondary" className="text-xs">{p.unit}</Badge></TableCell>
+                    <TableCell><Badge variant="secondary" className="text-xs font-normal">{legible.unidad}</Badge></TableCell>
                     <TableCell className="text-xs max-w-xs">
                       {fuenteLegible(p.source)}
                       {p.sourceUrl && (
@@ -136,7 +138,8 @@ export default async function FuentesPage() {
                     </TableCell>
                     <TableCell className="text-xs">{p.effectiveFrom.toLocaleDateString("es-MX")}</TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </CardContent>

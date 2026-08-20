@@ -184,3 +184,37 @@ export function fuenteLegible(source: string | null | undefined): string {
   }
   return source;
 }
+
+/**
+ * Valor y unidad como los leeria alguien del Ayuntamiento.
+ *
+ * En la base los porcentajes viven como fraccion (0.16) y la unidad como
+ * "rate". Mostrarlos crudos obligaba al lector a hacer la conversion mental
+ * en la pantalla que debe convencerlo, asi que aqui se traducen: 0.16 -> 16%.
+ */
+export function valorLegible(value: string | null, unit: string): { valor: string; unidad: string } {
+  if (unit === "json" || unit === "table" || unit === "table_antiguedad") {
+    return { valor: "tabla", unidad: "varios valores" };
+  }
+  const n = value === null ? NaN : Number(value);
+  if (Number.isNaN(n)) return { valor: value ?? "—", unidad: unit };
+
+  switch (unit) {
+    case "rate": {
+      // Redondeo a 4 decimales: cuotas como 0.00625 no deben perder digitos.
+      const pct = Math.round(n * 1000000) / 10000;
+      return { valor: `${pct}%`, unidad: "porcentaje" };
+    }
+    case "MXN":
+      return {
+        valor: n.toLocaleString("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 2 }),
+        unidad: "pesos",
+      };
+    case "dias_salario":
+      return { valor: String(n), unidad: n === 1 ? "día de salario" : "días de salario" };
+    case "veces_UMA":
+      return { valor: String(n), unidad: n === 1 ? "vez la UMA" : "veces la UMA" };
+    default:
+      return { valor: String(n), unidad: unit };
+  }
+}
