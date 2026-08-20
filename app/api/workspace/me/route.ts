@@ -1,8 +1,8 @@
 /**
  * Endpoint del workspace propio del visitante (identificado por cookie).
  *
- * GET  /api/workspace/me  → devuelve {id, displayName, role, recoveryCode, ...}
- * PUT  /api/workspace/me  → actualiza displayName y/o role
+ * GET  /api/workspace/me  -> devuelve {id, displayName, role, recoveryCode, ...}
+ * PUT  /api/workspace/me  -> actualiza displayName y/o role
  *
  * Sin login. La identidad viene de la cookie emps_workspace_id.
  */

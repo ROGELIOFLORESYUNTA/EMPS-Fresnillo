@@ -1,5 +1,5 @@
 /**
- * Tarjeta "¿Cuál opción te conviene?" — presenta la recomendación del motor
+ * Tarjeta "¿Cuál opción te conviene?" - presenta la recomendación del motor
  * (lib/engine/recommendation.ts) con sus razones y advertencias en lenguaje
  * llano. Server component presentacional: recibe todo por props.
  */
@@ -59,12 +59,9 @@ export function RecommendationCard({
           {isViewing && <Badge variant="success">Estás viendo esta opción</Badge>}
         </div>
 
-        <ul className="space-y-1.5 text-sm">
+        <ul className="list-disc list-inside space-y-1.5 text-sm marker:text-primary">
           {r.reasons.map((reason, i) => (
-            <li key={i} className="flex gap-2">
-              <span className="text-primary shrink-0">•</span>
-              <span>{reason}</span>
-            </li>
+            <li key={i}>{reason}</li>
           ))}
         </ul>
 

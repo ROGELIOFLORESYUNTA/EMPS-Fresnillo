@@ -18,7 +18,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const { id } = await params;
   const parameter = await prisma.parameter.findUnique({ where: { id } });
   if (!parameter) return NextResponse.json({ error: "Parámetro no encontrado" }, { status: 404 });
-  // FASE G.I — adjunta el override del workspace si existe, para que la UI
+  // FASE G.I - adjunta el override del workspace si existe, para que la UI
   // pueda mostrar el valor propio y el global lado a lado.
   const workspace = await getCurrentWorkspace();
   const override = workspace
@@ -30,7 +30,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 }
 
 /**
- * PUT — FASE G.I: en lugar de modificar el Parameter global,
+ * PUT - FASE G.I: en lugar de modificar el Parameter global,
  * crea o actualiza un WorkspaceParameterOverride para el workspace actual.
  * Esto garantiza que ningún usuario afecte a otros con sus ediciones.
  */
@@ -104,7 +104,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 /**
- * DELETE — FASE G.I: borra el override del workspace, volviendo al valor global.
+ * DELETE - FASE G.I: borra el override del workspace, volviendo al valor global.
  * NO borra el Parameter global (que es el catálogo base compartido).
  */
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

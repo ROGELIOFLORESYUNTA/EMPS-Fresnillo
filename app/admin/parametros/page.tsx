@@ -96,9 +96,9 @@ export default async function AdminParametrosPage() {
         <CardContent className="py-4 flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-blue-700 shrink-0 mt-0.5" />
           <div className="text-sm">
-            <p className="font-medium mb-1 text-blue-950">Tus cambios son privados — no afectan a otros visitantes</p>
+            <p className="font-medium mb-1 text-blue-950">Tus cambios son privados: no afectan a otros visitantes</p>
             <p className="text-blue-900">
-              Cada visitante del sitio tiene <strong>su propia copia</strong> de los parámetros. Si tú cambias el IVA aquí, solo TÚ ves ese cambio en TUS estimaciones futuras. Los demás siguen con el valor original. <strong className="text-foreground">Tus estimaciones anteriores tampoco cambian</strong> — el sistema guarda el valor que se usó en cada cálculo. Para usar tus valores nuevos en un proyecto ya estimado, ábrelo y presiona &ldquo;Recalcular con parámetros vigentes&rdquo;.
+              Cada visitante del sitio tiene <strong>su propia copia</strong> de los parámetros. Si tú cambias el IVA aquí, solo TÚ ves ese cambio en TUS estimaciones futuras. Los demás siguen con el valor original. <strong className="text-foreground">Tus estimaciones anteriores tampoco cambian</strong>. El sistema guarda el valor que se usó en cada cálculo. Para usar tus valores nuevos en un proyecto ya estimado, ábrelo y presiona &ldquo;Recalcular con parámetros vigentes&rdquo;.
             </p>
           </div>
         </CardContent>

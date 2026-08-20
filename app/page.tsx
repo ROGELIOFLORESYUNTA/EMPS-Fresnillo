@@ -11,12 +11,10 @@ export default async function HomePage() {
   // Lectura: no crear workspace solo por abrir el inicio. Un visitante nuevo
   // (sin fila todavía) llega como `null` y se trata como anónimo.
   const workspace = await peekWorkspace();
-  // FASE G.I — mismo alcance que la API y que la página de detalle: lo del
-  // workspace actual + templates + proyectos legados sin dueño. Sin este filtro
-  // el inicio muestra proyectos ajenos que luego dan 404 al abrirse.
-  const projectScope = workspace
-    ? { OR: [{ workspaceId: workspace.id }, { isTemplate: true }, { workspaceId: null }] }
-    : { OR: [{ isTemplate: true }, { workspaceId: null }] };
+  // Un visitante nuevo arranca EN CERO: solo ve los proyectos que él mismo creó.
+  // No se muestran plantillas ni proyectos sin dueño, para que el sistema no
+  // aparente tener trabajo previo que no es suyo.
+  const projectScope = { workspaceId: workspace?.id ?? "__sin_workspace__" };
   const [projects, totalProjects, paramsCount, pendingChanges] = await Promise.all([
     prisma.project.findMany({
       where: projectScope,
@@ -45,9 +43,9 @@ export default async function HomePage() {
       {isFirstVisit && (
         <section>
           <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-5">
-            <p className="text-base font-semibold text-blue-950 mb-2">👋 Bienvenido al sistema</p>
+            <p className="text-base font-semibold text-blue-950 mb-2">Bienvenido al sistema</p>
             <p className="text-sm text-blue-900 leading-relaxed">
-              <strong>No necesitas registrarte, ni dar tu correo, ni crear contraseña.</strong> El sitio te recuerda automáticamente con una galletita (cookie) en tu navegador. Lo que crees aquí (proyectos, parámetros editados) es <strong>solo tuyo</strong> — los demás visitantes tienen sus propios datos separados.
+              <strong>No necesitas registrarte, ni dar tu correo, ni crear contraseña.</strong> El sitio te recuerda automáticamente con una galletita (cookie) en tu navegador. Lo que crees aquí (proyectos, parámetros editados) es <strong>solo tuyo</strong>. Los demás visitantes tienen sus propios datos separados.
             </p>
             <p className="text-sm text-blue-900 mt-2 leading-relaxed">
               Si quieres que el sistema sepa tu nombre (en lugar de "anónimo"){" "}
@@ -67,14 +65,14 @@ export default async function HomePage() {
               <User2 className="w-4 h-4 shrink-0" />
               <span>
                 <strong>Estás navegando como anónimo.</strong> Pon tu nombre para que el sistema te identifique
-                <span className="text-amber-700 group-hover:underline ml-1">→ Mi cuenta</span>
+                <span className="text-amber-700 group-hover:underline ml-1 inline-flex items-center gap-1">Mi cuenta <ArrowRight className="w-3 h-3" /></span>
               </span>
             </p>
           </Link>
         </section>
       )}
 
-      {/* Acciones principales — bien visibles, una sola fila */}
+      {/* Acciones principales - bien visibles, una sola fila */}
       <section>
         <h1 className="text-3xl font-bold mb-2">EMPS Fresnillo</h1>
         <p className="text-muted-foreground mb-1">Estimador municipal de proyectos de software</p>

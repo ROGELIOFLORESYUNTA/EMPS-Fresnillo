@@ -39,7 +39,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
   });
   if (!project) notFound();
 
-  // Tomamos el ultimo registro de cada (mode, scenario) — soporta el caso donde
+  // Tomamos el ultimo registro de cada (mode, scenario) - soporta el caso donde
   // se corrieron varios modos en versiones separadas (cada llamada a runEstimate incrementa version).
   const latestVersion = project.estimates[0]?.version ?? 0;
   const seen = new Set<string>();
@@ -69,7 +69,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
   const monthsTotal = weeksTotal / 4.33;
   const weeklyTeamRate = weeksTotal > 0 ? directCost / weeksTotal : 0;
 
-  // Lead technician salary cascade: lider_tecnico → senior/lead → param → fallback
+  // Lead technician salary cascade: lider_tecnico -> senior/lead -> param -> fallback
   const leadSalary = (() => {
     const lider = project.team.filter((t) => t.role === "lider_tecnico");
     if (lider.length > 0) return Math.max(...lider.map((p) => Number(p.monthlySalary)));
@@ -201,7 +201,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
             </Card>
           )}
 
-          {/* G1 — ¿Va a terminar a tiempo? */}
+          {/* G1 - ¿Va a terminar a tiempo? */}
           {probable && (
             <Card>
               <CardHeader>
@@ -219,16 +219,16 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
                   <p className="text-green-700">Margen sobrado: la fecha objetivo da {formatWeeks(onTime.weeksAvailable)}. Si todo sale bien, termina antes.</p>
                 )}
                 {onTime.level === "apretado" && onTime.weeksAvailable !== null && (
-                  <p className="text-amber-700">⚠ La fecha objetivo da {formatWeeks(onTime.weeksAvailable)}. Apretado pero alcanzable si NO hay cambios. Cualquier modificación al alcance puede atrasarlo.</p>
+                  <p className="text-amber-700">La fecha objetivo da {formatWeeks(onTime.weeksAvailable)}. Apretado pero alcanzable si NO hay cambios. Cualquier modificación al alcance puede atrasarlo.</p>
                 )}
                 {onTime.level === "alto_riesgo" && (
-                  <p className="text-red-700"><strong>⚠ ALTO RIESGO de no terminar a tiempo.</strong> {onTime.weeksAvailable !== null ? `Solo hay ${formatWeeks(onTime.weeksAvailable)} hasta la fecha objetivo y se necesitan ${formatWeeks(onTime.weeksNeeded)}.` : ""} Negocia recortar alcance o mover fecha ANTES de firmar.</p>
+                  <p className="text-red-700"><strong>ALTO RIESGO de no terminar a tiempo.</strong> {onTime.weeksAvailable !== null ? `Solo hay ${formatWeeks(onTime.weeksAvailable)} hasta la fecha objetivo y se necesitan ${formatWeeks(onTime.weeksNeeded)}.` : ""} Negocia recortar alcance o mover fecha ANTES de firmar.</p>
                 )}
               </CardContent>
             </Card>
           )}
 
-          {/* G2 — ¿El proveedor va a aguantar? */}
+          {/* G2 - ¿El proveedor va a aguantar? */}
           {probable && wcap > 0 && (
             <Card className={quebrarRisk.level === "alto" ? "border-red-300" : quebrarRisk.level === "medio" ? "border-amber-300" : ""}>
               <CardHeader>
@@ -246,14 +246,14 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
                   <p className="text-amber-700">Riesgo medio. Pídele que demuestre capacidad de soportarlo. Si no, va a presionar para que le adelantes más o va a entregar tarde.</p>
                 )}
                 {quebrarRisk.level === "alto" && (
-                  <p className="text-red-700"><strong>⚠ Riesgo alto de que se quede sin caja a media obra</strong> y deje el proyecto inconcluso. NEGOCIA anticipo mayor o pagos por entregable más frecuentes ANTES de firmar.</p>
+                  <p className="text-red-700"><strong>Riesgo alto de que se quede sin caja a media obra</strong> y deje el proyecto inconcluso. NEGOCIA anticipo mayor o pagos por entregable más frecuentes ANTES de firmar.</p>
                 )}
                 <p className="text-xs text-muted-foreground italic mt-3">Esta sección busca proteger la inversión pública, no descalificar al proveedor. Comparte el reporte con él para que ajuste su propuesta.</p>
               </CardContent>
             </Card>
           )}
 
-          {/* G3 — ¿Qué método va a usar? */}
+          {/* G3 - ¿Qué método va a usar? */}
           {probable && (
             <Card>
               <CardHeader>
@@ -269,7 +269,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
             </Card>
           )}
 
-          {/* G4 — Si pides cambios, esto cuesta aparte */}
+          {/* G4 - Si pides cambios, esto cuesta aparte */}
           {weeklyTeamRate > 0 && (
             <Card>
               <CardHeader>
@@ -310,7 +310,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
             </Card>
           )}
 
-          {/* G5 — Mantenimiento mensual estimado */}
+          {/* G5 - Mantenimiento mensual estimado */}
           {totalPrice > 0 && (
             <Card>
               <CardHeader>
@@ -327,7 +327,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
             </Card>
           )}
 
-          {/* G6 — ¿Termina antes del cambio de gobierno? */}
+          {/* G6 - ¿Termina antes del cambio de gobierno? */}
           {probable && project.targetDate && (
             <Card className={onTime.daysOverDeadline && onTime.daysOverDeadline > 0 ? "border-red-300" : ""}>
               <CardHeader>
@@ -347,7 +347,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
                 )}
                 {onTime.daysOverDeadline !== null && onTime.daysOverDeadline > 0 && (
                   <p className="text-red-700">
-                    <strong>⚠ Estimado de entrega posterior a tu fecha objetivo por {onTime.daysOverDeadline} días.</strong> Si esta fecha es porque termina la administración, prácticamente no vas a alcanzar a cumplir la promesa de campaña con este alcance. Recorta alcance o ajusta plazo antes de firmar.
+                    <strong>Estimado de entrega posterior a tu fecha objetivo por {onTime.daysOverDeadline} días.</strong> Si esta fecha es porque termina la administración, prácticamente no vas a alcanzar a cumplir la promesa de campaña con este alcance. Recorta alcance o ajusta plazo antes de firmar.
                   </p>
                 )}
               </CardContent>
@@ -392,7 +392,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
             <CardHeader><CardTitle className="text-base flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-600" />Checklist Ayuntamiento</CardTitle></CardHeader>
             <CardContent className="text-sm space-y-1">
               <ul className="list-disc pl-6 space-y-1">
-                <li>Alcance escrito por módulos: ✅ {project.modules.length} módulos</li>
+                <li>Alcance escrito por módulos: {project.modules.length} módulos</li>
                 <li>Criterios de aceptación: {project.modules.reduce((a, m) => a + m.stories.filter((s) => s.acceptanceCriteria).length, 0)} historias con criterios</li>
                 <li>Mantenimiento posterior: a definir en contrato</li>
                 <li>Forma de pago no obliga al proveedor a financiar todo: capital requerido {formatMXN(wcap)}</li>
@@ -429,7 +429,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
                         <TableCell className="max-w-md">
                           <p className="truncate" title={c.clientOriginalText ?? c.description}>{c.clientOriginalText ?? c.description}</p>
                           {c.assessment?.requiresNewBaseline && (
-                            <p className="text-xs text-orange-700 font-medium mt-0.5">← Esta versión cambia el alcance original</p>
+                            <p className="text-xs text-orange-700 font-medium mt-0.5">Esta versión cambia el alcance original</p>
                           )}
                         </TableCell>
                         <TableCell><Badge variant="outline">{c.assessment?.finalType ?? c.assessment?.suggestedType ?? c.type}</Badge></TableCell>
@@ -493,7 +493,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
             </CardContent>
           </Card>
 
-          {/* H1 — ¿Realmente estás ganando? Costo de oportunidad */}
+          {/* H1 - ¿Realmente estás ganando? Costo de oportunidad */}
           <Card className={opportunityCost.level === "perdiendo_mucho" ? "border-red-300" : opportunityCost.level === "perdiendo_poco" ? "border-amber-300" : ""}>
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
@@ -517,16 +517,16 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
                 <p className="text-amber-700">Estás trabajando para mantenerte; no estás capitalizando significativamente sobre un empleo equivalente.</p>
               )}
               {opportunityCost.level === "perdiendo_poco" && (
-                <p className="text-orange-700">⚠ Estás dejando aprox. <strong>{formatMXN(opportunityCost.deficit)}</strong> al mes en la mesa. Hubieras ganado más como empleado.</p>
+                <p className="text-orange-700">Estás dejando aprox. <strong>{formatMXN(opportunityCost.deficit)}</strong> al mes en la mesa. Hubieras ganado más como empleado.</p>
               )}
               {opportunityCost.level === "perdiendo_mucho" && (
-                <p className="text-red-700"><strong>⚠ Estás dejando aprox. {formatMXN(opportunityCost.deficit)} al mes en la mesa.</strong> Considera subir precio, recortar alcance, o reducir meses asignados antes de firmar.</p>
+                <p className="text-red-700"><strong>Estás dejando aprox. {formatMXN(opportunityCost.deficit)} al mes en la mesa.</strong> Considera subir precio, recortar alcance, o reducir meses asignados antes de firmar.</p>
               )}
-              <p className="text-xs text-muted-foreground italic mt-3">Este cálculo no incluye valor estratégico, aprendizaje ni relaciones — es señal financiera pura. Sueldo de referencia: max(salarios de team con rol líder técnico o nivel senior/lead); fallback $50,000 MXN (Glassdoor MX 2026).</p>
+              <p className="text-xs text-muted-foreground italic mt-3">Este cálculo no incluye valor estratégico, aprendizaje ni relaciones: es señal financiera pura. Sueldo de referencia: max(salarios de team con rol líder técnico o nivel senior/lead); fallback $50,000 MXN (Glassdoor MX 2026).</p>
             </CardContent>
           </Card>
 
-          {/* H2 — ¿Cuándo cobras vs cuándo gastas? */}
+          {/* H2 - ¿Cuándo cobras vs cuándo gastas? */}
           {project.cashflow.length > 0 && (() => {
             const cashflowSorted = [...project.cashflow].sort((a, b) => a.monthNumber - b.monthNumber);
             const maxAbs = Math.max(
@@ -555,19 +555,19 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
                           <div className="flex items-center justify-between mb-1">
                             <span className="font-medium">Mes {m.monthNumber}</span>
                             <span className={acc >= 0 ? "text-green-700 font-medium" : "text-red-700 font-medium"}>
-                              Acumulado: {formatMXN(acc)}{isWorst && " ← peor mes"}
+                              Acumulado: {formatMXN(acc)}{isWorst && " (peor mes)"}
                             </span>
                           </div>
                           <div className="grid grid-cols-2 gap-2 items-center">
                             <div>
-                              <div className="text-[10px] text-muted-foreground">↓ Cobro</div>
+                              <div className="text-[10px] text-muted-foreground flex items-center justify-center gap-1"><TrendingDown className="w-3 h-3" />Cobro</div>
                               <div className="h-3 bg-muted rounded overflow-hidden">
                                 <div className="h-full bg-green-500" style={{ width: `${(ingreso / maxAbs) * 100}%` }} />
                               </div>
                               <div className="text-[10px] text-green-700">{formatMXN(ingreso)}</div>
                             </div>
                             <div>
-                              <div className="text-[10px] text-muted-foreground">↑ Gasto</div>
+                              <div className="text-[10px] text-muted-foreground flex items-center justify-center gap-1"><TrendingUp className="w-3 h-3" />Gasto</div>
                               <div className="h-3 bg-muted rounded overflow-hidden">
                                 <div className="h-full bg-red-500" style={{ width: `${(egreso / maxAbs) * 100}%` }} />
                               </div>
@@ -586,7 +586,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
             );
           })()}
 
-          {/* H3 — ¿Aguantas este proyecto? */}
+          {/* H3 - ¿Aguantas este proyecto? */}
           <Card className={viability.level === "rojo" ? "border-red-300" : viability.level === "apretado" ? "border-amber-300" : ""}>
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
@@ -597,18 +597,18 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
             <CardContent className="text-sm space-y-2">
               <p>Bache de caja: <strong>{formatMXN(wcap)}</strong> · Margen: <strong>{formatMXN(marginAmount)}</strong>.</p>
               {viability.level === "comodo" && (
-                <p className="text-green-700">El bache es {(viability.ratio * 100).toFixed(0)}% de tu margen — el proyecto se aguanta financieramente.</p>
+                <p className="text-green-700">El bache es {(viability.ratio * 100).toFixed(0)}% de tu margen, o sea que el proyecto se aguanta financieramente.</p>
               )}
               {viability.level === "apretado" && (
-                <p className="text-amber-700">⚠ Estás financiando del 50% al 100% de tu propio margen — vas a sentir presión de caja a la mitad. Negocia anticipo mayor o pagos por entregable más frecuentes.</p>
+                <p className="text-amber-700">Estás financiando del 50% al 100% de tu propio margen, vas a sentir presión de caja a la mitad. Negocia anticipo mayor o pagos por entregable más frecuentes.</p>
               )}
               {viability.level === "rojo" && (
-                <p className="text-red-700"><strong>⚠⚠ Estás poniendo MÁS dinero del que vas a ganar.</strong> Si el cliente retrasa un solo pago, quiebras. RENEGOCIA estructura de pago antes de firmar.</p>
+                <p className="text-red-700"><strong>Estás poniendo MÁS dinero del que vas a ganar.</strong> Si el cliente retrasa un solo pago, quiebras. RENEGOCIA estructura de pago antes de firmar.</p>
               )}
             </CardContent>
           </Card>
 
-          {/* H4 — Si surgen cambios, esto sale aproximadamente */}
+          {/* H4 - Si surgen cambios, esto sale aproximadamente */}
           {weeklyTeamRate > 0 && (
             <Card>
               <CardHeader>
@@ -646,7 +646,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
             <CardHeader><CardTitle className="text-base">Recomendación de forma de pago</CardTitle></CardHeader>
             <CardContent className="text-sm space-y-2">
               {wcap > 100000 ? (
-                <p className="text-orange-700"><strong>⚠ Capital de trabajo alto:</strong> negociar anticipo de al menos 30% para reducir necesidad de financiamiento propio.</p>
+                <p className="text-orange-700"><strong>Capital de trabajo alto:</strong> negociar anticipo de al menos 30% para reducir necesidad de financiamiento propio.</p>
               ) : (
                 <p>Esquema 30/40/30 (anticipo / entregables / pago final) es viable con el flujo proyectado.</p>
               )}
@@ -779,11 +779,11 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
             <CardHeader><CardTitle className="text-base">Evidencia para validar/ajustar la hipótesis</CardTitle></CardHeader>
             <CardContent className="text-sm space-y-1">
               <ul className="list-disc pl-6 space-y-1">
-                <li>Reporte generado: ✅</li>
+                <li>Reporte generado: sí</li>
                 <li>Versión de estimación: v{latestVersion}</li>
                 <li>Cambios registrados: {project.changes.length} ({project.changes.filter((c) => c.assessment).length} con evaluación de impacto v7)</li>
                 <li>Comparación de escenarios: {latest.length} estimaciones</li>
-                <li>Parámetros snapshot: ✅ (cada estimación guarda copia de los parámetros usados para auditoría)</li>
+                <li>Parámetros guardados: sí (cada estimación guarda copia de los parámetros usados para auditoría)</li>
                 <li>Resultado real pendiente de capturar al cierre del proyecto</li>
               </ul>
             </CardContent>
@@ -792,7 +792,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
           {project.changes.filter((c) => c.assessment).length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Cambios capturados — evidencia para el artículo</CardTitle>
+                <CardTitle className="text-base">Cambios capturados: evidencia para el artículo</CardTitle>
                 <p className="text-xs text-muted-foreground">
                   Tabla completa con factores aplicados y fuentes de parámetros. Cada cambio guarda su fórmula con los parámetros vigentes al momento del cálculo.
                 </p>

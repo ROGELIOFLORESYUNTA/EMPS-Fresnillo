@@ -4,21 +4,15 @@ import { projectCreateSchema } from "@/lib/validators";
 import { getCurrentWorkspace, peekWorkspace, logWorkspaceActivity } from "@/lib/workspace";
 
 /**
- * GET — FASE G.I: lista solo los proyectos del workspace actual + los templates públicos.
- * Templates (isTemplate=true) sirven como ejemplo a todos los usuarios.
+ * GET: lista solo los proyectos del visitante actual.
+ * Un visitante nuevo arranca en cero: no se le muestran plantillas ni
+ * proyectos sin dueño, para que el sistema no aparente trabajo previo ajeno.
  */
 export async function GET() {
   // Lectura: peekWorkspace no crea fila al solo listar.
   const workspace = await peekWorkspace();
   const projects = await prisma.project.findMany({
-    where: workspace
-      ? {
-          OR: [
-            { workspaceId: workspace.id },
-            { isTemplate: true },
-          ],
-        }
-      : { isTemplate: true },
+    where: { workspaceId: workspace?.id ?? "__sin_workspace__" },
     orderBy: { updatedAt: "desc" },
     include: {
       _count: { select: { modules: true, estimates: true, changes: true } },
@@ -28,7 +22,7 @@ export async function GET() {
 }
 
 /**
- * POST — FASE G.I: asigna automáticamente el workspaceId del cookie al proyecto nuevo.
+ * POST - FASE G.I: asigna automáticamente el workspaceId del cookie al proyecto nuevo.
  */
 export async function POST(req: NextRequest) {
   try {

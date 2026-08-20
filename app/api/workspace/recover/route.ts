@@ -2,10 +2,10 @@
  * Recuperar un workspace desde otro dispositivo usando su código corto.
  *
  * POST /api/workspace/recover { code: "ABCD-1234" }
- *   → Si el código existe, cambia la cookie emps_workspace_id al workspace
+ *   -> Si el código existe, cambia la cookie emps_workspace_id al workspace
  *     encontrado y devuelve sus datos. Las acciones siguientes ya quedan
  *     ligadas a ese workspace.
- *   → Si no existe, 404.
+ *   -> Si no existe, 404.
  *
  * Sin login: el código es la única credencial. Quien lo tenga, hereda el
  * workspace. Por eso conviene que cada usuario lo guarde como guardaría

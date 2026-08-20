@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { formatMXN, formatHours, formatWeeks, RISK_LEVELS, DEVELOPMENT_MODES, STATUS_LABELS, PRIORITY_LABELS, SYSTEM_TYPE_LABELS, SCENARIO_LABELS, CONTRACT_LABELS, ROLE_LABELS, LEVEL_LABELS, labelOf } from "@/lib/utils";
-import { FileText, Calculator, Users, Layers, GitPullRequest, TrendingUp, Activity, CheckCircle2, Circle, ArrowRight, ClipboardCheck } from "lucide-react";
+import { FileText, Calculator, Users, Layers, GitPullRequest, TrendingUp, TrendingDown, Activity, CheckCircle2, Circle, ArrowRight, ClipboardCheck } from "lucide-react";
 import { RecalcularButton } from "@/components/recalcular-button";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { ModeScenarioSelector } from "@/components/mode-scenario-selector";
@@ -50,8 +50,8 @@ export default async function ProjectDetailPage({
   const visitorWorkspace = await peekWorkspace();
   const visitorRole = (visitorWorkspace?.role ?? null) as RecommendationRole;
 
-  // Tomar último (mode, scenario) único — soporta múltiples versiones por modo.
-  // Orden lógico: modos de más lento a más rápido, escenarios optimista→probable→conservador.
+  // Tomar último (mode, scenario) único - soporta múltiples versiones por modo.
+  // Orden lógico: modos de más lento a más rápido, escenarios optimista->probable->conservador.
   const MODE_ORDER: Record<string, number> = {
     traditional: 0,
     ai_assisted: 1,
@@ -64,7 +64,7 @@ export default async function ProjectDetailPage({
     probable: 1,
     conservative: 2,
   };
-  // FASE H — Resultado real capturado (sin back-relation en Project, query aparte).
+  // FASE H - Resultado real capturado (sin back-relation en Project, query aparte).
   // Sirve para retroalimentar el modelo y medir precisión (estimado vs real).
   const actualResult = await prisma.projectActualResult.findFirst({
     where: { projectId: id },
@@ -116,7 +116,7 @@ export default async function ProjectDetailPage({
   };
 
   // Análisis comparativo entre modos para detectar el riesgo de cotizar barato y ejecutar caro.
-  // (ej. cotizar barato asumiendo bytecoding pero ejecutar en tradicional → quiebra)
+  // (ej. cotizar barato asumiendo bytecoding pero ejecutar en tradicional -> quiebra)
   const probableEstimatesByMode = latestEstimates.filter((e) => e.scenario === "probable");
   const probableTotals = probableEstimatesByMode.map((e) => Number(e.total));
   const minProbable = probableTotals.length > 0 ? Math.min(...probableTotals) : 0;
@@ -214,7 +214,7 @@ export default async function ProjectDetailPage({
             break;
           case "change_request_created": {
             const cr = payload.changeRequestId ? changesById.get(String(payload.changeRequestId)) : undefined;
-            const desc = cr?.description ? `: “${cr.description.slice(0, 80)}${cr.description.length > 80 ? "…" : ""}”` : "";
+            const desc = cr?.description ? `: "${cr.description.slice(0, 80)}${cr.description.length > 80 ? "..." : ""}"` : "";
             text = `Se registró una solicitud de cambio${desc}.`;
             break;
           }
@@ -222,13 +222,13 @@ export default async function ProjectDetailPage({
             text = `Se decidió una solicitud de cambio (${String(payload.decision ?? "")}).`;
             break;
           case "module_updated":
-            text = `Se editó el módulo “${String(payload.name ?? "")}” (cambia el esfuerzo en el próximo recálculo).`;
+            text = `Se editó el módulo "${String(payload.name ?? "")}" (cambia el esfuerzo en el próximo recálculo).`;
             break;
           case "module_created":
-            text = `Se agregó el módulo “${String(payload.name ?? payload.type ?? "")}”.`;
+            text = `Se agregó el módulo "${String(payload.name ?? payload.type ?? "")}".`;
             break;
           case "team_updated":
-            text = `Se editó al equipo (“${String(payload.name ?? "")}”) — cambia el costo en el próximo recálculo.`;
+            text = `Se editó al equipo ("${String(payload.name ?? "")}"), cambia el costo en el próximo recálculo.`;
             break;
         }
         if (text) decisionTimeline.push({ date: ev.createdAt, text });
@@ -281,7 +281,7 @@ export default async function ProjectDetailPage({
         </div>
       </div>
 
-      {/* Acerca de este proyecto — campos capturados en /projects/new que
+      {/* Acerca de este proyecto - campos capturados en /projects/new que
           antes no se mostraban (description, targetDate, estimatedBudget, responsable, objective). */}
       {(project.description || project.objective || project.targetDate || project.estimatedBudget || project.responsible || project.notes) && (
         <Card>
@@ -582,7 +582,7 @@ export default async function ProjectDetailPage({
               <Card className="border-orange-300 bg-orange-50/40">
                 <CardContent className="py-4">
                   <p className="text-xs uppercase tracking-wide text-orange-800 mb-1 font-semibold flex items-center gap-1">
-                    <span>⚠ Riesgo de cotización</span>
+                    <span>Riesgo de cotización</span>
                     <InfoTip title="¿Por qué hay riesgo?">
                       <p>Compara los precios del MISMO proyecto en dos modos de desarrollo distintos. El número de arriba es el factor: el modo más caro vale tantas veces el más barato.</p>
                       <p>Si es alto (&gt;1.5×), una mala elección de modo cambia mucho el costo. <strong>Cotizar como bytecoding y ejecutar como tradicional puede llevar al proveedor a quiebra</strong>.</p>
@@ -927,11 +927,11 @@ export default async function ProjectDetailPage({
         const selectedMonthsFromWeeks = selectedWeeks ? selectedWeeks / 4.33 : null;
         const cashflowVsEstimateMismatch = selectedMonthsFromWeeks !== null && Math.abs(selectedMonthsFromWeeks - cashflowMonths) > 1.0;
         function conceptoDelMes(idx: number, income: number) {
-          if (income === 0) return { label: "Sin cobro", className: "text-muted-foreground", icon: "—" };
-          if (idx === firstMaxIdx && idx !== lastMaxIdx) return { label: "Anticipo (cobro)", className: "text-blue-700 font-medium", icon: "↓" };
-          if (idx === lastMaxIdx && lastMaxIdx !== firstMaxIdx) return { label: "Pago final (cobro)", className: "text-emerald-700 font-medium", icon: "↓" };
-          if (idx === firstMaxIdx && idx === lastMaxIdx) return { label: "Pago único (cobro)", className: "text-emerald-700 font-medium", icon: "↓" };
-          return { label: "Pago parcial (cobro)", className: "text-foreground", icon: "↓" };
+          if (income === 0) return { label: "Sin cobro", className: "text-muted-foreground", esCobro: false };
+          if (idx === firstMaxIdx && idx !== lastMaxIdx) return { label: "Anticipo (cobro)", className: "text-blue-700 font-medium", esCobro: true };
+          if (idx === lastMaxIdx && lastMaxIdx !== firstMaxIdx) return { label: "Pago final (cobro)", className: "text-emerald-700 font-medium", esCobro: true };
+          if (idx === firstMaxIdx && idx === lastMaxIdx) return { label: "Pago único (cobro)", className: "text-emerald-700 font-medium", esCobro: true };
+          return { label: "Pago parcial (cobro)", className: "text-foreground", esCobro: true };
         }
         return (
         <Card>
@@ -945,7 +945,7 @@ export default async function ProjectDetailPage({
               </InfoTip>
             </CardTitle>
             <CardDescription>
-              Cómo entra y sale el dinero del proveedor mes a mes. Los <strong>cobros al cliente</strong> son ingresos (todos en verde con flecha ↓ porque son dinero que ENTRA al proveedor). Las <strong>salidas</strong> son nómina del equipo, impuestos, herramientas y administración.
+              Cómo entra y sale el dinero del proveedor mes a mes. Los <strong>cobros al cliente</strong> son ingresos (todos en verde porque son dinero que ENTRA al proveedor). Las <strong>salidas</strong> son nómina del equipo, impuestos, herramientas y administración.
               <br />
               <span className="block mt-1">
                 <strong className="text-foreground">Estructura de pagos de este proyecto:</strong> {totalPayments} cobros en total: 1 anticipo al arrancar, {intermediatePayments} {intermediatePayments === 1 ? "pago parcial intermedio" : "pagos parciales intermedios"} y 1 pago final al cerrar. Distribuidos en <strong>{cashflowMonths} meses</strong>.
@@ -956,7 +956,7 @@ export default async function ProjectDetailPage({
               </span>
               {cashflowVsEstimateMismatch && selectedMonthsFromWeeks !== null && (
                 <span className="block mt-2 p-2 rounded border border-amber-300 bg-amber-50 text-amber-900 text-xs">
-                  ⚠ <strong>El cashflow no coincide con la duración de este modo:</strong> el modo {modeLabels[selectedMode]} tarda ~{selectedMonthsFromWeeks.toFixed(1)} meses según la estimación, pero esta tabla está calculada para {cashflowMonths} meses. El cashflow se generó una sola vez con la duración del wizard. Para sincronizarlo, recalcula el proyecto eligiendo este modo.
+                  <strong>El flujo de efectivo no coincide con la duración de este modo:</strong> el modo {modeLabels[selectedMode]} tarda ~{selectedMonthsFromWeeks.toFixed(1)} meses según la estimación, pero esta tabla está calculada para {cashflowMonths} meses. El cashflow se generó una sola vez con la duración del wizard. Para sincronizarlo, recalcula el proyecto eligiendo este modo.
                 </span>
               )}
               <br />
@@ -974,7 +974,7 @@ export default async function ProjectDetailPage({
                     <span className="inline-flex items-center">
                       Concepto
                       <InfoTip title="¿Cómo se etiqueta cada mes?">
-                        <p>Todas las filas con flecha <strong>↓</strong> son <strong>cobros que el proveedor recibe del cliente</strong> (dinero que entra). El sistema mira el monto y asigna:</p>
+                        <p>Todas las filas marcadas en verde son <strong>cobros que el proveedor recibe del cliente</strong> (dinero que entra). El sistema mira el monto y asigna:</p>
                         <ul className="list-disc ml-4 space-y-0.5">
                           <li><strong>Anticipo (cobro)</strong>: el primer mes con el cobro más alto. Es el pago inicial al arrancar.</li>
                           <li><strong>Pago final (cobro)</strong>: el último mes con el cobro más alto. Es el pago de cierre cuando se entrega. Aquí lo nombramos "Pago final" en lugar de "Finiquito" porque finiquito en español también significa liquidación al trabajador, y el pago aquí es del CLIENTE al PROVEEDOR.</li>
@@ -996,7 +996,7 @@ export default async function ProjectDetailPage({
                       Saldo acumulado
                       <InfoTip title="¿Cómo se acumula?">
                         <p><strong>Saldo acumulado del mes N = Saldo acumulado del mes N-1 + Saldo del mes N.</strong></p>
-                        <p>O sea: cada mes arrastra el resultado del anterior. Si en el mes 1 el saldo acumulado quedó en $50,000 y en el mes 2 el saldo del mes fue de $20,000, entonces el acumulado del mes 2 es $70,000 (el sistema ya lo sumó por ti — la columna "Operación" lo escribe explícito para que lo verifiques sin calculadora).</p>
+                        <p>O sea: cada mes arrastra el resultado del anterior. Si en el mes 1 el saldo acumulado quedó en $50,000 y en el mes 2 el saldo del mes fue de $20,000, entonces el acumulado del mes 2 es $70,000 (el sistema ya lo sumó por ti; la columna "Operación" lo escribe explícito para que lo verifiques sin calculadora).</p>
                         <p>Por eso el <strong>bache de caja</strong> es el mínimo de esta columna: el peor momento donde el proveedor lleva más dinero gastado de lo que ha cobrado.</p>
                       </InfoTip>
                     </span>
@@ -1032,7 +1032,7 @@ export default async function ProjectDetailPage({
                     <TableCell>Mes {m.monthNumber}</TableCell>
                     <TableCell className={concepto.className}>
                       <span className="inline-flex items-center gap-1">
-                        {concepto.icon !== "—" && <span aria-hidden className="text-green-600">{concepto.icon}</span>}
+                        {concepto.esCobro && <TrendingDown aria-hidden className="w-3.5 h-3.5 text-green-600" />}
                         <span>{concepto.label}</span>
                       </span>
                     </TableCell>
@@ -1050,7 +1050,7 @@ export default async function ProjectDetailPage({
                     <TableCell className={`text-right font-medium ${saldoMes >= 0 ? "text-green-700" : "text-destructive"}`}>{formatMXN(saldoMes)}</TableCell>
                     <TableCell className={`text-right ${acumNuevo >= 0 ? "" : "text-destructive font-medium"}`}>
                       {formatMXN(acumNuevo)}
-                      {isBacheRow && <span className="block text-[10px] text-orange-700 font-bold mt-0.5">← BACHE DE CAJA</span>}
+                      {isBacheRow && <span className="block text-[10px] text-orange-700 font-bold mt-0.5">AQUÍ ESTÁ EL BACHE DE CAJA</span>}
                     </TableCell>
                     <TableCell className="text-right text-[11px] font-mono text-muted-foreground whitespace-nowrap" title="acum mes anterior + saldo de este mes = acum nuevo">
                       {operacion}
@@ -1061,7 +1061,7 @@ export default async function ProjectDetailPage({
               </TableBody>
             </Table>
             <div className="px-4 py-3 border-t bg-muted/30 text-xs text-muted-foreground">
-              <p><strong className="text-foreground">Nota:</strong> el saldo acumulado SIEMPRE incluye los meses anteriores. La columna <strong>Operación</strong> muestra la suma explícita (acum mes anterior + saldo de este mes = acum nuevo) para que NO necesites calculadora. Si las cifras no cuadran, hay un bug — repórtalo.</p>
+              <p><strong className="text-foreground">Nota:</strong> el saldo acumulado SIEMPRE incluye los meses anteriores. La columna <strong>Operación</strong> muestra la suma explícita (acum mes anterior + saldo de este mes = acum nuevo) para que NO necesites calculadora. Si las cifras no cuadran, hay un error, repórtalo.</p>
             </div>
           </CardContent>
         </Card>

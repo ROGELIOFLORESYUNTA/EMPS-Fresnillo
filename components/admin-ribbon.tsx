@@ -23,7 +23,7 @@ export function AdminRibbon() {
         <span className="flex items-center gap-1.5">
           <ShieldCheck className="w-3.5 h-3.5" />
           <span className="font-medium">Modo administrador (investigador) activo</span>
-          <span className="text-amber-800/70 hidden sm:inline">— puedes ver los datos agregados de todos los visitantes</span>
+          <span className="text-amber-800/70 hidden sm:inline">(puedes ver los datos agregados de todos los visitantes)</span>
         </span>
         <span className="flex items-center gap-3">
           <Link

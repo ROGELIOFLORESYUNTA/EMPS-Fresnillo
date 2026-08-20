@@ -1,11 +1,11 @@
 /**
  * Decisión del proyecto: la opción (modo × escenario) que el usuario ELIGE.
  *
- * POST  /api/projects/[id]/decision  → registra la decisión con la foto de
+ * POST  /api/projects/[id]/decision  -> registra la decisión con la foto de
  *       las cifras de hoy (total, semanas, riesgo, versión). La decisión
  *       anterior queda supersedida (histórico, nunca se borra). El proyecto
  *       pasa a status "aprobado" (sin degradar en_ejecucion/cerrado).
- * GET   /api/projects/[id]/decision  → lista (la activa = supersededAt null).
+ * GET   /api/projects/[id]/decision  -> lista (la activa = supersededAt null).
  *
  * Aislamiento: mismo criterio que la página del proyecto (404 si es de otro
  * workspace); las plantillas compartidas no aceptan decisiones.

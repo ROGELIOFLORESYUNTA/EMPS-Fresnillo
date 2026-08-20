@@ -78,7 +78,7 @@ export function DecisionSection({
             <strong>{modeLabel}</strong> · escenario <strong>{scenarioLabel}</strong> por{" "}
             <strong>{formatMXN(decision.totalAtDecision)}</strong>
             {decision.weeksAtDecision !== null && <> ({formatWeeks(decision.weeksAtDecision)}{riskLabel ? `, riesgo ${riskLabel.toLowerCase()}` : ""})</>}
-            {" "}— versión {decision.versionAtDecision}.
+            {" "}(versión {decision.versionAtDecision}).
           </p>
           {decision.followedRecommendation === true && (
             <Badge variant="success" className="text-xs">
@@ -92,7 +92,7 @@ export function DecisionSection({
               {labelOf(SCENARIO_LABELS, decision.recommendedScenario ?? "")}
             </Badge>
           )}
-          {decision.note && <p className="text-xs text-muted-foreground italic">Nota: “{decision.note}”</p>}
+          {decision.note && <p className="text-xs text-muted-foreground italic">Nota: "{decision.note}"</p>}
         </div>
 
         {/* El delta contra hoy */}

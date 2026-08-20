@@ -7,7 +7,7 @@ export interface BreadcrumbItem {
 }
 
 /**
- * Migas de pan — muestran al usuario DÓNDE está navegando dentro del sistema.
+ * Migas de pan - muestran al usuario DÓNDE está navegando dentro del sistema.
  *
  * Uso:
  *   <Breadcrumbs items={[
@@ -42,7 +42,7 @@ export function Breadcrumbs({ items }: { items: BreadcrumbItem[] }) {
 }
 
 /**
- * Variante con badge "Estás editando" cuando aplica — útil para que el operador
+ * Variante con badge "Estás editando" cuando aplica - útil para que el operador
  * sepa con claridad que está en modo edición de algo importante.
  */
 export function EditBreadcrumbs({ items, editingWhat }: { items: BreadcrumbItem[]; editingWhat?: string }) {

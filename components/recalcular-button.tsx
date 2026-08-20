@@ -25,7 +25,7 @@ export function RecalcularButton({ projectId }: { projectId: string }) {
   return (
     <Button variant="outline" onClick={handleClick} disabled={busy}>
       <RefreshCw className={`w-4 h-4 mr-2 ${busy ? "animate-spin" : ""}`} />
-      {busy ? "Recalculando…" : "Recalcular con parámetros vigentes"}
+      {busy ? "Recalculando..." : "Recalcular con parámetros vigentes"}
     </Button>
   );
 }
