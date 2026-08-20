@@ -15,7 +15,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { ShieldCheck, Sliders, BookOpenCheck } from "lucide-react";
 import { ParameterManualSheet } from "@/components/parameter-manual-sheet";
-import { CATEGORIAS, FUENTE_POR_CATEGORIA, categorizar, nombreLegible } from "@/lib/parameter-labels";
+import { CATEGORIAS, FUENTE_POR_CATEGORIA, ORDEN_CATEGORIAS, categorizar, nombreLegible, fuenteLegible } from "@/lib/parameter-labels";
 
 export const metadata = {
   title: "De dónde salen los números | EMPS Fresnillo",
@@ -31,6 +31,10 @@ export default async function FuentesPage() {
   for (const p of parameters) {
     (grupos[categorizar(p.key)] ??= []).push(p);
   }
+  // Primero los impuestos y cuotas que cualquiera reconoce, no el orden alfabetico.
+  const gruposOrdenados = Object.entries(grupos).sort(
+    ([a], [b]) => ORDEN_CATEGORIAS.indexOf(a) - ORDEN_CATEGORIAS.indexOf(b),
+  );
 
   const ahora = new Date();
   const vigentes = parameters.filter((p) => !p.effectiveUntil || p.effectiveUntil >= ahora);
@@ -86,7 +90,7 @@ export default async function FuentesPage() {
         </Button>
       </div>
 
-      {Object.entries(grupos).map(([cat, items]) => (
+      {gruposOrdenados.map(([cat, items]) => (
         <Card key={cat}>
           <CardHeader>
             <CardTitle className="text-base">{CATEGORIAS[cat] ?? cat}</CardTitle>
@@ -123,7 +127,7 @@ export default async function FuentesPage() {
                     </TableCell>
                     <TableCell><Badge variant="secondary" className="text-xs">{p.unit}</Badge></TableCell>
                     <TableCell className="text-xs max-w-xs">
-                      {p.source}
+                      {fuenteLegible(p.source)}
                       {p.sourceUrl && (
                         <a href={p.sourceUrl} target="_blank" rel="noopener noreferrer" className="block text-primary hover:underline mt-0.5">
                           Ver la publicación oficial
