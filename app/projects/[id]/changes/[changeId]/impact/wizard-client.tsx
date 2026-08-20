@@ -213,21 +213,21 @@ export function ImpactWizardClient({ projectId, changeId, initialDescription, ex
             <div className="grid gap-1">
               <Label>Claridad de la solicitud (1 vaga, 5 clara)</Label>
               <Select value={String(clarityLevel)} onChange={(e) => setClarityLevel(Number(e.target.value) as 1 | 2 | 3 | 4 | 5)}>
-                <option value="1">1 — Solo una frase suelta</option>
-                <option value="2">2 — Idea general sin detalle</option>
-                <option value="3">3 — Se entiende lo que quiere</option>
-                <option value="4">4 — Validada con stakeholder</option>
-                <option value="5">5 — Lista para estimar, con criterios</option>
+                <option value="1">1: solo una frase suelta</option>
+                <option value="2">2: idea general sin detalle</option>
+                <option value="3">3: se entiende lo que quiere</option>
+                <option value="4">4: validada con stakeholder</option>
+                <option value="5">5: lista para estimar, con criterios</option>
               </Select>
             </div>
             <div className="grid gap-1">
               <Label>Urgencia (1 baja, 5 alta)</Label>
               <Select value={String(urgencyLevel)} onChange={(e) => setUrgencyLevel(Number(e.target.value) as 1 | 2 | 3 | 4 | 5)}>
-                <option value="1">1 — Puede esperar</option>
-                <option value="2">2 — Normal</option>
-                <option value="3">3 — Importante</option>
-                <option value="4">4 — Urgente</option>
-                <option value="5">5 — Crítica (legal o política)</option>
+                <option value="1">1: puede esperar</option>
+                <option value="2">2: normal</option>
+                <option value="3">3: importante</option>
+                <option value="4">4: urgente</option>
+                <option value="5">5: crítica (legal o política)</option>
               </Select>
             </div>
           </div>
@@ -311,8 +311,8 @@ export function ImpactWizardClient({ projectId, changeId, initialDescription, ex
           {previewResult.plainExplanationForClient && previewResult.plainExplanationForClient.length > 0 && (
             <div className="mt-4 rounded-md border border-blue-200 bg-blue-50/50 p-3 text-sm">
               <p className="font-semibold mb-1 text-blue-900">Explicación para el Ayuntamiento (lenguaje claro)</p>
-              <ul className="space-y-1 text-blue-900/90 text-xs">
-                {previewResult.plainExplanationForClient.map((line, i) => <li key={i}>• {line}</li>)}
+              <ul className="list-disc list-inside space-y-1 text-blue-900/90 text-xs">
+                {previewResult.plainExplanationForClient.map((line, i) => <li key={i}>{line}</li>)}
               </ul>
             </div>
           )}
@@ -320,8 +320,8 @@ export function ImpactWizardClient({ projectId, changeId, initialDescription, ex
           {previewResult.questionsToClarify.length > 0 && (
             <div className="mt-4 rounded-md border border-amber-300 bg-amber-50/50 p-3 text-sm">
               <p className="font-semibold mb-1 text-amber-900 flex items-center gap-1"><HelpCircle className="w-4 h-4" /> Preguntas sugeridas para aclarar la solicitud</p>
-              <ul className="space-y-1 text-amber-900/90 text-xs">
-                {previewResult.questionsToClarify.map((q, i) => <li key={i}>• {q}</li>)}
+              <ul className="list-disc list-inside space-y-1 text-amber-900/90 text-xs">
+                {previewResult.questionsToClarify.map((q, i) => <li key={i}>{q}</li>)}
               </ul>
             </div>
           )}
@@ -329,8 +329,8 @@ export function ImpactWizardClient({ projectId, changeId, initialDescription, ex
           {previewWarnings.length > 0 && (
             <div className="mt-4 rounded-md border border-amber-300 bg-amber-50/30 p-3 text-xs text-amber-900">
               <p className="font-semibold flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Advertencias del cargador de parámetros</p>
-              <ul className="space-y-1 mt-1">
-                {previewWarnings.map((w, i) => <li key={i}>• {w}</li>)}
+              <ul className="list-disc list-inside space-y-1 mt-1">
+                {previewWarnings.map((w, i) => <li key={i}>{w}</li>)}
               </ul>
             </div>
           )}
@@ -342,7 +342,7 @@ export function ImpactWizardClient({ projectId, changeId, initialDescription, ex
       {step === 5 && previewResult && (
         <StepCard title="Paso 5. ¿De dónde sale este número?" description="Desglose técnico de la fórmula aplicada.">
           <div className="rounded-md border bg-card p-3 text-sm font-mono">
-            <ul className="space-y-1 text-xs">
+            <ul className="list-disc list-inside space-y-1 text-xs">
               <li>Puntos de artefactos: <strong>{previewResult.breakdown.artifactPoints.toFixed(0)}</strong></li>
               <li>Factor de claridad: <strong>{previewResult.breakdown.clarityFactor.toFixed(2)}</strong></li>
               <li>Factor de fase: <strong>{previewResult.breakdown.phaseFactor.toFixed(2)}</strong></li>
@@ -358,7 +358,7 @@ export function ImpactWizardClient({ projectId, changeId, initialDescription, ex
             <div className="mt-4 rounded-md border bg-card p-3 text-sm">
               <p className="font-semibold mb-1">Explicación técnica para el proveedor</p>
               <ul className="space-y-1 text-xs text-muted-foreground">
-                {previewResult.technicalExplanationForProvider.map((line, i) => <li key={i}>• {line}</li>)}
+                {previewResult.technicalExplanationForProvider.map((line, i) => <li key={i}>{line}</li>)}
               </ul>
             </div>
           )}
@@ -366,8 +366,8 @@ export function ImpactWizardClient({ projectId, changeId, initialDescription, ex
           {previewResult.legalReferences && previewResult.legalReferences.length > 0 && (
             <div className="mt-4 rounded-md border bg-muted/40 p-3 text-xs">
               <p className="font-semibold mb-1 flex items-center gap-1"><FileText className="w-3 h-3" /> Referencias legales aplicables</p>
-              <ul className="space-y-1 text-muted-foreground">
-                {previewResult.legalReferences.map((r, i) => <li key={i}>• {r}</li>)}
+              <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                {previewResult.legalReferences.map((r, i) => <li key={i}>{r}</li>)}
               </ul>
             </div>
           )}

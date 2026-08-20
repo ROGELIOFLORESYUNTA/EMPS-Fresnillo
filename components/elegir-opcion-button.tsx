@@ -92,7 +92,7 @@ export function ElegirOpcionButton({
           Cancelar
         </Button>
         <Button size="sm" onClick={handleConfirm} disabled={busy}>
-          {busy ? "Guardando…" : "Confirmar decisión"}
+          {busy ? "Guardando..." : "Confirmar decisión"}
         </Button>
       </div>
     </div>

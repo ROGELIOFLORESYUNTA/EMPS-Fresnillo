@@ -285,9 +285,9 @@ function formatValue(value: string | null, unit: string): string {
       const obj = JSON.parse(value);
       const num = typeof obj === "object" && obj !== null && "value" in obj ? obj.value : null;
       if (typeof num === "number") return String(num);
-      return "(tabla / objeto — abrir para editar detalles)";
+      return "(tabla o lista: abrir para editar los detalles)";
     } catch {
-      return value.length > 60 ? value.slice(0, 60) + "…" : value;
+      return value.length > 60 ? value.slice(0, 60) + "..." : value;
     }
   }
   if (unit === "rate") {
@@ -314,10 +314,9 @@ function Markdown({ text }: { text: string }) {
         if (!trimmed) return <div key={i} className="h-2" />;
         if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
           return (
-            <div key={i} className="flex gap-2">
-              <span className="text-blue-600">•</span>
-              <span>{trimmed.slice(2)}</span>
-            </div>
+            <ul key={i} className="list-disc list-inside marker:text-blue-600">
+              <li>{trimmed.slice(2)}</li>
+            </ul>
           );
         }
         return <p key={i}>{trimmed}</p>;

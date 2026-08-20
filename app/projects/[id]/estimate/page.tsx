@@ -280,7 +280,7 @@ export default function EstimatePage({ params }: { params: Promise<{ id: string 
             <Link href={`/projects/${projectId}`}>Cancelar</Link>
           </Button>
           <Button type="submit" disabled={submitting || distribucionInvalida}>
-            {submitting ? "Calculando…" : allModes ? "Estimar 5 modos × 3 escenarios" : "Estimar"}
+            {submitting ? "Calculando..." : allModes ? "Estimar 5 modos × 3 escenarios" : "Estimar"}
           </Button>
         </div>
       </form>

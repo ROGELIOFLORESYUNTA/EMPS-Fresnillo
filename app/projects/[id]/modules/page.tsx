@@ -199,7 +199,7 @@ export default function ProjectModulesPage({ params }: { params: Promise<{ id: s
                 <div className="grid gap-2">
                   <Label>Catálogos</Label>
                   <Input type="number" min={0} value={form.catalogsCount} onChange={(e) => setForm({ ...form, catalogsCount: +e.target.value })} />
-                  <p className="text-xs text-muted-foreground">Listas que administra (tarifas, áreas…)</p>
+                  <p className="text-xs text-muted-foreground">Listas que administra (tarifas, áreas...)</p>
                 </div>
                 <div className="grid gap-2">
                   <Label>Integraciones</Label>
@@ -236,7 +236,7 @@ export default function ProjectModulesPage({ params }: { params: Promise<{ id: s
       <Card>
         <CardContent className="p-0">
           {loading ? (
-            <p className="p-6 text-center text-muted-foreground">Cargando…</p>
+            <p className="p-6 text-center text-muted-foreground">Cargando...</p>
           ) : modules.length === 0 ? (
             <p className="p-6 text-center text-muted-foreground">Aún no hay módulos. Agregar el primero usando el botón superior.</p>
           ) : (

@@ -20,29 +20,29 @@ export async function GET() {
         formula: "mean(|estimado − real| / real × 100)",
         thresholds: {
           preciso: "≤ 15%",
-          aceptable: "15% – 30%",
+          aceptable: "15% a 30%",
           impreciso: "> 30%",
         },
         source: "IFPUG Counting Practices Manual + Conte/Dunsmore/Shen 1986",
       },
       independent: [
         {
-          group: "VI 1 — Esfuerzo técnico integrado",
+          group: "VI 1: esfuerzo técnico integrado",
           features: ["clarity_avg", "n_modules", "n_integrations", "criticality_avg"],
           why: "Mide cuánto detalle técnico se capturó al estimar.",
         },
         {
-          group: "VI 2 — Modo de desarrollo declarado",
+          group: "VI 2: modo de desarrollo declarado",
           features: ["dev_mode (categórica one-hot)"],
           why: "El modo determina factores de productividad y hardening.",
         },
         {
-          group: "VI 3 — Cambios anticipados",
+          group: "VI 3: cambios anticipados",
           features: ["changes_anticipated_ratio"],
           why: "¿Se anticiparon los cambios que efectivamente ocurrieron?",
         },
         {
-          group: "VI 4 — Viabilidad fiscal-laboral",
+          group: "VI 4: viabilidad fiscal-laboral",
           features: ["fiscal_detailed"],
           why: "¿Se desglosó IMSS/INFONAVIT/ISN o se usó factor agregado?",
         },

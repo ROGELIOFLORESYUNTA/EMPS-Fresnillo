@@ -73,19 +73,19 @@ export default async function MetodologiaPage() {
         <CardHeader><CardTitle className="text-base">3. Variables independientes (las 4 dimensiones)</CardTitle></CardHeader>
         <CardContent className="space-y-3 text-sm">
           <div>
-            <p className="font-semibold">VI 1 — Esfuerzo técnico integrado</p>
+            <p className="font-semibold">VI 1: esfuerzo técnico integrado</p>
             <p className="text-muted-foreground">Features: clarity_avg, n_modules, n_integrations, criticality_avg.</p>
           </div>
           <div>
-            <p className="font-semibold">VI 2 — Modo de desarrollo declarado</p>
+            <p className="font-semibold">VI 2: modo de desarrollo declarado</p>
             <p className="text-muted-foreground">Feature: dev_mode (one-hot encoding de traditional / ai_assisted / hybrid / bytecoding_prompts / low_code).</p>
           </div>
           <div>
-            <p className="font-semibold">VI 3 — Cambios anticipados</p>
+            <p className="font-semibold">VI 3: cambios anticipados</p>
             <p className="text-muted-foreground">Feature: changes_anticipated_ratio = cantidad de cambios capturados antes / cambios reales.</p>
           </div>
           <div>
-            <p className="font-semibold">VI 4 — Viabilidad fiscal-laboral capturada</p>
+            <p className="font-semibold">VI 4: viabilidad fiscal-laboral capturada</p>
             <p className="text-muted-foreground">Feature: fiscal_detailed (booleano: detailed = se desglosó IMSS/INFONAVIT/ISN; estimated = factor agregado).</p>
           </div>
         </CardContent>
@@ -120,7 +120,7 @@ export default async function MetodologiaPage() {
             <p className="text-muted-foreground">Identifica qué features individuales se asocian con menor MAPE. Significancia: p &lt; 0.05.</p>
           </div>
           <div>
-            <p className="font-semibold">Regresión multivariable lineal — EVIDENCIA PRINCIPAL</p>
+            <p className="font-semibold">Regresión multivariable lineal (evidencia principal)</p>
             <p className="text-muted-foreground">Mide qué fracción de la varianza del MAPE se explica conjuntamente por las 4 VI (R²) y qué coeficientes son significativos.</p>
           </div>
           <div>
@@ -128,7 +128,7 @@ export default async function MetodologiaPage() {
             <p className="text-muted-foreground">Entrena un bosque aleatorio para predecir si una estimación caerá dentro del umbral del 15%. Reporta feature importance robusto a no-linealidades.</p>
           </div>
           <div>
-            <p className="font-semibold">Red neuronal MLP (1 capa oculta) — EXHIBICIÓN, NO EVIDENCIA</p>
+            <p className="font-semibold">Red neuronal MLP de 1 capa oculta (demostrativa, no es evidencia)</p>
             <p className="text-muted-foreground">Sirve para mostrar predicción no-lineal. <strong>No es evidencia principal del artículo</strong> porque con N&lt;100 hay alto riesgo de sobreajuste. Reportarla solo como complemento.</p>
           </div>
         </CardContent>

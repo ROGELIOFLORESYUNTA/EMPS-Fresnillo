@@ -168,7 +168,7 @@ export default function MiCuentaPage() {
                 onChange={(e) => setRole(e.target.value)}
                 className="border border-input bg-background rounded-md h-10 px-3 text-sm"
               >
-                <option value="">— Prefiero no decir —</option>
+                <option value="">Prefiero no decir</option>
                 {ROLES.map((r) => (
                   <option key={r.value} value={r.value}>{r.label}</option>
                 ))}
@@ -213,11 +213,11 @@ export default function MiCuentaPage() {
             </Button>
           </div>
           <div className="bg-amber-50/60 border border-amber-200 rounded p-3 text-xs text-amber-900">
-            <p className="font-semibold mb-1">⚠ Importante:</p>
+            <p className="font-semibold mb-1">Importante:</p>
             <ul className="list-disc list-inside space-y-0.5">
               <li>Cualquier persona que tenga esta llave puede ver tus proyectos. Trátala como una contraseña.</li>
-              <li>El sistema NO la puede recuperar si la pierdes — vas a empezar desde cero con una cuenta nueva.</li>
-              <li>No tiene letras O, I, L ni números 0, 1 — para que no te confundas al escribirla.</li>
+              <li>El sistema NO la puede recuperar si la pierdes: vas a empezar desde cero con una cuenta nueva.</li>
+              <li>No tiene letras O, I, L ni números 0, 1, para que no te confundas al escribirla.</li>
             </ul>
           </div>
         </CardContent>

@@ -139,7 +139,7 @@ export default function NewProjectPage() {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="notes">Notas</Label>
-              <Textarea id="notes" value={form.notes} onChange={set("notes")} placeholder="Restricciones, dependencias, observaciones…" />
+              <Textarea id="notes" value={form.notes} onChange={set("notes")} placeholder="Restricciones, dependencias, observaciones..." />
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
           </CardContent>
@@ -150,7 +150,7 @@ export default function NewProjectPage() {
             <Link href="/projects">Cancelar</Link>
           </Button>
           <Button type="submit" disabled={submitting}>
-            {submitting ? "Guardando…" : "Crear y continuar"}
+            {submitting ? "Guardando..." : "Crear y continuar"}
           </Button>
         </div>
       </form>

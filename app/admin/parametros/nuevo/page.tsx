@@ -148,7 +148,7 @@ export default function NuevoParametroPage() {
           </Button>
           <Button type="submit" disabled={saving}>
             <Save className="w-4 h-4 mr-2" />
-            {saving ? "Guardando…" : "Guardar parámetro"}
+            {saving ? "Guardando..." : "Guardar parámetro"}
           </Button>
         </div>
       </form>

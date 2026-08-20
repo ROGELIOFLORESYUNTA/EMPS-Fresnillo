@@ -8,7 +8,7 @@ import { z } from "zod";
  *   { year, country, state, parameters: [...] }
  *
  * Por cada parámetro: si ya existe (year+country+state+key+effectiveFrom) lo actualiza,
- * si no existe lo crea. No borra los antiguos — para eso está DELETE individual.
+ * si no existe lo crea. No borra los antiguos - para eso está DELETE individual.
  */
 
 const paramSchema = z.object({

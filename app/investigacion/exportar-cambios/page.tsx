@@ -9,7 +9,7 @@ import { formatMXN, RISK_LEVELS } from "@/lib/utils";
 import { Download, FileBarChart, Filter } from "lucide-react";
 
 export const metadata = {
-  title: "Exportar evidencia de cambios — Investigación",
+  title: "Exportar evidencia de cambios | Investigación",
 };
 
 export default async function ExportarCambiosPage() {

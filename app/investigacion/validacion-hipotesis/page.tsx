@@ -67,9 +67,9 @@ export default async function ValidacionHipotesisPage() {
             <strong>Umbral IFPUG:</strong> ≤15% = preciso, 15-30% = aceptable, &gt;30% = impreciso.
           </p>
           <p className="text-sm mt-2">
-            <strong>Veredicto automático:</strong> R² ≥ 0.35 con ≥2 predictores significativos →{" "}
-            <em>cumplida</em>. R² entre 0.15–0.35 → <em>parcialmente cumplida</em>. R² &lt; 0.15 →{" "}
-            <em>no cumplida</em>. N &lt; 15 → <em>datos insuficientes</em>.
+            <strong>Veredicto automático:</strong> se considera <em>cumplida</em> si R² ≥ 0.35 con al menos 2 predictores significativos.{" "}
+            Con R² entre 0.15 y 0.35 queda <em>parcialmente cumplida</em>. Con R² menor a 0.15 queda{" "}
+            <em>no cumplida</em>. Con menos de 15 casos el sistema reporta <em>datos insuficientes</em>.
           </p>
         </CardContent>
       </Card>

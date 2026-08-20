@@ -132,7 +132,7 @@ export default function CargarAnioPage() {
           </Button>
           <Button type="submit" disabled={saving || !json.trim()}>
             <Upload className="w-4 h-4 mr-2" />
-            {saving ? "Cargando…" : "Cargar parámetros"}
+            {saving ? "Cargando..." : "Cargar parámetros"}
           </Button>
         </div>
       </form>

@@ -70,7 +70,7 @@ export default function EditarParametroPage({ params }: { params: Promise<{ id: 
     );
   }
 
-  if (!param) return <div className="text-center py-12 text-muted-foreground">Cargando…</div>;
+  if (!param) return <div className="text-center py-12 text-muted-foreground">Cargando...</div>;
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -146,7 +146,7 @@ export default function EditarParametroPage({ params }: { params: Promise<{ id: 
           <CardHeader>
             <CardTitle className="text-base">Edición</CardTitle>
             <CardDescription>
-              Tu cambio se guarda <strong>solo para ti</strong> (queda en la galletita de tu navegador). Los demás visitantes siguen viendo el valor original. Las estimaciones que ya corriste conservan los valores con los que se calcularon — eso no cambia.
+              Tu cambio se guarda <strong>solo para ti</strong> (queda en la galletita de tu navegador). Los demás visitantes siguen viendo el valor original. Las estimaciones que ya corriste conservan los valores con los que se calcularon, eso no cambia.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4">
@@ -234,7 +234,7 @@ export default function EditarParametroPage({ params }: { params: Promise<{ id: 
           {override ? (
             <Button type="button" variant="outline" onClick={handleRestore} disabled={restoring} className="border-blue-300 text-blue-800 hover:bg-blue-50">
               <RotateCcw className="w-4 h-4 mr-2" />
-              {restoring ? "Restaurando…" : "Restaurar al valor original del sistema"}
+              {restoring ? "Restaurando..." : "Restaurar al valor original del sistema"}
             </Button>
           ) : (
             <span className="text-xs text-muted-foreground italic">Aún no has cambiado este parámetro. Estás usando el valor original del sistema.</span>
@@ -245,7 +245,7 @@ export default function EditarParametroPage({ params }: { params: Promise<{ id: 
             </Button>
             <Button type="submit" disabled={saving}>
               <Save className="w-4 h-4 mr-2" />
-              {saving ? "Guardando…" : "Guardar cambios"}
+              {saving ? "Guardando..." : "Guardar cambios"}
             </Button>
           </div>
         </div>

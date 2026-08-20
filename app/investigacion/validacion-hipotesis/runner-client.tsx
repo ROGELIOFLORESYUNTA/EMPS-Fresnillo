@@ -318,7 +318,7 @@ function ResultadoCompleto({ result }: { result: AnalysisResult }) {
       {result.classification && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Random Forest — predicción "estimación precisa sí/no"</CardTitle>
+            <CardTitle className="text-base">Random Forest: predicción "estimación precisa sí/no"</CardTitle>
             <CardDescription>
               Accuracy en test = <strong>{(result.classification.accuracy * 100).toFixed(1)}%</strong>{" "}
               (train n={result.classification.trainSize}, test n={result.classification.testSize}). Feature
@@ -355,7 +355,7 @@ function ResultadoCompleto({ result }: { result: AnalysisResult }) {
           </CardHeader>
           <CardContent>
             <div className="bg-amber-50 border border-amber-200 rounded-md p-3 text-xs text-amber-900 mb-4">
-              <strong>⚠ Disclaimer académico:</strong> {result.neuralNet.overfittingWarning}
+              <strong>Advertencia académica:</strong> {result.neuralNet.overfittingWarning}
             </div>
             <div style={{ width: "100%", height: 280 }}>
               <ResponsiveContainer>

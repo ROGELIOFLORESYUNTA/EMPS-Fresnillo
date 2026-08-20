@@ -11,12 +11,9 @@ import { peekWorkspace } from "@/lib/workspace";
 export default async function ProjectsPage() {
   // Lectura: no crear workspace solo por listar proyectos.
   const workspace = await peekWorkspace();
-  // FASE G.I — mismo alcance que la API y la página de detalle (evita listar
-  // proyectos de otros visitantes que después dan 404 al abrirse).
+  // Un visitante nuevo arranca EN CERO: solo sus propios proyectos.
   const projects = await prisma.project.findMany({
-    where: workspace
-      ? { OR: [{ workspaceId: workspace.id }, { isTemplate: true }, { workspaceId: null }] }
-      : { OR: [{ isTemplate: true }, { workspaceId: null }] },
+    where: { workspaceId: workspace?.id ?? "__sin_workspace__" },
     orderBy: { updatedAt: "desc" },
     include: {
       _count: { select: { modules: true, estimates: true, changes: true } },

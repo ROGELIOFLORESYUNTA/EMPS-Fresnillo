@@ -111,7 +111,7 @@ export default function CalibracionPage() {
   }
 
   if (!data) {
-    return <div className="text-center py-12 text-muted-foreground">Cargando…</div>;
+    return <div className="text-center py-12 text-muted-foreground">Cargando...</div>;
   }
 
   const hasChanges = JSON.stringify(data) !== JSON.stringify(original);
@@ -216,7 +216,7 @@ export default function CalibracionPage() {
                         className="w-24"
                       />
                       <span className="text-sm text-muted-foreground">×</span>
-                      <span className="text-sm text-muted-foreground">→ {(100 / m.velocity_factor).toFixed(0)}% del tiempo de tradicional</span>
+                      <span className="text-sm text-muted-foreground">equivale a {(100 / m.velocity_factor).toFixed(0)}% del tiempo de tradicional</span>
                     </div>
                   </div>
                   <div className="grid gap-2">
@@ -280,7 +280,7 @@ export default function CalibracionPage() {
       <div className="flex flex-wrap items-center justify-between gap-3 sticky bottom-4 p-3 bg-card border rounded-lg shadow-md">
         <div className="text-sm">
           {hasChanges ? (
-            <span className="text-orange-700 font-medium">⚠ Hay cambios sin guardar</span>
+            <span className="text-orange-700 font-medium">Hay cambios sin guardar</span>
           ) : (
             <span className="text-muted-foreground">Sin cambios pendientes</span>
           )}
@@ -296,14 +296,14 @@ export default function CalibracionPage() {
           )}
           <Button onClick={handleSave} disabled={!hasChanges || saving}>
             <Save className="w-4 h-4 mr-2" />
-            {saving ? "Guardando…" : "Guardar calibración"}
+            {saving ? "Guardando..." : "Guardar calibración"}
           </Button>
         </div>
       </div>
 
       <div className="text-center pt-4">
         <Link href="/admin/parametros" className="text-sm text-muted-foreground hover:text-foreground">
-          ← Volver al editor de parámetros
+          Volver al editor de parámetros
         </Link>
       </div>
     </div>
