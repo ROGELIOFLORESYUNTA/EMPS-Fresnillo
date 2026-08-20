@@ -8,38 +8,24 @@
  * Uso: npx tsx prisma/ensure-ejemplo-publico.ts
  */
 /**
- * Limpia todos los proyectos demo (C1-C5 + Demo viejo) y crea UN solo proyecto demo
- * con alcance realista que muestre las diferencias entre modos de desarrollo.
- *
- * Caso: "Sistema integral de trámites municipales" — proyecto medio-grande con 8 módulos,
- * datos sensibles, integraciones, equipo de 4 personas y duración real estimada de varios meses.
+ * El ejemplo es un caso realista: "Sistema integral de tramites municipales",
+ * proyecto medio-grande con 8 modulos, datos sensibles, integraciones y un
+ * equipo de 4 personas, para que se noten las diferencias entre modos de
+ * desarrollo.
  */
 import { PrismaClient } from "@prisma/client";
 import { runEstimate } from "../lib/estimate-service";
 import type { DevelopmentMode } from "../lib/engine";
-import seedData from "../17_seed_data_parametros_2026.json";
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log("=== Ejemplo publico del sistema ===\n");
 
-  // 0. Actualizar parámetros del motor (DEV_MODE_FACTORS, DEV_MODE_VELOCITY, SCENARIO_FACTORS, etc)
-  // con la versión más reciente del seed JSON, para que la calibración esté siempre fresca.
-  const paramsToSync = [
-    { key: "DEV_MODE_FACTORS", value: seedData.development_mode_factors },
-    { key: "DEV_MODE_VELOCITY", value: seedData.development_mode_velocity },
-    { key: "SCENARIO_FACTORS", value: seedData.scenario_factors },
-    { key: "DEFAULT_CARGA_PATRONAL_ESTIMADA", value: seedData.default_carga_patronal_estimada },
-  ];
-  for (const p of paramsToSync) {
-    const updated = await prisma.parameter.updateMany({
-      where: { key: p.key, year: 2026 },
-      data: { value: JSON.stringify(p.value) },
-    });
-    console.log(`Sincronizado ${p.key}: ${updated.count} fila(s)`);
-  }
-  console.log("");
+  // Este script NO toca los parametros del motor. La version que se copio de
+  // reset-demo-realista si los reescribia con el JSON semilla, y correrlo en
+  // produccion habria borrado la calibracion hecha desde /admin/calibracion.
+  // Para actualizar parametros existe prisma/update-parameters.ts.
 
   // 1. Si ya existe un ejemplo publico, no se hace nada (idempotente).
   const yaExiste = await prisma.project.findFirst({ where: { isTemplate: true } });
