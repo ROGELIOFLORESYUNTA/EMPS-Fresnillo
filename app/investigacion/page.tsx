@@ -69,7 +69,7 @@ export default async function InvestigacionPage() {
           emptyHint={actualResultsCount < 15 ? `Necesitas N≥15 (hoy ${actualResultsCount})` : undefined}
         />
         <ResearchCard
-          href="/investigacion/metodologia"
+          href="/metodologia"
           icon={<BookOpenCheck className="w-5 h-5" />}
           title="Metodología"
           description="Cómo se operacionaliza la hipótesis: variable dependiente, 4 grupos de variables independientes, umbral de decisión, métodos estadísticos y referencias bibliográficas."

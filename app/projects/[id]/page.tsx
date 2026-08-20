@@ -268,6 +268,20 @@ export default async function ProjectDetailPage({
         { label: project.name },
       ]} />
 
+      {project.isTemplate && (
+        <div className="rounded-lg border border-amber-300 bg-amber-50/70 px-4 py-3">
+          <p className="font-semibold text-amber-950">Esto es un ejemplo, para que veas cómo funciona</p>
+          <p className="text-sm text-amber-900 mt-0.5">
+            Es un proyecto municipal ya capturado, con cifras calculadas de verdad. Recórrelo completo: los
+            módulos, el equipo, la comparación de opciones, el flujo de efectivo y los reportes. No es tuyo y no
+            aparece en tus proyectos.{" "}
+            <Link href="/projects/new" className="underline font-medium hover:text-amber-950">
+              Crear el mío
+            </Link>
+          </p>
+        </div>
+      )}
+
       {/* Encabezado */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>

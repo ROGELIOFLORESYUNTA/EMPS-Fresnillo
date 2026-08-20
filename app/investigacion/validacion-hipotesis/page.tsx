@@ -33,7 +33,7 @@ export default async function ValidacionHipotesisPage() {
         </div>
         <div className="flex gap-2">
           <Button asChild variant="outline">
-            <Link href="/investigacion/metodologia">
+            <Link href="/metodologia">
               <BookOpenCheck className="w-4 h-4 mr-2" />
               Metodología
             </Link>

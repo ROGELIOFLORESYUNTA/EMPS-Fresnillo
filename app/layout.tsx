@@ -21,9 +21,11 @@ const NAV_USUARIO = [
   { href: "/glossary", label: "Glosario" },
 ] as const;
 
+// Ajustes que cualquier visitante puede hacer para SUS propias estimaciones.
+// La calibración del motor cambia valores de todos, así que solo se ofrece
+// cuando hay sesión de investigador (ver más abajo).
 const NAV_OPERATIVO = [
-  { href: "/admin/parametros", label: "Editor de parámetros" },
-  { href: "/admin/calibracion", label: "Calibración del motor" },
+  { href: "/admin/parametros", label: "Ajustar valores para mis estimaciones" },
 ] as const;
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -72,12 +74,23 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <div>
                   <p className="text-sm font-semibold">EMPS Fresnillo</p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Tesis del Seminario de Investigación de Ingeniería en Software, Universidad Autónoma de Zacatecas.
+                    Estimador Municipal de Proyectos de Software. Desarrollado por Rogelio Flores Rodríguez como
+                    parte de una investigación de Ingeniería de Software en la Universidad Autónoma de Zacatecas.
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Valores fiscales y laborales vigentes 2026, verificados contra el Diario Oficial de la
+                    Federación, CONASAMI, IMSS y la Secretaría de Finanzas de Zacatecas.{" "}
+                    <Link href="/fuentes" className="text-primary hover:underline">Ver las fuentes</Link>
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm font-semibold mb-2">Configuración avanzada</p>
-                  <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm">
+                  <p className="text-sm font-semibold mb-2">El sistema</p>
+                  <div className="flex flex-col gap-1 text-sm">
+                    <Link href="/como-funciona" className="text-muted-foreground hover:text-foreground transition-colors">Cómo funciona</Link>
+                    <Link href="/fuentes" className="text-muted-foreground hover:text-foreground transition-colors">De dónde salen los números</Link>
+                    <Link href="/metodologia" className="text-muted-foreground hover:text-foreground transition-colors">Metodología</Link>
+                    <Link href="/glossary" className="text-muted-foreground hover:text-foreground transition-colors">Glosario</Link>
+                    <Link href="/privacidad" className="text-muted-foreground hover:text-foreground transition-colors">Aviso de privacidad</Link>
                     {NAV_OPERATIVO.map((item) => (
                       <Link
                         key={item.href}
@@ -94,12 +107,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <p className="text-xs text-muted-foreground flex-1 min-w-[280px]">
                   Las estimaciones son preliminares. La determinación oficial fiscal y laboral requiere revisión profesional contable, fiscal y legal.
                 </p>
-                <Link
-                  href="/investigacion"
-                  className="text-[10px] text-muted-foreground/60 hover:text-muted-foreground transition-colors"
-                >
-                  Investigación
-                </Link>
+                {adminActive && (
+                  <div className="flex gap-3 text-xs">
+                    <Link href="/investigacion" className="text-muted-foreground hover:text-foreground transition-colors">
+                      Investigación
+                    </Link>
+                    <Link href="/admin/calibracion" className="text-muted-foreground hover:text-foreground transition-colors">
+                      Calibración del motor
+                    </Link>
+                  </div>
+                )}
               </div>
             </div>
           </footer>

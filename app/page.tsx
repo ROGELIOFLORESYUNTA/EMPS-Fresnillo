@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, FolderOpen, Plus, Settings, BookOpen, FileText, AlertCircle, User2 } from "lucide-react";
+import { ArrowRight, FolderOpen, Plus, BookOpen, FileText, AlertCircle, User2, Eye, ShieldCheck, BookOpenCheck } from "lucide-react";
 import { formatMXN, STATUS_LABELS, labelOf } from "@/lib/utils";
 import { peekWorkspace } from "@/lib/workspace";
 
@@ -34,27 +34,18 @@ export default async function HomePage() {
     prisma.changeRequest.count({ where: { decision: "pendiente", project: projectScope } }),
   ]);
 
+  // Proyecto de ejemplo que cualquiera puede abrir sin capturar nada.
+  const ejemplo = await prisma.project.findFirst({
+    where: { isTemplate: true },
+    select: { id: true, name: true },
+  });
+
   // `workspace` es null para un visitante nuevo (aún sin fila): también es anónimo.
   const isAnonymous = !workspace || !workspace.displayName;
   const isFirstVisit = isAnonymous && totalProjects === 0;
 
   return (
     <div className="space-y-8">
-      {isFirstVisit && (
-        <section>
-          <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-5">
-            <p className="text-base font-semibold text-blue-950 mb-2">Bienvenido al sistema</p>
-            <p className="text-sm text-blue-900 leading-relaxed">
-              <strong>No necesitas registrarte, ni dar tu correo, ni crear contraseña.</strong> El sitio te recuerda automáticamente con una galletita (cookie) en tu navegador. Lo que crees aquí (proyectos, parámetros editados) es <strong>solo tuyo</strong>. Los demás visitantes tienen sus propios datos separados.
-            </p>
-            <p className="text-sm text-blue-900 mt-2 leading-relaxed">
-              Si quieres que el sistema sepa tu nombre (en lugar de "anónimo"){" "}
-              <Link href="/mi-cuenta" className="underline font-semibold hover:text-blue-700">identifícate aquí</Link>.
-              Si vas a usar este sitio desde varias computadoras, guarda tu <strong>llave de respaldo</strong> ahí también.
-            </p>
-          </div>
-        </section>
-      )}
       {isAnonymous && !isFirstVisit && (
         <section>
           <Link
@@ -72,12 +63,20 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* Acciones principales - bien visibles, una sola fila */}
+      {/* Qué es esto y para quién */}
       <section>
-        <h1 className="text-3xl font-bold mb-2">EMPS Fresnillo</h1>
-        <p className="text-muted-foreground mb-1">Estimador municipal de proyectos de software</p>
-        <p className="text-sm text-foreground/80 mb-6 max-w-2xl">
-          Calcula cuánto cuesta DE VERDAD un sistema de software (con impuestos, nómina, cambios a medio camino y flujo de efectivo) <strong>antes de firmar</strong>. Una cotización que se ve barata puede costar mucho más durante la ejecución; este sistema lo detecta a tiempo.
+        <h1 className="text-3xl font-bold mb-1">EMPS Fresnillo</h1>
+        <p className="text-muted-foreground mb-3">
+          Estimador Municipal de Proyectos de Software
+        </p>
+        <p className="text-base text-foreground mb-2 max-w-3xl leading-relaxed">
+          Calcula lo que <strong>realmente</strong> cuesta un sistema de software antes de firmar el contrato:
+          además de las horas de programación, suma los impuestos y la nómina, los cambios que el cliente pide
+          a medio camino, el dinero que el proveedor tiene que adelantar y el mantenimiento posterior.
+        </p>
+        <p className="text-sm text-muted-foreground mb-6 max-w-3xl">
+          Está hecho para dos lados de la misma mesa: el área del Ayuntamiento que va a presupuestar y el
+          proveedor que va a cotizar.
         </p>
 
         <div className="grid md:grid-cols-3 gap-4">
@@ -88,20 +87,47 @@ export default async function HomePage() {
             description="Empezar un proyecto nuevo desde cero"
             primary
           />
+          {ejemplo ? (
+            <ActionCard
+              href={`/projects/${ejemplo.id}`}
+              icon={<Eye className="w-6 h-6" />}
+              title="Ver un ejemplo"
+              description="Un proyecto municipal ya capturado, con sus cifras y reportes. Para ver cómo funciona sin llenar nada."
+            />
+          ) : (
+            <ActionCard
+              href="/como-funciona"
+              icon={<BookOpen className="w-6 h-6" />}
+              title="Cómo funciona"
+              description="El recorrido completo en 6 pasos, con ejemplos."
+            />
+          )}
           <ActionCard
             href="/projects"
             icon={<FolderOpen className="w-6 h-6" />}
             title="Mis proyectos"
-            description={`Ver y editar los ${totalProjects} proyectos registrados`}
+            description={totalProjects > 0 ? `Ver y editar los ${totalProjects} proyectos registrados` : "Aquí aparecerán los proyectos que tú captures"}
             badge={totalProjects > 0 ? String(totalProjects) : undefined}
           />
-          <ActionCard
-            href="/admin/parametros"
-            icon={<Settings className="w-6 h-6" />}
-            title="Editar parámetros"
-            description={`Configuración avanzada (opcional): impuestos y cuotas como UMA, IVA, ISR, IMSS e ISN. Los ${paramsCount} valores oficiales de 2026 ya vienen cargados; solo entra si necesitas ajustarlos.`}
-          />
         </div>
+      </section>
+
+      {/* De dónde salen los números: la evidencia, no escondida en configuración */}
+      <section>
+        <Link
+          href="/fuentes"
+          className="block rounded-lg border border-primary/30 bg-primary/[0.03] px-5 py-4 hover:bg-primary/[0.06] transition-colors group"
+        >
+          <p className="font-semibold flex items-center gap-2 text-foreground">
+            <ShieldCheck className="w-5 h-5 text-primary shrink-0" />
+            Las cifras no son inventadas
+          </p>
+          <p className="text-sm text-muted-foreground mt-1 max-w-3xl">
+            El cálculo usa {paramsCount} valores oficiales vigentes: cuotas del IMSS e INFONAVIT, impuesto sobre
+            nóminas de Zacatecas, IVA, ISR y prestaciones de ley. Cada uno con su fundamento legal y su fuente.
+            <span className="text-primary group-hover:underline ml-1">Ver de dónde sale cada número</span>
+          </p>
+        </Link>
       </section>
 
       {/* Alertas si hay pendientes */}
@@ -132,10 +158,34 @@ export default async function HomePage() {
 
         {projects.length === 0 ? (
           <Card>
-            <CardContent className="py-10 text-center text-muted-foreground">
-              <FolderOpen className="w-10 h-10 mx-auto mb-3 opacity-30" />
-              <p className="mb-3">No hay proyectos todavía.</p>
-              <Button asChild><Link href="/projects/new">Crear el primer proyecto</Link></Button>
+            <CardContent className="py-6">
+              <p className="font-medium mb-1">Todavía no has capturado ningún proyecto.</p>
+              <p className="text-sm text-muted-foreground mb-4 max-w-2xl">
+                Toma unos 10 minutos: describes el sistema que quieres, en qué se divide, quién lo va a
+                desarrollar, y el sistema te da el costo, el tiempo, el riesgo y los reportes para imprimir.
+              </p>
+              <div className="grid sm:grid-cols-3 gap-3 mb-5 text-sm">
+                <div className="rounded-md border bg-muted/30 p-3">
+                  <p className="font-medium mb-0.5">1. Describe el proyecto</p>
+                  <p className="text-muted-foreground text-xs">Qué sistema es, para qué área y qué problema resuelve.</p>
+                </div>
+                <div className="rounded-md border bg-muted/30 p-3">
+                  <p className="font-medium mb-0.5">2. Divídelo en partes</p>
+                  <p className="text-muted-foreground text-xs">Los módulos y quién los va a desarrollar.</p>
+                </div>
+                <div className="rounded-md border bg-muted/30 p-3">
+                  <p className="font-medium mb-0.5">3. Recibe las cifras</p>
+                  <p className="text-muted-foreground text-xs">Costo, tiempo, riesgo, flujo de efectivo y reportes.</p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button asChild><Link href="/projects/new">Crear mi primer proyecto</Link></Button>
+                {ejemplo && (
+                  <Button variant="outline" asChild>
+                    <Link href={`/projects/${ejemplo.id}`}>Antes, ver un ejemplo ya hecho</Link>
+                  </Button>
+                )}
+              </div>
             </CardContent>
           </Card>
         ) : (
@@ -170,6 +220,22 @@ export default async function HomePage() {
         )}
       </section>
 
+      {/* Cómo funciona la cuenta: al final, ya que sabe qué es el sitio */}
+      {isFirstVisit && (
+        <section>
+          <div className="rounded-lg border bg-muted/30 p-4">
+            <p className="font-medium mb-1">No necesitas registrarte</p>
+            <p className="text-sm text-muted-foreground leading-relaxed max-w-3xl">
+              No se pide correo ni contraseña para entrar. El sitio te reconoce con un identificador que queda
+              guardado en tu navegador, y lo que captures aquí es solo tuyo: los demás visitantes no lo ven.
+              Si vas a usar el sistema desde varias computadoras, en{" "}
+              <Link href="/mi-cuenta" className="underline font-medium hover:text-foreground">Mi cuenta</Link>{" "}
+              puedes poner tu nombre y guardar tu llave de acceso.
+            </p>
+          </div>
+        </section>
+      )}
+
       {/* Ayuda */}
       <section>
         <h2 className="text-xl font-semibold mb-1">Ayuda</h2>
@@ -186,6 +252,18 @@ export default async function HomePage() {
             icon={<FileText className="w-5 h-5" />}
             title="Glosario"
             description="Los términos del sistema explicados en lenguaje llano"
+          />
+          <SecondaryCard
+            href="/fuentes"
+            icon={<ShieldCheck className="w-5 h-5" />}
+            title="De dónde salen los números"
+            description="Los valores oficiales que usa el cálculo, con su fundamento legal"
+          />
+          <SecondaryCard
+            href="/metodologia"
+            icon={<BookOpenCheck className="w-5 h-5" />}
+            title="Metodología"
+            description="Cómo se calcula y con qué criterios se valida"
           />
         </div>
       </section>

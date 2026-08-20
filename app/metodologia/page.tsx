@@ -1,6 +1,4 @@
-import { redirect } from "next/navigation";
 import Link from "next/link";
-import { isAdmin } from "@/lib/admin-auth";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,11 +14,9 @@ const ROLES = {
 };
 
 export default async function MetodologiaPage() {
-  if (!(await isAdmin())) redirect("/admin-login");
   return (
     <div className="space-y-6 max-w-4xl">
       <Breadcrumbs items={[
-        { label: "Investigación", href: "/investigacion" },
         { label: "Metodología" },
       ]} />
 

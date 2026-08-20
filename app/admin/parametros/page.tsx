@@ -9,44 +9,8 @@ import { Plus, Upload, Pencil, AlertCircle } from "lucide-react";
 import { ClearCacheButton } from "./clear-cache-button";
 import { ParameterManualSheet } from "@/components/parameter-manual-sheet";
 import { getCurrentWorkspaceId } from "@/lib/workspace";
-
-const CATEGORIAS: Record<string, string> = {
-  IMSS: "Cuotas IMSS por ramo",
-  UMA: "Unidad de Medida y Actualización",
-  SALARIO: "Salarios mínimos",
-  LFT: "Prestaciones Ley Federal del Trabajo",
-  ZAC: "Estado de Zacatecas",
-  INFONAVIT: "INFONAVIT",
-  FED: "Federales (IVA, ISR)",
-  MODO: "Modos de desarrollo",
-  CHANGE: "Motor de control de cambios (v7)",
-  CHATBOT: "Cotizador del chatbot (ROSBECLOUD)",
-  OTROS: "Otros",
-};
-
-function categorizar(key: string): keyof typeof CATEGORIAS {
-  if (key.startsWith("CHATBOT_")) return "CHATBOT";
-  if (key.startsWith("CHANGE_")) return "CHANGE";
-  if (key.startsWith("IMSS_")) return "IMSS";
-  if (key.startsWith("UMA_")) return "UMA";
-  if (key.startsWith("SALARIO_")) return "SALARIO";
-  if (key.startsWith("LFT_")) return "LFT";
-  if (key === "ISN_ZACATECAS" || key === "IMPUESTO_UAZ") return "ZAC";
-  if (key === "INFONAVIT_PATRON") return "INFONAVIT";
-  if (key === "IVA_GENERAL" || key === "ISR_PERSONA_MORAL") return "FED";
-  if (key.startsWith("DEV_MODE") || key === "SCENARIO_FACTORS" || key === "DEFAULT_CARGA_PATRONAL_ESTIMADA") return "MODO";
-  return "OTROS";
-}
-
-// Convierte la clave interna (IMSS_ENFERMEDAD_MATERNIDAD_FIJA) en un nombre
-// legible (IMSS Enfermedad Maternidad Fija) conservando las siglas conocidas.
-const SIGLAS = new Set(["IMSS", "IVA", "ISR", "ISN", "UMA", "UAZ", "SBC", "PTU", "CEAV", "LFT", "RESICO", "PF", "INFONAVIT", "ZLFN", "CHATBOT", "ROSBECLOUD"]);
-function nombreLegible(key: string): string {
-  return key
-    .split("_")
-    .map((w) => (SIGLAS.has(w) ? w : w.charAt(0) + w.slice(1).toLowerCase()))
-    .join(" ");
-}
+import { isAdmin } from "@/lib/admin-auth";
+import { CATEGORIAS, categorizar, nombreLegible } from "@/lib/parameter-labels";
 
 export default async function AdminParametrosPage() {
   const parameters = await prisma.parameter.findMany({
@@ -67,6 +31,10 @@ export default async function AdminParametrosPage() {
   }
 
   const ahora = new Date();
+  // Las acciones que afectan a todos los visitantes (sembrar un año, calibrar
+  // el motor) solo se le muestran al investigador. Ajustar un valor para las
+  // estimaciones propias sigue disponible para cualquiera.
+  const esInvestigador = await isAdmin();
 
   return (
     <div className="space-y-6">
@@ -78,18 +46,20 @@ export default async function AdminParametrosPage() {
             {parameters.length} parámetros registrados. Edita o agrega nuevos cuando salgan reformas o cambie el ejercicio fiscal.
           </p>
         </div>
-        <div className="flex gap-2 flex-wrap">
-          <Button variant="outline" asChild>
-            <Link href="/admin/calibracion"><Pencil className="w-4 h-4 mr-2" />Calibrar motor (5 modos)</Link>
-          </Button>
-          <Button variant="outline" asChild>
-            <Link href="/admin/parametros/cargar-anio"><Upload className="w-4 h-4 mr-2" />Cargar año completo</Link>
-          </Button>
-          <Button asChild>
-            <Link href="/admin/parametros/nuevo"><Plus className="w-4 h-4 mr-2" />Nuevo parámetro</Link>
-          </Button>
-          <ClearCacheButton />
-        </div>
+        {esInvestigador && (
+          <div className="flex gap-2 flex-wrap">
+            <Button variant="outline" asChild>
+              <Link href="/admin/calibracion"><Pencil className="w-4 h-4 mr-2" />Calibrar motor (5 modos)</Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link href="/admin/parametros/cargar-anio"><Upload className="w-4 h-4 mr-2" />Cargar año completo</Link>
+            </Button>
+            <Button asChild>
+              <Link href="/admin/parametros/nuevo"><Plus className="w-4 h-4 mr-2" />Nuevo parámetro</Link>
+            </Button>
+            <ClearCacheButton />
+          </div>
+        )}
       </div>
 
       <Card className="border-blue-200 bg-blue-50/40">
