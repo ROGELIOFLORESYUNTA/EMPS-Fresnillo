@@ -7,32 +7,27 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { UserCircle2, KeyRound, Copy, Smartphone, Save, Check, Info, ChevronDown, ChevronUp } from "lucide-react";
+import { ROLES } from "@/lib/roles";
 
 interface MyAccount {
   id: string;
   displayName: string | null;
   role: string | null;
+  contactEmail: string | null;
   recoveryCode: string | null;
   createdAt?: string;
   lastSeenAt?: string;
 }
-
-// Roles en lenguaje cotidiano, no tecnico.
-const ROLES = [
-  { value: "operador_municipal", label: "Trabajo en un Ayuntamiento (Catastro, Tesorería, Obras, etc.)" },
-  { value: "proveedor", label: "Soy desarrollador / proveedor de software" },
-  { value: "investigador", label: "Soy investigador o profesor" },
-  { value: "explorando", label: "Solo estoy curioseando para ver de qué se trata" },
-  { value: "otro", label: "Otro" },
-];
 
 export default function MiCuentaPage() {
   const router = useRouter();
   const [me, setMe] = useState<MyAccount | null>(null);
   const [name, setName] = useState("");
   const [role, setRole] = useState("");
+  const [email, setEmail] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [recoverCode, setRecoverCode] = useState("");
   const [recoverError, setRecoverError] = useState<string | null>(null);
@@ -46,6 +41,7 @@ export default function MiCuentaPage() {
         setMe(d.workspace);
         setName(d.workspace?.displayName ?? "");
         setRole(d.workspace?.role ?? "");
+        setEmail(d.workspace?.contactEmail ?? "");
       });
   }, []);
 
@@ -56,16 +52,19 @@ export default function MiCuentaPage() {
     const r = await fetch("/api/workspace/me", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ displayName: name, role }),
+      body: JSON.stringify({ displayName: name, role, contactEmail: email }),
     });
     const d = await r.json();
     if (r.ok) {
+      setSaveError(null);
       setMe(d.workspace);
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
       // Notificar al WorkspaceBadge del header que la identidad cambio
       // para que se refresque sin reload completo.
       window.dispatchEvent(new CustomEvent("emps:identity-changed"));
+    } else {
+      setSaveError(d.error ?? "No se pudo guardar. Intenta de nuevo.");
     }
     setSaving(false);
   }
@@ -174,9 +173,26 @@ export default function MiCuentaPage() {
                 ))}
               </select>
               <p className="text-xs text-muted-foreground">
-                El autor del estudio agrupa respuestas anónimas por este campo para sus estadísticas. No afecta lo que ves en el sitio.
+                El autor del estudio agrupa respuestas anónimas por este campo para sus estadísticas. Además, el sistema
+                ordena las opciones de desarrollo según el lado desde el que trabajas.
               </p>
             </div>
+            <div className="grid gap-2">
+              <Label htmlFor="email">Tu correo (opcional)</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="ej. maria@fresnillo.gob.mx"
+                maxLength={120}
+              />
+              <p className="text-xs text-muted-foreground">
+                Solo por si pierdes la llave de aquí abajo y necesitas recuperar tus proyectos. No se comparte con nadie
+                ni se usa para enviarte publicidad.
+              </p>
+            </div>
+            {saveError && <p className="text-sm text-destructive">{saveError}</p>}
             <div className="flex items-center gap-2">
               <Button type="submit" disabled={saving}>
                 <Save className="w-4 h-4 mr-2" />

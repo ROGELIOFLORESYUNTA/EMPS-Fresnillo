@@ -753,6 +753,7 @@ model Workspace {
   displayName   String?  // opcional, capturado por el usuario en /mi-workspace
   role          String?  // operador_municipal | proveedor | investigador | explorando | otro
   recoveryCode  String?  @unique // codigo corto (8 chars) para recuperar workspace en otro dispositivo
+  contactEmail  String?  // opcional, lo deja la persona al crear su primer proyecto por si pierde su llave
   notes         String? @db.Text
   createdAt     DateTime @default(now())
   lastSeenAt    DateTime @default(now())

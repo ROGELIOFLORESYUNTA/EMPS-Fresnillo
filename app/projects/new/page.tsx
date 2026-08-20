@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -7,8 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { apiPost } from "@/lib/api-client";
+import { ROLES } from "@/lib/roles";
+import { UserCircle2 } from "lucide-react";
 
 // Qué es cada tipo de sistema, sin tecnicismos (se muestra bajo el select).
 const SYSTEM_TYPE_HELP: Record<string, string> = {
@@ -30,6 +32,11 @@ export default function NewProjectPage() {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Si la persona todavía no tiene nombre guardado, este alta es también su
+  // presentación: se le pide aquí, dentro del flujo, y no en una pantalla de
+  // registro aparte.
+  const [needsIdentity, setNeedsIdentity] = useState<boolean | null>(null);
+  const [identity, setIdentity] = useState({ displayName: "", role: "", contactEmail: "" });
   const [form, setForm] = useState({
     name: "",
     description: "",
@@ -43,6 +50,16 @@ export default function NewProjectPage() {
     notes: "",
   });
 
+  useEffect(() => {
+    fetch("/api/workspace/me")
+      .then((r) => r.json())
+      .then((d) => setNeedsIdentity(!d.workspace?.displayName))
+      .catch(() => setNeedsIdentity(false)); // si falla la consulta, no bloqueamos el alta
+  }, []);
+
+  const setIdentityField = (k: keyof typeof identity) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+    setIdentity((i) => ({ ...i, [k]: e.target.value }));
+
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
 
@@ -51,14 +68,21 @@ export default function NewProjectPage() {
     setSubmitting(true);
     setError(null);
     try {
-      const result = await apiPost<{ project: { id: string } }>("/api/projects", form);
+      const payload = needsIdentity ? { ...form, identity } : form;
+      const result = await apiPost<{ project: { id: string } }>("/api/projects", payload);
+      if (needsIdentity) {
+        // El encabezado muestra el nombre en cuanto queda guardado.
+        window.dispatchEvent(new CustomEvent("emps:identity-changed"));
+      }
       router.push(`/projects/${result.project.id}`);
     } catch (e) {
       const raw = e instanceof Error ? e.message : "";
       setError(
-        raw.includes("workspace")
-          ? "No se pudo identificar tu sesión. Recarga la página e intenta de nuevo."
-          : "No se pudo guardar el proyecto. Revisa que el nombre, el área y el objetivo estén llenos, e intenta de nuevo.",
+        raw.includes("correo") || raw.includes("nombre") || raw.includes("lado")
+          ? raw
+          : raw.includes("workspace")
+            ? "No se pudo identificar tu sesión. Recarga la página e intenta de nuevo."
+            : "No se pudo guardar el proyecto. Revisa que el nombre, el área y el objetivo estén llenos, e intenta de nuevo.",
       );
       setSubmitting(false);
     }
@@ -71,7 +95,65 @@ export default function NewProjectPage() {
         <p className="text-muted-foreground text-sm">Captura los datos generales y el contexto municipal.</p>
       </div>
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {needsIdentity && (
+          <Card className="border-blue-200 bg-blue-50/40">
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <UserCircle2 className="w-5 h-5 text-blue-600" />
+                ¿De quién es este proyecto?
+              </CardTitle>
+              <CardDescription>
+                Es la primera vez que capturas aquí. Con estos dos datos el sistema sabe de quién son los proyectos y
+                desde qué lado recomendarte la mejor opción. No hay registro ni contraseña.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="identityName">Tu nombre *</Label>
+                <Input
+                  id="identityName"
+                  value={identity.displayName}
+                  onChange={setIdentityField("displayName")}
+                  required
+                  minLength={2}
+                  maxLength={80}
+                  placeholder="ej. María Hernández"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="identityRole">¿Desde qué lado vas a usar el sistema? *</Label>
+                <Select id="identityRole" value={identity.role} onChange={setIdentityField("role")} required>
+                  <option value="" disabled>Elige una opción</option>
+                  {ROLES.map((r) => (
+                    <option key={r.value} value={r.value}>{r.short}</option>
+                  ))}
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  El Ayuntamiento y el proveedor no buscan lo mismo: uno cuida el presupuesto y el otro el margen y el
+                  tiempo. El sistema ordena las opciones según lo que contestes.
+                </p>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="identityEmail">Correo (opcional)</Label>
+                <Input
+                  id="identityEmail"
+                  type="email"
+                  value={identity.contactEmail}
+                  onChange={setIdentityField("contactEmail")}
+                  maxLength={120}
+                  placeholder="ej. maria@fresnillo.gob.mx"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Solo por si pierdes tu llave de acceso y necesitas recuperar tus proyectos desde otra computadora. No
+                  se usa para nada más ni se comparte.{" "}
+                  <Link href="/privacidad" className="text-primary hover:underline">Aviso de privacidad</Link>
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Datos generales</CardTitle>
@@ -149,7 +231,7 @@ export default function NewProjectPage() {
           <Button variant="outline" type="button" asChild>
             <Link href="/projects">Cancelar</Link>
           </Button>
-          <Button type="submit" disabled={submitting}>
+          <Button type="submit" disabled={submitting || needsIdentity === null}>
             {submitting ? "Guardando..." : "Crear y continuar"}
           </Button>
         </div>
