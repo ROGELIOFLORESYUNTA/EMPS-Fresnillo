@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import {
+  Sparkles,
   Database,
   BrainCircuit,
   Activity,
@@ -33,6 +34,7 @@ export default async function InvestigacionPage() {
     feedbackCount,
     projectsCount,
     usersCount,
+    observatorioCount,
   ] = await Promise.all([
     prisma.estimationDatasetSource.count(),
     prisma.mLModelRegistry.count(),
@@ -43,6 +45,7 @@ export default async function InvestigacionPage() {
     prisma.estimationFeedback.count(),
     prisma.project.count(),
     prisma.user.count(),
+    prisma.observatorioComentario.count({ where: { esTestimonio: true } }),
   ]);
 
   return (
@@ -107,6 +110,14 @@ export default async function InvestigacionPage() {
           title="Bitácora"
           description="Historial completo de cambios del sistema para auditoría académica y reproducibilidad."
           badge={auditCount}
+        />
+        <ResearchCard
+          href="/investigacion/observatorio"
+          icon={<Sparkles className="w-5 h-5" />}
+          title="Observatorio de comentarios"
+          description="Testimonios públicos de YouTube analizados uno por uno. Sirven para saber qué sale mal en los proyectos, no para medir cuánto: no entran a la validación de la hipótesis."
+          badge={observatorioCount}
+          emptyHint={observatorioCount === 0 ? "Vacío hoy" : undefined}
         />
         <ResearchCard
           href="/investigacion/casos-entrenamiento"
