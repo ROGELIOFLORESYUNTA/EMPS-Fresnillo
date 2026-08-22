@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
+import { isAdmin } from "@/lib/admin-auth";
 
 const approveSchema = z.object({
   approvedBy: z.string().min(2),
@@ -11,6 +12,9 @@ const approveSchema = z.object({
  * Solo modelos aprobados deben usarse para sugerencias en la UI.
  */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  if (!(await isAdmin())) {
+    return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+  }
   try {
     const { id } = await params;
     const body = await req.json();

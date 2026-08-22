@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { Decimal } from "decimal.js";
 import { z } from "zod";
+import { isAdmin } from "@/lib/admin-auth";
 
 const createSchema = z.object({
   sourceKind: z.enum(["public_dataset", "local_capture", "simulated_case"]),
@@ -33,6 +34,9 @@ const createSchema = z.object({
 });
 
 export async function GET(req: NextRequest) {
+  if (!(await isAdmin())) {
+    return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+  }
   const url = new URL(req.url);
   const sourceKind = url.searchParams.get("sourceKind");
   const devMode = url.searchParams.get("devMode");
@@ -48,6 +52,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  if (!(await isAdmin())) {
+    return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+  }
   try {
     const body = await req.json();
     const data = createSchema.parse(body);
