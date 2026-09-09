@@ -32,12 +32,6 @@ const MODE_LABELS: Record<string, string> = {
   hybrid: "Híbrido",
 };
 
-const SCENARIO_LABELS: Record<string, string> = {
-  optimistic: "optimista",
-  probable: "probable",
-  conservative: "conservador",
-};
-
 const RISK_LABELS: Record<string, string> = {
   bajo: "bajo",
   medio: "medio",

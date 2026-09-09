@@ -56,6 +56,8 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
   const optimistic = probable ? latest.find((e) => e.scenario === "optimistic" && e.mode === probable.mode) : undefined;
   const conservative = probable ? latest.find((e) => e.scenario === "conservative" && e.mode === probable.mode) : undefined;
   const wcap = Number(project.cashflow[0]?.workingCapitalRequired ?? 0);
+  // Rastro de la decision: el reporte dice que se eligio, cuando y por quien.
+  const decisionActiva = await prisma.projectDecision.findFirst({ where: { projectId: id, supersededAt: null }, orderBy: { createdAt: "desc" } });
   const modeLabels = Object.fromEntries(DEVELOPMENT_MODES.map((m) => [m.value, m.label]));
   const meta = REPORT_LABELS[type];
 
@@ -149,6 +151,11 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
             <div>
               <h1 className="text-2xl font-bold">{meta.title}</h1>
               <p className="text-muted-foreground">Para: {meta.audience}</p>
+              {decisionActiva && (
+                <p className="text-sm mt-1">
+                  <strong>Decisión:</strong> {modeLabels[decisionActiva.mode] ?? decisionActiva.mode}, escenario {decisionActiva.scenario === "optimistic" ? "optimista" : decisionActiva.scenario === "conservative" ? "conservador" : "probable"}, {formatMXN(Number(decisionActiva.totalAtDecision))}, elegida el {decisionActiva.createdAt.toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" })}{decisionActiva.decidedByName ? ` por ${decisionActiva.decidedByName}` : ""}.
+                </p>
+              )}
             </div>
             <div className="text-right text-sm text-muted-foreground">
               <p>Generado: {new Date().toLocaleDateString("es-MX")}</p>
