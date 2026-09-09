@@ -940,11 +940,11 @@ model ObservatorioFuente {
   nombre          String
   plataforma      String    @default("youtube")
   tipo            String // busqueda | canal | video
-  consulta        String // terminos de busqueda, o el id del canal/video
+  consulta        String @db.Text // terminos de busqueda, o el id del canal/video
   idioma          String? // es | en | null = cualquiera
   activa          Boolean   @default(true)
   ultimaCosechaEl DateTime?
-  notas           String?
+  notas           String? @db.Text
   createdAt       DateTime  @default(now())
 
   comentarios ObservatorioComentario[]
@@ -958,7 +958,7 @@ model ObservatorioComentario {
   plataforma  String    @default("youtube")
   externalId  String    @unique // id del comentario en la plataforma: evita reanalizar
   videoId     String?
-  videoTitulo String?
+  videoTitulo String? @db.Text
   canal       String?
   publicadoEl DateTime?
   likes       Int?
@@ -966,7 +966,7 @@ model ObservatorioComentario {
 
   // Texto crudo. Las politicas de YouTube obligan a borrarlo o refrescarlo a
   // los 30 dias; el analisis derivado si se conserva. Lo hace POST /purgar.
-  textoOriginal String?
+  textoOriginal String? @db.Text
   textoExpiraEl DateTime?
   cosechadoEl   DateTime  @default(now())
 
@@ -981,16 +981,16 @@ model ObservatorioComentario {
   tamanoEquipo           Int?
   desviacion             String? // mas | igual | menos | no_dice
   desviacionPct          Decimal?
-  causasJson             String? // JSON: lista de la taxonomia cerrada
+  causasJson             String? @db.Text // JSON: lista de la taxonomia cerrada
   confianza              String? // alta | media | baja
-  citasJson              String? // JSON: { campo: "frase textual de donde salio" }
-  razonamiento           String?
-  errorAnalisis          String? // si fallo, por que; para reintentar despues
+  citasJson              String? @db.Text // JSON: { campo: "frase textual de donde salio" }
+  razonamiento           String? @db.Text
+  errorAnalisis          String? @db.Text // si fallo, por que; para reintentar despues
 
   // --- Validacion del anotador (acuerdo entre el modelo y una persona) ---
   revisadoPorHumano Boolean  @default(false)
   coincideConHumano Boolean?
-  notaRevision      String?
+  notaRevision      String? @db.Text
 
   fuente ObservatorioFuente @relation(fields: [fuenteId], references: [id], onDelete: Cascade)
 
