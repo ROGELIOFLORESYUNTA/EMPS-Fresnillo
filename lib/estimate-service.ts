@@ -1,6 +1,21 @@
 /**
  * Servicio de estimacion: orquesta motor + persistencia + auditoria.
  * Cumple criterios 11 (versionado), 13 (no sobrescribir histórico), RNF-03 (auditabilidad).
+ *
+ * Correcciones de septiembre 2026 (auditoría de cuentas sobre el proyecto de ejemplo):
+ *   - El factor de riesgo ya no es la constante 1.45: sale de los cambios
+ *     registrados, de la claridad, de la disponibilidad del cliente y de la
+ *     rotación declarada del equipo. Sin datos vale 1.0 y se dice.
+ *   - La capacidad semanal ya no es un número que el usuario teclea a ciegas:
+ *     sale del equipo capturado (Σ disponibilidad × 40 h). Se puede forzar.
+ *   - Las integraciones se cobran una vez, el endurecimiento de bytecoding una
+ *     vez, y la liquidación LFT no vuelve a cobrar lo que el costo mensual ya
+ *     provisiona.
+ *   - El tipo de contrato sí cambia las cargas: honorarios y freelance no pagan
+ *     IMSS ni INFONAVIT.
+ *   - Todo lo que entra al cálculo queda en el snapshot, incluido el capital
+ *     declarado, para que un recálculo reproduzca el mismo riesgo.
+ *   - Cada estimación guarda su cadena de cálculo ("de dónde sale este número").
  */
 import { Decimal } from "decimal.js";
 import { prisma } from "./db";
@@ -22,11 +37,13 @@ import {
   type ProjectInput,
   type ModuleInput,
 } from "./engine";
+import { construirExplicacion, type PasoDeCalculo } from "./engine/explicacion";
 
 interface CashFlowAssumptions {
   anticipoPct: number;
   finalPaymentPct: number;
-  durationMonths: number;
+  /** Ya no entra al cálculo: los meses los decide el motor. Se acepta por compatibilidad. */
+  durationMonths?: number;
   monthlyToolsCost: number;
   monthlyAdminCost: number;
 }
@@ -36,7 +53,8 @@ interface EstimateRequest {
   mode: DevelopmentMode;
   scenarios?: Scenario[];           // default todos
   targetMargin: number;             // 0..0.99
-  weeklyTeamCapacityHours: number;
+  /** Si no se manda, se calcula del equipo: Σ(disponibilidad % × 40 h). */
+  weeklyTeamCapacityHours?: number | null;
   costMode?: "detailed" | "estimated";
   cashFlowAssumptions?: CashFlowAssumptions;
   capitalDeclaredByProvider?: number;
@@ -62,12 +80,68 @@ interface EstimateOutput {
     isrEstimated: number;
     riskLevel: string;
     riskScore: number;
+    explicacion: PasoDeCalculo[];
   }>;
   cashflowResult: { workingCapitalRequired: number; months: number };
+  /** Capacidad semanal usada y de dónde salió. */
+  capacidad: { horasSemana: number; calculadaDelEquipo: boolean };
 }
 
-function projectInputFromDb(modules: { complexity: number; clarity: number; criticality: number; screensCount: number; reportsCount: number; catalogsCount: number; integrationsCount: number; sensitiveData: boolean; }[],
-  context: { changeProbability?: number; clientUnavailability?: number; turnoverRisk?: number; clientAvailability?: number; dataMigration?: boolean; externalIntegrationsCount?: number; }): ProjectInput {
+const HORAS_SEMANA_POR_PERSONA = 40;
+const MIN_PROJECT_MONTHS = 0.5; // mínimo medio mes para cualquier proyecto
+const SEMANAS_POR_MES = 4.33;
+
+/** Niveles que captura la interfaz para "¿qué tan disponible está el cliente?". */
+const CLIENTE_AUSENTE_POR_NIVEL: Record<string, number> = {
+  alta: 0.0,   // hay alguien dedicado a resolver dudas
+  media: 0.10, // contesta cuando puede
+  baja: 0.25,  // difícil de encontrar
+};
+
+/**
+ * Entradas de riesgo del proyecto. Antes eran tres constantes de 0.15 que
+ * inflaban todas las horas un 45 % sin que ninguna pantalla las capturara.
+ * Ahora cada una sale de un dato real y se documenta de dónde.
+ */
+export function riesgoDelProyecto(input: {
+  cambiosRegistrados: number;
+  claridadPromedio: number;
+  nivelDisponibilidadCliente: string | null;
+  rotacionEquipo: number[]; // turnoverRisk 1..5 por perfil
+}): {
+  changeProbability: number;
+  clientUnavailability: number;
+  turnoverRisk: number;
+  sinDatoDeCliente: boolean;
+} {
+  // Cambios: cada solicitud registrada sube la probabilidad; la claridad baja también.
+  let changeProbability = Math.min(0.30, input.cambiosRegistrados * 0.05);
+  if (input.claridadPromedio <= 2) changeProbability += 0.10;
+  else if (input.claridadPromedio <= 3) changeProbability += 0.05;
+  changeProbability = Math.min(0.40, changeProbability);
+
+  const nivel = input.nivelDisponibilidadCliente;
+  const sinDatoDeCliente = !nivel || !(nivel in CLIENTE_AUSENTE_POR_NIVEL);
+  const clientUnavailability = sinDatoDeCliente ? 0 : CLIENTE_AUSENTE_POR_NIVEL[nivel!];
+
+  // Rotación: promedio del 1..5 declarado por perfil, llevado a 0..0.30.
+  const rot = input.rotacionEquipo.filter((v) => Number.isFinite(v));
+  const promedioRot = rot.length ? rot.reduce((a, b) => a + b, 0) / rot.length : 1;
+  const turnoverRisk = Math.max(0, Math.min(0.30, ((promedioRot - 1) / 4) * 0.30));
+
+  return { changeProbability, clientUnavailability, turnoverRisk, sinDatoDeCliente };
+}
+
+/** Capacidad semanal del equipo: cada persona aporta 40 h por su disponibilidad. */
+export function capacidadDelEquipo(team: { availabilityPercent: number | string }[]): number {
+  const horas = team.reduce((acc, p) => acc + (Number(p.availabilityPercent) / 100) * HORAS_SEMANA_POR_PERSONA, 0);
+  return Math.max(1, horas);
+}
+
+function projectInputFromDb(
+  modules: { complexity: number; clarity: number; criticality: number; screensCount: number; reportsCount: number; catalogsCount: number; integrationsCount: number; sensitiveData: boolean; }[],
+  context: { changeProbability: number; clientUnavailability: number; turnoverRisk: number; externalIntegrationsCount: number; dataMigration?: boolean },
+): ProjectInput {
   return {
     modules: modules.map((m): ModuleInput => ({
       complexity: m.complexity,
@@ -80,11 +154,13 @@ function projectInputFromDb(modules: { complexity: number; clarity: number; crit
       sensitiveData: m.sensitiveData,
     })),
     dataMigration: context.dataMigration ?? false,
-    externalIntegrationsCount: context.externalIntegrationsCount ?? 0,
-    changeProbability: context.changeProbability ?? 0.15,
-    clientUnavailability: context.clientUnavailability ?? 0.15,
-    turnoverRisk: context.turnoverRisk ?? 0.15,
-    clientAvailability: context.clientAvailability ?? 0.85,
+    // Se conserva como señal para el escenario conservador y el riesgo técnico.
+    // Ya NO suma horas por segunda vez (ver effort.ts).
+    externalIntegrationsCount: context.externalIntegrationsCount,
+    changeProbability: context.changeProbability,
+    clientUnavailability: context.clientUnavailability,
+    turnoverRisk: context.turnoverRisk,
+    clientAvailability: 1 - context.clientUnavailability,
   };
 }
 
@@ -94,6 +170,7 @@ export async function runEstimate(req: EstimateRequest): Promise<EstimateOutput>
     include: {
       modules: true,
       team: true,
+      _count: { select: { changes: true } },
     },
   });
   if (!project) throw new Error(`Proyecto ${req.projectId} no encontrado`);
@@ -108,6 +185,16 @@ export async function runEstimate(req: EstimateRequest): Promise<EstimateOutput>
     project.targetDate?.getFullYear() ?? 2026,
     req.workspaceId ?? null,
   );
+
+  const claridadPromedio =
+    project.modules.reduce((a, m) => a + m.clarity, 0) / project.modules.length;
+  const riesgo = riesgoDelProyecto({
+    cambiosRegistrados: project._count.changes,
+    claridadPromedio,
+    nivelDisponibilidadCliente: project.clientAvailabilityLevel ?? null,
+    rotacionEquipo: project.team.map((p) => p.turnoverRisk),
+  });
+
   const projectInput = projectInputFromDb(
     project.modules.map((m) => ({
       complexity: m.complexity,
@@ -121,6 +208,9 @@ export async function runEstimate(req: EstimateRequest): Promise<EstimateOutput>
     })),
     {
       externalIntegrationsCount: project.modules.reduce((a, m) => a + m.integrationsCount, 0),
+      changeProbability: riesgo.changeProbability,
+      clientUnavailability: riesgo.clientUnavailability,
+      turnoverRisk: riesgo.turnoverRisk,
     },
   );
 
@@ -148,7 +238,13 @@ export async function runEstimate(req: EstimateRequest): Promise<EstimateOutput>
   };
   const scenarioMap = computeScenarios(effort, projectInput, ctx.scenarios);
 
-  // Costo equipo (todo el proyecto, mensual y total)
+  // Capacidad semanal: del equipo, salvo que se fuerce un valor.
+  const capacidadCalculadaDelEquipo = !(req.weeklyTeamCapacityHours && req.weeklyTeamCapacityHours > 0);
+  const weeklyTeamCapacityHours = capacidadCalculadaDelEquipo
+    ? capacidadDelEquipo(project.team)
+    : Number(req.weeklyTeamCapacityHours);
+
+  // Costo mensual del equipo. El tipo de contrato decide qué cargas aplican.
   const useEstimated = req.costMode === "estimated";
   const monthlyTeamCost = project.team.reduce((acc, p) => {
     const cost = computeProfileCost(
@@ -157,24 +253,16 @@ export async function runEstimate(req: EstimateRequest): Promise<EstimateOutput>
         riskClass: "I",
         useEstimatedFactor: useEstimated,
         estimatedFactor: 0.40,
+        contractType: p.contractType,
       },
       ctx.rates,
     );
     return acc + cost.total * Number(p.availabilityPercent) / 100;
   }, 0);
 
-  // El costo se calcula dentro del loop por modo/escenario:
-  //   cost = monthlyTeamCost × realMonthsOfMode × actualSum
-  // donde realMonthsOfMode = max(MIN_MONTHS, weeksTotal / 4.33) y actualSum es 1.0 o 1.10 (bytecoding).
-  // Esto refleja que el proyecto cuesta lo que dura mantener al equipo trabajando.
-  const MIN_PROJECT_MONTHS = 0.5; // mínimo medio mes para cualquier proyecto
-
-  // Cashflow (opcional) — la duración la calculamos dentro del loop por modo:
-  // si bytecoding termina en 1 mes y tradicional en 6, sus cashflows son distintos.
   const cfa = req.cashFlowAssumptions;
-
+  const capitalDeclarado = req.capitalDeclaredByProvider ?? 100000;
   const scenariosToCompute = (req.scenarios ?? ["optimistic", "probable", "conservative"]) as Scenario[];
-
   const out: EstimateOutput["estimates"] = [];
 
   // Determinar version siguiente para este proyecto/modo
@@ -190,10 +278,27 @@ export async function runEstimate(req: EstimateRequest): Promise<EstimateOutput>
     projectInput,
     mode: req.mode,
     targetMargin: req.targetMargin,
-    weeklyTeamCapacityHours: req.weeklyTeamCapacityHours,
+    weeklyTeamCapacityHours,
+    capacidadCalculadaDelEquipo,
     costMode: req.costMode ?? "detailed",
     cashFlowAssumptions: cfa,
+    capitalDeclaredByProvider: capitalDeclarado,
+    riesgo: { ...riesgo, cambiosRegistrados: project._count.changes, claridadPromedio },
   });
+
+  const velocidadModo = ctx.velocity[req.mode].velocity_factor;
+  const nombresModo: Record<string, string> = {
+    traditional: "programado a mano",
+    ai_assisted: "a mano con ayuda de IA",
+    hybrid: "mitad a mano y mitad con IA",
+    bytecoding_prompts: "casi todo con IA",
+    low_code: "con herramientas de armar sin programar",
+  };
+  const nombresEscenario: Record<string, string> = {
+    optimistic: "si todo sale bien",
+    probable: "lo más seguro",
+    conservative: "si hay tropiezos",
+  };
 
   for (const scen of scenariosToCompute) {
     const sResult = scenarioMap[scen];
@@ -201,10 +306,10 @@ export async function runEstimate(req: EstimateRequest): Promise<EstimateOutput>
       { ...effort, totalEffortHours: sResult.totalEffortHours, phases: sResult.phases },
       req.mode,
       ctx.velocity,
-      req.weeklyTeamCapacityHours,
+      weeklyTeamCapacityHours,
     );
     // Calendario real del proyecto en MESES con piso mínimo (un proyecto no puede durar 0 meses).
-    const realMonthsOfMode = Math.max(MIN_PROJECT_MONTHS, calendar.weeksTotal / 4.33);
+    const realMonthsOfMode = Math.max(MIN_PROJECT_MONTHS, calendar.weeksTotal / SEMANAS_POR_MES);
 
     // Riesgo LFT — si el proyecto excede 6 meses con personal en nómina, hay riesgo de
     // conversión a indeterminado y liquidación al despedir.
@@ -218,13 +323,15 @@ export async function runEstimate(req: EstimateRequest): Promise<EstimateOutput>
       willTerminateAtEnd: true, // asumimos terminación al cierre como caso conservador
     });
 
-    // Costo base + overhead de horas + provisión LFT si aplica
-    const baseCost = monthlyTeamCost * realMonthsOfMode * effort.actualSum;
+    // Costo = lo que cuesta mantener al equipo los meses que dura, más la
+    // liquidación si aplica. Las horas de endurecimiento de bytecoding ya
+    // están dentro de las semanas; no se vuelven a multiplicar aquí.
+    const baseCost = monthlyTeamCost * realMonthsOfMode;
     const totalCost = baseCost + lftRisk.estimatedTerminationCost;
     const pricing = computePricing({ totalCost, targetMargin: req.targetMargin }, ctx.rates.IVA);
     const isr = computeISR(pricing.subtotal, totalCost * 0.85, totalCost * 0.05, ctx.rates.ISR);
 
-    // Cashflow basado en el calendario REAL del modo (no en durationMonths declarado).
+    // Cashflow basado en el calendario REAL del modo.
     const cashflowMonthsThisMode = Math.max(1, Math.ceil(realMonthsOfMode));
     const cashflowResult = cfa
       ? buildSimpleCashFlow({
@@ -241,10 +348,46 @@ export async function runEstimate(req: EstimateRequest): Promise<EstimateOutput>
 
     const risk = computeRisk(projectInput, {
       workingCapitalRequired: cashflowResult.workingCapitalRequired,
-      capitalDeclaredByProvider: req.capitalDeclaredByProvider ?? 100000,
+      capitalDeclaredByProvider: capitalDeclarado,
       marginPct: req.targetMargin,
       isnUazRate: ctx.rates.ISN * (1 + ctx.rates.UAZ),
       fiscalIvaRate: ctx.rates.IVA,
+    });
+
+    const explicacion = construirExplicacion({
+      puntosBase: effort.basePoints,
+      factorClaridad: effort.clarityFactor,
+      claridadPromedio,
+      factorRiesgo: effort.riskFactor,
+      riesgo: {
+        cambios: riesgo.changeProbability,
+        clienteAusente: riesgo.clientUnavailability,
+        rotacion: riesgo.turnoverRisk,
+        sinDatoDeCliente: riesgo.sinDatoDeCliente,
+      },
+      esfuerzoTecnico: effortRaw.technicalEffort,
+      repartoFases: effortRaw.totalEffortHours / effortRaw.technicalEffort,
+      horasTrasReparto: effortRaw.totalEffortHours,
+      eficienciaModo: efficiency,
+      nombreModo: nombresModo[req.mode] ?? req.mode,
+      horasModo: effort.totalEffortHours,
+      factorEscenario: sResult.factor,
+      nombreEscenario: nombresEscenario[scen] ?? scen,
+      horasEscenario: sResult.totalEffortHours,
+      capacidadSemanal: weeklyTeamCapacityHours,
+      capacidadCalculadaDelEquipo,
+      velocidadModo,
+      semanas: calendar.weeksTotal,
+      meses: realMonthsOfMode,
+      costoMensualEquipo: monthlyTeamCost,
+      personas: project.team.length,
+      liquidacionLFT: lftRisk.estimatedTerminationCost,
+      costoTotal: totalCost,
+      margen: req.targetMargin,
+      subtotal: pricing.subtotal,
+      tasaIva: ctx.rates.IVA,
+      iva: pricing.vat,
+      total: pricing.total,
     });
 
     // Persistir
@@ -277,6 +420,7 @@ export async function runEstimate(req: EstimateRequest): Promise<EstimateOutput>
         riskLevel: risk.level,
         parametersSnapshot: snapshotStr,
         inputsSnapshot,
+        explanationJson: JSON.stringify(explicacion),
         createdById: req.createdById ?? null,
       },
     });
@@ -306,6 +450,7 @@ export async function runEstimate(req: EstimateRequest): Promise<EstimateOutput>
       isrEstimated: isr,
       riskLevel: risk.level,
       riskScore: risk.total,
+      explicacion,
     });
   }
 
@@ -315,8 +460,8 @@ export async function runEstimate(req: EstimateRequest): Promise<EstimateOutput>
     await prisma.cashFlowLine.deleteMany({ where: { projectId: project.id } });
     const probableEst = out.find((e) => e.scenario === "probable") ?? out[0];
     const probableTotal = probableEst?.total ?? 0;
-    const probableWeeks = probableEst?.weeksTotal ?? cfa.durationMonths * 4.33;
-    const realMonths = Math.max(1, Math.ceil(Math.max(MIN_PROJECT_MONTHS, probableWeeks / 4.33)));
+    const probableWeeks = probableEst?.weeksTotal ?? 0;
+    const realMonths = Math.max(1, Math.ceil(Math.max(MIN_PROJECT_MONTHS, probableWeeks / SEMANAS_POR_MES)));
     const finalCashflow = buildSimpleCashFlow({
       totalContractAmount: probableTotal,
       anticipoPct: cfa.anticipoPct,
@@ -357,5 +502,9 @@ export async function runEstimate(req: EstimateRequest): Promise<EstimateOutput>
   });
   const wcap = cf[0] ? Number(cf[0].workingCapitalRequired) : 0;
 
-  return { estimates: out, cashflowResult: { workingCapitalRequired: wcap, months: cf.length } };
+  return {
+    estimates: out,
+    cashflowResult: { workingCapitalRequired: wcap, months: cf.length },
+    capacidad: { horasSemana: weeklyTeamCapacityHours, calculadaDelEquipo: capacidadCalculadaDelEquipo },
+  };
 }

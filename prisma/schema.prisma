@@ -38,25 +38,27 @@ model User {
 // ============================================================
 
 model Project {
-  id              String    @id @default(cuid())
-  name            String
-  description     String?
-  client          String
-  clientType      String // municipal | paramunicipal | externo
-  municipalArea   String
-  objective       String
-  systemType      String // crud_interno | portal_ciudadano | integrador | etc.
-  responsible     String?
-  estimatedBudget Decimal?
-  targetDate      DateTime?
-  priority        String    @default("media") // baja|media|alta|critica
-  status          String    @default("borrador") // borrador|captura|estimado|aprobado|en_ejecucion|cerrado|archivado
-  notes           String?
+  id                      String    @id @default(cuid())
+  name                    String
+  description             String?
+  client                  String
+  clientType              String // municipal | paramunicipal | externo
+  municipalArea           String
+  objective               String
+  systemType              String // crud_interno | portal_ciudadano | integrador | etc.
+  responsible             String?
+  estimatedBudget         Decimal?
+  clientAvailabilityLevel String? // alta | media | baja: que tan disponible esta el cliente para dudas (entra al riesgo)
+  shareToken              String?   @unique // enlace de solo lectura /r/[token]; null = no compartido
+  targetDate              DateTime?
+  priority                String    @default("media") // baja|media|alta|critica
+  status                  String    @default("borrador") // borrador|captura|estimado|aprobado|en_ejecucion|cerrado|archivado
+  notes                   String?
   // FASE G.I: aislamiento por workspace (cookie). NULL = proyecto template público.
-  workspaceId     String?
-  isTemplate      Boolean   @default(false)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  workspaceId             String?
+  isTemplate              Boolean   @default(false)
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
 
   modules   Module[]
   team      TeamProfile[]
@@ -223,6 +225,7 @@ model Estimate {
   // Auditoria (RNF-03)
   parametersSnapshot String // JSON con copia de los Parameters usados
   inputsSnapshot     String // JSON con los inputs usados (modules count, complexities, etc.)
+  explanationJson    String? // cadena de calculo paso a paso ("de donde sale este numero")
 
   createdById String?
   createdAt   DateTime @default(now())

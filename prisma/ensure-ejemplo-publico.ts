@@ -122,7 +122,6 @@ async function main() {
       projectId: project.id,
       mode,
       targetMargin: 0.20,
-      weeklyTeamCapacityHours: 4 * 40, // 4 personas × 40h
       costMode: "detailed",
       capitalDeclaredByProvider: 250000,
       cashFlowAssumptions: {

@@ -166,11 +166,9 @@ export default function ProjectTeamPage({ params }: { params: Promise<{ id: stri
                   <Input type="number" min={0} max={100} value={form.availabilityPercent} onChange={(e) => setForm({ ...form, availabilityPercent: +e.target.value })} />
                   <p className="text-xs text-muted-foreground">% de su jornada dedicado a ESTE proyecto. 100 = tiempo completo; 50 = medio tiempo.</p>
                 </div>
-                <div className="grid gap-2">
-                  <Label>Meses asignados</Label>
-                  <Input type="number" min={0} step={0.5} value={form.monthsAssigned} onChange={(e) => setForm({ ...form, monthsAssigned: +e.target.value })} />
-                  <p className="text-xs text-muted-foreground">Cuántos meses va a trabajar en el proyecto. Acepta medios (2.5).</p>
-                </div>
+                {/* Los meses los calcula el sistema a partir de las horas y la
+                    forma de hacerlo; pedirlos aqui era circular y el motor no los
+                    leia. El campo sigue en el esquema. */}
               </div>
               <div className="grid gap-2">
                 <Label>Tipo de contrato</Label>
@@ -182,21 +180,15 @@ export default function ProjectTeamPage({ params }: { params: Promise<{ id: stri
                   <option value="freelance">Freelance</option>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  {CONTRACT_HELP[form.contractType]} Este dato cambia el costo real del perfil (cargas patronales).
+                  {CONTRACT_HELP[form.contractType]} Nómina carga IMSS, INFONAVIT y prestaciones; asimilados solo impuesto sobre nómina; honorarios, RESICO y freelance cuestan lo pactado.
                 </p>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label>Riesgo de que renuncie (1-5)</Label>
-                  <Input type="number" min={1} max={5} value={form.turnoverRisk} onChange={(e) => setForm({ ...form, turnoverRisk: +e.target.value })} />
-                  <p className="text-xs text-muted-foreground">1 = persona estable y comprometida · 5 = muy probable que deje el proyecto a medias. Sube el riesgo de la estimación.</p>
-                </div>
-                <div className="grid gap-2">
-                  <Label>Supervisión que necesita (1-5)</Label>
-                  <Input type="number" min={1} max={5} value={form.supervisionRequired} onChange={(e) => setForm({ ...form, supervisionRequired: +e.target.value })} />
-                  <p className="text-xs text-muted-foreground">1 = trabaja solo sin revisión · 5 = necesita revisión constante de alguien senior (le quita tiempo al líder).</p>
-                </div>
+              <div className="grid gap-2">
+                <Label>¿Qué tan probable es que deje el proyecto a medias? (1-5)</Label>
+                <Input type="number" min={1} max={5} value={form.turnoverRisk} onChange={(e) => setForm({ ...form, turnoverRisk: +e.target.value })} />
+                <p className="text-xs text-muted-foreground">1 = persona estable · 5 = muy probable que se vaya. Entra al factor de riesgo de la estimación: 1 no agrega nada, 5 agrega hasta 30% de horas.</p>
               </div>
+              {/* "Supervision que necesita" se dejo de pedir: el motor nunca lo leyo. Sigue en el esquema. */}
               {error && <p className="text-sm text-destructive">{error}</p>}
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={cancelEdit}>
