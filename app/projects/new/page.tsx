@@ -122,13 +122,26 @@ export default function NewProjectPage() {
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="identityRole">¿Desde qué lado vas a usar el sistema? *</Label>
-                <Select id="identityRole" value={identity.role} onChange={setIdentityField("role")} required>
-                  <option value="" disabled>Elige una opción</option>
-                  {ROLES.map((r) => (
-                    <option key={r.value} value={r.value}>{r.short}</option>
-                  ))}
-                </Select>
+                <Label>¿Desde qué lado vas a usar el sistema? *</Label>
+                <div className="grid sm:grid-cols-2 gap-2">
+                  <button type="button" onClick={() => setIdentity((prev) => ({ ...prev, role: "operador_municipal" }))} className={`rounded-md border p-3 text-left text-sm hover:bg-accent ${identity.role === "operador_municipal" ? "border-primary ring-1 ring-primary" : ""}`}>
+                    <p className="font-medium">Soy del Ayuntamiento</p>
+                    <p className="text-xs text-muted-foreground">Cuido el presupuesto y que se termine a tiempo.</p>
+                  </button>
+                  <button type="button" onClick={() => setIdentity((prev) => ({ ...prev, role: "proveedor" }))} className={`rounded-md border p-3 text-left text-sm hover:bg-accent ${identity.role === "proveedor" ? "border-primary ring-1 ring-primary" : ""}`}>
+                    <p className="font-medium">Soy proveedor</p>
+                    <p className="text-xs text-muted-foreground">Cuido mi utilidad, mi tiempo y el dinero que adelanto.</p>
+                  </button>
+                </div>
+                <details open={identity.role !== "operador_municipal" && identity.role !== "proveedor"}>
+                  <summary className="text-xs text-muted-foreground cursor-pointer">Soy otra cosa (investigador, solo explorando)</summary>
+                  <Select id="identityRole" value={identity.role} onChange={setIdentityField("role")} required className="mt-2">
+                    <option value="" disabled>Elige una opción</option>
+                    {ROLES.map((r) => (
+                      <option key={r.value} value={r.value}>{r.short}</option>
+                    ))}
+                  </Select>
+                </details>
                 <p className="text-xs text-muted-foreground">
                   El Ayuntamiento y el proveedor no buscan lo mismo: uno cuida el presupuesto y el otro el margen y el
                   tiempo. El sistema ordena las opciones según lo que contestes.
@@ -180,8 +193,8 @@ export default function NewProjectPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="municipalArea">Área usuaria *</Label>
-                <Input id="municipalArea" value={form.municipalArea} onChange={set("municipalArea")} required placeholder="ej. Atención Ciudadana" />
+                <Label htmlFor="municipalArea">Oficina que lo va a usar *</Label>
+                <Input id="municipalArea" value={form.municipalArea} onChange={set("municipalArea")} required placeholder="ej. Catastro, Tesorería, Atención Ciudadana" />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="systemType">Tipo de sistema</Label>
@@ -197,12 +210,9 @@ export default function NewProjectPage() {
               </div>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="objective">Objetivo administrativo *</Label>
-              <Textarea id="objective" value={form.objective} onChange={set("objective")} required minLength={5} placeholder="¿Qué problema administrativo resuelve?" />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="description">Descripción detallada</Label>
-              <Textarea id="description" value={form.description} onChange={set("description")} placeholder="Qué debe hacer el sistema, quiénes lo van a usar y qué hacen hoy sin él" />
+              <Label htmlFor="objective">¿Para qué es el sistema y qué debe hacer? *</Label>
+              <Textarea id="objective" value={form.objective} onChange={set("objective")} required minLength={5} rows={4} placeholder="Ejemplo: que la gente pague el predial desde su casa y que Catastro vea quién ya pagó. Hoy se hace en ventanilla, con papel." />
+              <p className="text-xs text-muted-foreground">Con tus palabras: qué problema resuelve, quién lo va a usar y qué hacen hoy sin él.</p>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">

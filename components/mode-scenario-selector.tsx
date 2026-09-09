@@ -4,6 +4,12 @@ import { Select } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { DEVELOPMENT_MODES, SCENARIOS } from "@/lib/utils";
 
+const ESCENARIO_LLANO: Record<string, string> = {
+  optimistic: "Si todo sale bien (optimista)",
+  probable: "Lo más seguro (probable)",
+  conservative: "Si hay tropiezos (conservador)",
+};
+
 /**
  * Selector que cambia la URL con searchParams (?mode=hybrid&scenario=probable).
  * El servidor re-renderiza usando esos params y muestra el modo+escenario seleccionado
@@ -29,7 +35,7 @@ export function ModeScenarioSelector({
   return (
     <div className="flex flex-wrap items-end gap-3 p-3 bg-muted/40 rounded-lg border">
       <div className="flex-1 min-w-[200px] grid gap-1">
-        <Label className="text-xs text-muted-foreground">Ver tarjetas según el modo</Label>
+        <Label className="text-xs text-muted-foreground">Forma de hacerlo</Label>
         <Select
           value={currentMode}
           onChange={(e) => update("mode", e.target.value)}
@@ -48,7 +54,7 @@ export function ModeScenarioSelector({
           className="h-9"
         >
           {SCENARIOS.map((s) => (
-            <option key={s.value} value={s.value}>{s.label}</option>
+            <option key={s.value} value={s.value}>{ESCENARIO_LLANO[s.value] ?? s.label}</option>
           ))}
         </Select>
       </div>

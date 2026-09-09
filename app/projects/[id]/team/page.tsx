@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { api, apiPost, apiPut, apiDelete } from "@/lib/api-client";
 import { formatMXN, CONTRACT_LABELS, CONTRACT_HELP, ROLE_LABELS, LEVEL_LABELS, labelOf } from "@/lib/utils";
 import { Breadcrumbs } from "@/components/breadcrumbs";
+import { BarraDePasos } from "@/components/barra-de-pasos";
 import { Plus, Trash2, Pencil, X, Save } from "lucide-react";
 
 interface TeamItem {
@@ -105,12 +106,14 @@ export default function ProjectTeamPage({ params }: { params: Promise<{ id: stri
         { label: "Proyecto", href: `/projects/${projectId}` },
         { label: "Equipo" },
       ]} />
+      <BarraDePasos projectId={projectId} actual={3} />
 
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Equipo del proyecto</h1>
           <p className="text-muted-foreground text-sm">
-            {team.length} perfiles · las personas que el PROVEEDOR asigna. Su salario es lo que el proveedor les paga (su costo), no lo que cobra al cliente.
+            {team.length} persona(s) · las que el proveedor pone a trabajar. Su sueldo es lo que el proveedor les paga (su costo), no lo que cobra al cliente.
+            Si eres del Ayuntamiento y no conoces al equipo, deja uno típico (un desarrollador con experiencia) o pide al proveedor su lista y captúrala aquí.
           </p>
         </div>
         {!showForm && (
@@ -131,7 +134,7 @@ export default function ProjectTeamPage({ params }: { params: Promise<{ id: stri
                   <Input value={form.name} required onChange={(e) => setForm({ ...form, name: e.target.value })} />
                 </div>
                 <div className="grid gap-2">
-                  <Label>Rol</Label>
+                  <Label>Puesto</Label>
                   <Select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
                     <option value="lider_tecnico">Líder técnico</option>
                     <option value="dev_senior">Desarrollador senior</option>
@@ -154,7 +157,7 @@ export default function ProjectTeamPage({ params }: { params: Promise<{ id: stri
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="grid gap-2">
-                  <Label>Salario mensual (MXN, bruto)</Label>
+                  <Label>Sueldo mensual (pesos, antes de impuestos)</Label>
                   <Input type="number" min={0} value={form.monthlySalary} placeholder="ej. 30000" onChange={(e) => setForm({ ...form, monthlySalary: +e.target.value })} />
                   <p className="text-xs text-muted-foreground">
                     Lo que el proveedor le paga a esta persona al mes, antes de impuestos.
@@ -162,7 +165,7 @@ export default function ProjectTeamPage({ params }: { params: Promise<{ id: stri
                   </p>
                 </div>
                 <div className="grid gap-2">
-                  <Label>Disponibilidad %</Label>
+                  <Label>Qué parte de su tiempo dedica al proyecto (%)</Label>
                   <Input type="number" min={0} max={100} value={form.availabilityPercent} onChange={(e) => setForm({ ...form, availabilityPercent: +e.target.value })} />
                   <p className="text-xs text-muted-foreground">% de su jornada dedicado a ESTE proyecto. 100 = tiempo completo; 50 = medio tiempo.</p>
                 </div>
@@ -247,6 +250,16 @@ export default function ProjectTeamPage({ params }: { params: Promise<{ id: stri
           )}
         </CardContent>
       </Card>
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/30 p-4">
+        <p className="text-sm">
+          <strong>{team.length} persona(s)</strong> · {formatMXN(team.reduce((a, t) => a + Number(t.monthlySalary), 0))} al mes en sueldos; las cuotas del IMSS, INFONAVIT e impuesto sobre nómina se suman al calcular.
+        </p>
+        {team.length > 0 ? (
+          <Button asChild><Link href={`/projects/${projectId}/estimate`}>Continuar: calcular</Link></Button>
+        ) : (
+          <p className="text-xs text-muted-foreground">Agrega al menos a una persona para continuar.</p>
+        )}
+      </div>
     </div>
   );
 }

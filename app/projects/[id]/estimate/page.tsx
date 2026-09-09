@@ -1,5 +1,5 @@
 "use client";
-import { useState, use } from "react";
+import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { apiPost } from "@/lib/api-client";
+import { api, apiPost } from "@/lib/api-client";
+import { BarraDePasos } from "@/components/barra-de-pasos";
 import { DEVELOPMENT_MODES, formatMXN } from "@/lib/utils";
 import { Calculator, Lightbulb, AlertCircle } from "lucide-react";
 import { Breadcrumbs } from "@/components/breadcrumbs";
@@ -19,6 +20,18 @@ export default function EstimatePage({ params }: { params: Promise<{ id: string 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [allModes, setAllModes] = useState(true);
+  // La capacidad semanal se calcula del equipo (disponibilidad x 40 h); solo
+  // se fija a mano si el usuario lo pide, porque divide el precio.
+  const [capacidadDelEquipo, setCapacidadDelEquipo] = useState(true);
+  const [proyecto, setProyecto] = useState<{ estimatedBudget: string | number | null; targetDate: string | null; team: { availabilityPercent: string | number }[] } | null>(null);
+  useEffect(() => {
+    api<{ project: { estimatedBudget: string | number | null; targetDate: string | null; team: { availabilityPercent: string | number }[] } }>(`/api/projects/${projectId}`)
+      .then((r) => setProyecto(r.project))
+      .catch(() => setProyecto(null));
+  }, [projectId]);
+  const horasDelEquipo = proyecto?.team?.length
+    ? Math.max(1, proyecto.team.reduce((a, t) => a + (Number(t.availabilityPercent) / 100) * 40, 0))
+    : null;
   // Form en porcentajes (0-100), no en decimales (0-1)
   const [form, setForm] = useState({
     mode: "hybrid" as string,
@@ -44,7 +57,7 @@ export default function EstimatePage({ params }: { params: Promise<{ id: string 
       {
         mode,
         targetMargin: form.targetMarginPct / 100,
-        weeklyTeamCapacityHours: form.weeklyTeamCapacityHours,
+        weeklyTeamCapacityHours: capacidadDelEquipo ? undefined : form.weeklyTeamCapacityHours,
         costMode: form.costMode,
         capitalDeclaredByProvider: form.capitalDeclaredByProvider,
         cashFlowAssumptions: {
@@ -88,10 +101,18 @@ export default function EstimatePage({ params }: { params: Promise<{ id: string 
         { label: "Proyecto", href: `/projects/${projectId}` },
         { label: "Estimar" },
       ]} />
+      <BarraDePasos projectId={projectId} actual={4} />
 
       <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2"><Calculator className="w-6 h-6" />Estimar proyecto</h1>
-        <p className="text-muted-foreground text-sm">Genera 3 escenarios (optimista, probable, conservador) y guarda nueva versión.</p>
+        <h1 className="text-2xl font-bold flex items-center gap-2"><Calculator className="w-6 h-6" />Calcular cuánto cuesta y cuánto tarda</h1>
+        <p className="text-muted-foreground text-sm">Compara las 5 formas de hacerlo con tres escenarios: si todo sale bien (optimista), lo más seguro (probable) y si hay tropiezos (conservador). Cada corrida se guarda como versión nueva.</p>
+        {proyecto && (proyecto.estimatedBudget != null || proyecto.targetDate) && (
+          <p className="text-sm mt-2">
+            {proyecto.estimatedBudget != null && <>Dinero disponible: <strong>{formatMXN(Number(proyecto.estimatedBudget))}</strong>. </>}
+            {proyecto.targetDate && <>Fecha límite: <strong>{new Date(proyecto.targetDate).toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" })}</strong>. </>}
+            El resultado te dirá si cabe y si llega a tiempo.
+          </p>
+        )}
       </div>
 
       <form onSubmit={handleSubmit}>
@@ -100,18 +121,18 @@ export default function EstimatePage({ params }: { params: Promise<{ id: string 
             <CardTitle className="text-base">Configuración</CardTitle>
             <CardDescription className="flex items-start gap-2">
               <Lightbulb className="w-4 h-4 mt-0.5 shrink-0" />
-              <span>Si comparas los 5 modos, el sistema corre 5 × 3 = 15 estimaciones (5 modos × 3 escenarios) y las guarda como nueva versión para auditoría.</span>
+              <span>Si comparas las 5 formas de hacerlo, el sistema corre 15 estimaciones (5 formas por 3 escenarios) y las guarda como versión nueva, para que se pueda revisar después.</span>
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-5">
             <div className="flex items-center gap-2 p-3 rounded-md border bg-muted/30">
               <input type="checkbox" id="allModes" checked={allModes} onChange={(e) => setAllModes(e.target.checked)} />
-              <Label htmlFor="allModes" className="cursor-pointer">Comparar los 5 modos de desarrollo (recomendado)</Label>
+              <Label htmlFor="allModes" className="cursor-pointer">Comparar las 5 formas de hacerlo (recomendado)</Label>
             </div>
 
             {!allModes && (
               <div className="grid gap-2">
-                <Label>Modo único</Label>
+                <Label>Una sola forma de hacerlo</Label>
                 <Select value={form.mode} onChange={(e) => setForm({ ...form, mode: e.target.value })}>
                   {DEVELOPMENT_MODES.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
                 </Select>
@@ -120,7 +141,7 @@ export default function EstimatePage({ params }: { params: Promise<{ id: string 
 
             <div className="grid grid-cols-3 gap-4">
               <div className="grid gap-2">
-                <Label>Margen objetivo (%)</Label>
+                <Label>Utilidad que quiere ganar el proveedor (%)</Label>
                 <div className="relative">
                   <Input
                     type="number"
@@ -133,29 +154,49 @@ export default function EstimatePage({ params }: { params: Promise<{ id: string 
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
                 </div>
-                <p className="text-xs text-muted-foreground">Ejemplo: 20 = utilidad 20% sobre el costo</p>
+                <p className="text-xs text-muted-foreground">Ejemplo: 20 = gana 20 % sobre lo que le cuesta. Es la parte del precio que no es costo.</p>
               </div>
               <div className="grid gap-2">
-                <Label>Capacidad del equipo (horas/semana)</Label>
-                <Input type="number" min={1} value={form.weeklyTeamCapacityHours} onChange={(e) => setForm({ ...form, weeklyTeamCapacityHours: +e.target.value })} />
-                <p className="text-xs text-muted-foreground">Suma de horas que el equipo puede trabajar en una semana</p>
+                <Label>Horas a la semana del equipo</Label>
+                {capacidadDelEquipo ? (
+                  <>
+                    <p className="text-sm font-medium">{horasDelEquipo != null ? `${horasDelEquipo.toLocaleString("es-MX", { maximumFractionDigits: 0 })} horas` : "Se calculan del equipo"}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Sale del equipo capturado: la parte del tiempo de cada persona por 40 horas.{" "}
+                      <button type="button" className="underline" onClick={() => setCapacidadDelEquipo(false)}>Quiero fijarlas yo</button>
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <Input type="number" min={1} value={form.weeklyTeamCapacityHours} onChange={(e) => setForm({ ...form, weeklyTeamCapacityHours: +e.target.value })} />
+                    <p className="text-xs text-amber-800">
+                      Cuidado: este número divide el precio (80 horas cuestan el doble que 160).{" "}
+                      <button type="button" className="underline" onClick={() => setCapacidadDelEquipo(true)}>Volver a calcularlas del equipo</button>
+                    </p>
+                  </>
+                )}
               </div>
               <div className="grid gap-2">
-                <Label>Cómo calcular costo de equipo</Label>
+                <Label>Cómo calcular lo que cuesta el equipo</Label>
                 <Select value={form.costMode} onChange={(e) => setForm({ ...form, costMode: e.target.value as "detailed" | "estimated" })}>
-                  <option value="detailed">Detallado (IMSS por ramo + INFONAVIT)</option>
-                  <option value="estimated">Factor estimado 40% sobre salario</option>
+                  <option value="detailed">Detallado: IMSS, INFONAVIT e impuesto sobre nómina, cuota por cuota</option>
+                  <option value="estimated">Rápido: 40 % sobre el sueldo</option>
                 </Select>
-                <p className="text-xs text-muted-foreground">Detallado es más preciso; estimado más rápido</p>
+                <p className="text-xs text-muted-foreground">Detallado es el exacto; rápido sirve para una primera idea.</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="mt-4">
+        <details className="mt-4 rounded-lg border">
+          <summary className="cursor-pointer px-4 py-3 text-sm">
+            <span className="font-medium">Ajustar detalles</span>
+            <span className="text-muted-foreground"> · anticipo {form.anticipoPct} %, pago final {form.finalPaymentPct} %, herramientas {formatMXN(form.monthlyToolsCost)} al mes, administración {formatMXN(form.monthlyAdminCost)} al mes, el proveedor puede adelantar {formatMXN(form.capitalDeclaredByProvider)}</span>
+          </summary>
+        <Card className="border-0 shadow-none">
           <CardHeader>
             <CardTitle className="text-base">Calendario de pagos</CardTitle>
-            <CardDescription>Cuándo cobra el proveedor. Se usa para calcular el capital de trabajo necesario.</CardDescription>
+            <CardDescription>Cuándo cobra el proveedor. Con esto se calcula cuánto dinero tiene que poner de su bolsa mientras le pagan (capital de trabajo).</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-5">
             <div className="grid grid-cols-3 gap-4">
@@ -240,33 +281,27 @@ export default function EstimatePage({ params }: { params: Promise<{ id: string 
               )}
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label>Duración del proyecto</Label>
-                <div className="relative">
-                  <Input type="number" min={1} value={form.durationMonths} onChange={(e) => setForm({ ...form, durationMonths: +e.target.value })} className="pr-16" />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">meses</span>
-                </div>
-              </div>
-              <div className="grid gap-2">
-                <Label>Costo herramientas / mes</Label>
+                <Label>Herramientas al mes (licencias, servidores)</Label>
                 <Input type="number" min={0} value={form.monthlyToolsCost} onChange={(e) => setForm({ ...form, monthlyToolsCost: +e.target.value })} />
                 <p className="text-xs text-muted-foreground">{formatMXN(form.monthlyToolsCost)}</p>
               </div>
               <div className="grid gap-2">
-                <Label>Costo administración / mes</Label>
+                <Label>Administración al mes (contador, oficina)</Label>
                 <Input type="number" min={0} value={form.monthlyAdminCost} onChange={(e) => setForm({ ...form, monthlyAdminCost: +e.target.value })} />
                 <p className="text-xs text-muted-foreground">{formatMXN(form.monthlyAdminCost)}</p>
               </div>
             </div>
 
             <div className="grid gap-2">
-              <Label>Capital de trabajo declarado por el proveedor</Label>
+              <Label>Dinero que el proveedor puede adelantar (capital de trabajo)</Label>
               <Input type="number" min={0} step={10000} value={form.capitalDeclaredByProvider} onChange={(e) => setForm({ ...form, capitalDeclaredByProvider: +e.target.value })} />
-              <p className="text-xs text-muted-foreground">{formatMXN(form.capitalDeclaredByProvider)}. Si la necesidad supera este monto, el sistema marca riesgo financiero alto</p>
+              <p className="text-xs text-muted-foreground">{formatMXN(form.capitalDeclaredByProvider)}. Es lo que pone de su bolsa mientras le pagan. Si el proyecto necesita más que esto, el sistema lo marca en rojo.</p>
             </div>
           </CardContent>
         </Card>
+        </details>
 
         {error && (
           <div className="flex items-start gap-2 p-3 rounded-md bg-destructive/10 text-destructive text-sm mt-4">
@@ -280,7 +315,7 @@ export default function EstimatePage({ params }: { params: Promise<{ id: string 
             <Link href={`/projects/${projectId}`}>Cancelar</Link>
           </Button>
           <Button type="submit" disabled={submitting || distribucionInvalida}>
-            {submitting ? "Calculando..." : allModes ? "Estimar 5 modos × 3 escenarios" : "Estimar"}
+            {submitting ? "Calculando..." : allModes ? "Calcular las 5 formas de hacerlo" : "Calcular"}
           </Button>
         </div>
       </form>
