@@ -150,6 +150,7 @@ model TeamProfile {
   turnoverRisk        Int      @default(2) // 1-5
   supervisionRequired Int      @default(2) // 1-5
   aiSkill             Int      @default(3) // 1-5: pericia con la IA para programar (1 nunca la ha usado, 4 la usa a diario, 5 arma flujos con agentes)
+  aiToolUsdMonthly    Decimal? // si ya trae su propio plan de IA, USD al mes; null = el nivel del proyecto
   notes               String?
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt

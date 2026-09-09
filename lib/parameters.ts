@@ -8,6 +8,7 @@ import {
   HERRAMIENTAS_POR_OMISION,
   PERICIA_POR_OMISION,
   TIPO_CAMBIO_POR_OMISION,
+  AUMENTO_ANUAL_POR_OMISION,
   type TablaHerramientas,
   type FactoresPericia,
 } from "./engine/herramientas";
@@ -234,7 +235,8 @@ export async function loadAllForEstimate(
   const aiToolCosts = getJsonOr<TablaHerramientas>(raw, "AI_TOOL_COSTS", HERRAMIENTAS_POR_OMISION);
   const aiSkillFactors = getJsonOr<FactoresPericia>(raw, "AI_SKILL_FACTORS", PERICIA_POR_OMISION);
   const tipoCambio = getNumOr(raw, "TIPO_CAMBIO_USD_MXN", TIPO_CAMBIO_POR_OMISION);
-  return { rates, factors, velocity, scenarios, snapshot: raw, aiToolCosts, aiSkillFactors, tipoCambio };
+  const aiToolAumentoAnual = getNumOr(raw, "AI_TOOL_AUMENTO_ANUAL", AUMENTO_ANUAL_POR_OMISION);
+  return { rates, factors, velocity, scenarios, snapshot: raw, aiToolCosts, aiSkillFactors, tipoCambio, aiToolAumentoAnual };
 }
 
 /**

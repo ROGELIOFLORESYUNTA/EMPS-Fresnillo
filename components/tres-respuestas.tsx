@@ -29,12 +29,12 @@ export function TresRespuestas(p: {
       <CardContent className="pt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 text-sm">
         <div>
           <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Te va a costar</p>
-          <p className="text-2xl font-bold">{formatMXN(p.total)}</p>
+          <p className="text-xl xl:text-2xl font-bold break-words">{formatMXN(p.total)}</p>
           <p className="text-xs text-muted-foreground">con IVA · {p.modoLabel}, escenario {p.escenarioLabel}</p>
         </div>
         <div>
           <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Va a tardar</p>
-          <p className="text-2xl font-bold">{meses != null ? `${meses.toFixed(1)} meses` : "Sin dato"}</p>
+          <p className="text-xl xl:text-2xl font-bold break-words">{meses != null ? `${meses.toFixed(1)} meses` : "Sin dato"}</p>
           <p className="text-xs text-muted-foreground">
             {p.semanas != null ? formatWeeks(p.semanas) : ""}
             {p.onTime.level === "sin_fecha" && " · no registraste fecha límite"}
@@ -47,17 +47,17 @@ export function TresRespuestas(p: {
           <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">¿Te alcanza?</p>
           {diferencia == null ? (
             <>
-              <p className="text-2xl font-bold text-muted-foreground">Sin presupuesto</p>
+              <p className="text-xl xl:text-2xl font-bold break-words text-muted-foreground">Sin presupuesto</p>
               <p className="text-xs text-muted-foreground">Registra cuánto dinero tienes y aquí te dice si cabe.</p>
             </>
           ) : diferencia >= 0 ? (
             <>
-              <p className="text-2xl font-bold text-green-700">Sí cabe</p>
+              <p className="text-xl xl:text-2xl font-bold break-words text-green-700">Sí cabe</p>
               <p className="text-xs text-muted-foreground">Te sobran {formatMXN(diferencia)} de los {formatMXN(p.presupuesto!)} que tienes.</p>
             </>
           ) : (
             <>
-              <p className="text-2xl font-bold text-red-700">Se pasa</p>
+              <p className="text-xl xl:text-2xl font-bold break-words text-red-700">Se pasa</p>
               <p className="text-xs text-muted-foreground">Faltan {formatMXN(-diferencia)}; tienes {formatMXN(p.presupuesto!)}. Quita piezas o cambia la forma de hacerlo.</p>
             </>
           )}

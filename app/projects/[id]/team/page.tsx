@@ -27,6 +27,7 @@ interface TeamItem {
   turnoverRisk: number;
   supervisionRequired: number;
   aiSkill: number;
+  aiToolUsdMonthly: string | number | null;
 }
 
 const FORM_DEFAULT = {
@@ -40,6 +41,7 @@ const FORM_DEFAULT = {
   turnoverRisk: 2,
   supervisionRequired: 2,
   aiSkill: 3,
+  aiToolUsdMonthly: null as number | null,
 };
 
 export default function ProjectTeamPage({ params }: { params: Promise<{ id: string }> }) {
@@ -71,6 +73,7 @@ export default function ProjectTeamPage({ params }: { params: Promise<{ id: stri
       turnoverRisk: p.turnoverRisk,
       supervisionRequired: p.supervisionRequired,
       aiSkill: p.aiSkill ?? 3,
+      aiToolUsdMonthly: p.aiToolUsdMonthly != null ? Number(p.aiToolUsdMonthly) : null,
     });
   }
 
@@ -207,6 +210,13 @@ export default function ProjectTeamPage({ params }: { params: Promise<{ id: stri
                   con menos pericia se acredita solo una parte (1: 35 %, 2: 65 %, 3: 85 %) y con 5 un poco más (115 %). Un modelo muy potente en manos de quien no sabe darle instrucciones no ahorra tiempo.
                 </p>
               </div>
+              <div className="grid gap-2">
+                <Label>Herramientas de IA que ya paga esta persona (USD al mes, opcional)</Label>
+                <Input type="number" min={0} step={1} value={form.aiToolUsdMonthly ?? ""} placeholder="vacío = el nivel elegido en Calcular" onChange={(e) => setForm({ ...form, aiToolUsdMonthly: e.target.value === "" ? null : +e.target.value })} />
+                <p className="text-xs text-muted-foreground">
+                  En la vida real cada quien trae su plan. Si lo dejas vacío, este asiento cobra el nivel del proyecto (básico, típico o máximo). Si escribes un monto, ese es el que se cobra en todas las formas de hacerlo con IA (0 si no usa ninguna).
+                </p>
+              </div>
               {/* "Supervision que necesita" se dejo de pedir: el motor nunca lo leyo. Sigue en el esquema. */}
               {error && <p className="text-sm text-destructive">{error}</p>}
               <div className="flex justify-end gap-2">
@@ -249,7 +259,7 @@ export default function ProjectTeamPage({ params }: { params: Promise<{ id: stri
                     <TableCell className="text-right">{formatMXN(Number(p.monthlySalary))}</TableCell>
                     <TableCell className="text-center">{p.availabilityPercent}%</TableCell>
                     <TableCell className="text-center">{Number(p.monthsAssigned).toFixed(1)}</TableCell>
-                    <TableCell className="text-center">{p.aiSkill ?? 3}</TableCell>
+                    <TableCell className="text-center">{p.aiSkill ?? 3}{p.aiToolUsdMonthly != null ? <span className="block text-[10px] text-muted-foreground">plan propio {Number(p.aiToolUsdMonthly)} USD</span> : null}</TableCell>
                     <TableCell><Badge variant="outline">{labelOf(CONTRACT_LABELS, p.contractType)}</Badge></TableCell>
                     <TableCell>
                       <div className="flex gap-1">

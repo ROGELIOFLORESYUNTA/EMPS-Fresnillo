@@ -61,6 +61,8 @@ export const teamProfileCreateSchema = z.object({
   productivityFactor: z.number().min(0).max(2).default(1.0),
   // Pericia con la IA para programar (1 nunca la ha usado ... 5 arma flujos con agentes).
   aiSkill: z.number().int().min(1).max(5).default(3),
+  // Si ya trae su propio plan de IA: USD al mes; null = el nivel del proyecto.
+  aiToolUsdMonthly: z.number().min(0).max(100000).nullable().optional(),
   turnoverRisk: z.number().int().min(1).max(5).default(2),
   supervisionRequired: z.number().int().min(1).max(5).default(2),
   notes: z.string().optional(),
@@ -83,6 +85,8 @@ export const estimateRequestSchema = z.object({
     })
     .optional(),
   capitalDeclaredByProvider: z.number().min(0).optional(),
+  // Nivel de herramientas de IA por persona: básico, típico o máximo.
+  aiToolLevel: z.enum(["basico", "tipico", "maximo"]).default("tipico"),
 });
 
 // Integración chatbot ROSBECLOUD (POST /api/chatbot-quote): payload que el

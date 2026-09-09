@@ -30,6 +30,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       weeklyTeamCapacityHours?: number;
       capacidadCalculadaDelEquipo?: boolean;
       capitalDeclaredByProvider?: number;
+      aiToolLevel?: "basico" | "tipico" | "maximo";
       costMode?: "detailed" | "estimated";
       scenarios?: Scenario[];
       cashFlowAssumptions?: {
@@ -50,6 +51,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       // Si la capacidad salio del equipo, se vuelve a calcular del equipo actual.
       weeklyTeamCapacityHours: inputs.capacidadCalculadaDelEquipo ? undefined : inputs.weeklyTeamCapacityHours,
       capitalDeclaredByProvider: inputs.capitalDeclaredByProvider,
+      aiToolLevel: inputs.aiToolLevel,
       costMode: inputs.costMode,
       scenarios: inputs.scenarios,
       cashFlowAssumptions: inputs.cashFlowAssumptions,

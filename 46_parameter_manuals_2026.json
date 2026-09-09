@@ -425,7 +425,7 @@
       "originSource": "Páginas de precios oficiales (GitHub, Cursor, Anthropic, Microsoft, Google) y gasto real publicado (morphllm, DX, Gartner citado), consultados el 09-sep-2026",
       "originUrl": "https://github.com/features/copilot/plans",
       "originDocument": "Investigación de precios EMPS-Fresnillo, 9 de septiembre de 2026",
-      "whatItAffects": "Suma al costo del proyecto (y por tanto al precio y al flujo de efectivo) lo que cuestan al mes las herramientas de IA de cada persona técnica del equipo, según la forma de hacerlo: 0 USD a mano, 30 con ayuda de IA, 100 híbrido, 250 casi todo con IA, 40 en plataforma de armado (más 20 por cada usuario final después de entregar). Se multiplica por (1 + sobreconsumo) y por el tipo de cambio. Sin IVA porque es acreditable.",
+      "whatItAffects": "Suma al costo del proyecto (y por tanto al precio y al flujo de efectivo) lo que cuestan al mes las herramientas de IA de cada persona técnica del equipo. Se cobra POR PERSONA (asiento), no por equipo. Tiene tres niveles por forma de hacerlo (básico, típico, máximo) que se eligen en Calcular; cada persona puede además traer su propio plan en Equipo. Valores típicos según la forma de hacerlo: 0 USD a mano, 30 con ayuda de IA, 100 híbrido, 250 casi todo con IA, 40 en plataforma de armado (más 20 por cada usuario final después de entregar). Se multiplica por (1 + sobreconsumo) y por el tipo de cambio. Sin IVA porque es acreditable.",
       "howToModify": "- Revisar la página de precios de cada herramienta (cambian varias veces al año).\n- Ajustar usd_por_persona_mes y sobreconsumo por modo; no mezclar con TIPO_CAMBIO_USD_MXN.\n- Si el proveedor usa otra canasta, editarla en su workspace, no en el valor global.\n- Registrar fecha de consulta en _consultado.",
       "referencesMarkdown": "- Copilot: https://github.com/features/copilot/plans\n- Cursor: https://cursor.com/pricing\n- Claude y Claude Code: https://claude.com/pricing\n- Gasto real con agentes: https://www.morphllm.com/ai-coding-costs\n- Presupuestos de IA por ingeniero: https://getdx.com/blog/how-are-engineering-leaders-approaching-2026-ai-tooling-budget/\n- Power Apps: https://www.microsoft.com/en-us/power-platform/products/power-apps/pricing\n- IVA a servicios digitales extranjeros (LIVA 18-B): https://www.diputados.gob.mx/LeyesBiblio/pdf/LIVA.pdf",
       "sourceTrustLevel": "secundaria",
@@ -439,6 +439,17 @@
       "whatItAffects": "Qué parte del ahorro nominal de cada forma de hacerlo se acredita según la pericia promedio del equipo con la IA (1 a 5): 35 % con nivel 1, 65 % con 2, 85 % con 3, 100 % con 4 y 115 % con 5. Mueve las horas, las semanas y el precio de los modos con IA (ayuda de IA, híbrido, casi todo con IA). No afecta a mano ni plataforma de armado.",
       "howToModify": "- Cambiar solo con evidencia nueva (estudios controlados, no anécdotas).\n- Mantener el nivel 4 en 1.0: es el usuario para el que están calibrados los factores de velocidad.\n- Registrar la versión de la calibración.",
       "referencesMarkdown": "- METR 2025 (19 % más lentos): https://metr.org/blog/2025-07-10-early-2025-ai-experienced-os-dev-study/\n- Google 2024 (+21 %): https://arxiv.org/pdf/2410.12944\n- Peng et al. 2023 (+56 %): https://arxiv.org/abs/2302.06590\n- DORA 2025: https://cloud.google.com/blog/products/ai-machine-learning/announcing-the-2025-dora-report\n- Stack Overflow 2025: https://survey.stackoverflow.co/2025/ai\n- Instrucciones y valor obtenido: https://arxiv.org/abs/2507.18638",
+      "sourceTrustLevel": "secundaria",
+      "lastReviewedAt": "2026-09-09"
+    },
+    "AI_TOOL_AUMENTO_ANUAL": {
+      "title": "Aumento anual esperado de los planes de IA",
+      "originSource": "Cambios de precio publicados por Cursor, Windsurf y Google entre 2025 y 2026",
+      "originUrl": "https://ai.google.dev/gemini-api/docs/pricing",
+      "originDocument": "Investigación de precios EMPS-Fresnillo, 9 de septiembre de 2026",
+      "whatItAffects": "Solo en el escenario conservador (si hay tropiezos): multiplica las herramientas de IA por (1 + aumento × meses ÷ 12). Refleja que los planes suben de precio y un proyecto largo puede pagar más de lo cotizado. No toca los escenarios optimista ni probable.",
+      "howToModify": "- Revisar los anuncios de precio de las herramientas usadas.\n- Subirlo si el proveedor depende de una sola plataforma.\n- Ponerlo en 0 si el contrato con la plataforma fija el precio por el plazo del proyecto.",
+      "referencesMarkdown": "- Gemini 3.8 Flash: https://ai.google.dev/gemini-api/docs/pricing\n- Cursor: https://cursor.com/pricing\n- Windsurf (cuotas desde marzo de 2026): https://www.cloudzero.com/blog/windsurf-pricing/",
       "sourceTrustLevel": "secundaria",
       "lastReviewedAt": "2026-09-09"
     },

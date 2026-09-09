@@ -287,11 +287,11 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
                 <p className="text-muted-foreground">{MODE_CLIENT_EXPLANATION[probable.mode] ?? "Modo no documentado en lenguaje cliente."}</p>
                 {(() => {
                   try {
-                    const snap = JSON.parse(probable.inputsSnapshot) as { herramientas?: { asientos: number; mensualMXN: number; usuariosFinales: number; usdPorUsuarioFinal: number; mensualUsuariosFinalesMXN: number; usuariosFinalesSupuestos: boolean }; pericia?: { promedio: number; factor: number; aplica: boolean } };
+                    const snap = JSON.parse(probable.inputsSnapshot) as { herramientas?: { asientos: number; nivel?: string; asientosConPlanPropio?: number; mensualMXN: number; usuariosFinales: number; usdPorUsuarioFinal: number; mensualUsuariosFinalesMXN: number; usuariosFinalesSupuestos: boolean }; pericia?: { promedio: number; factor: number; aplica: boolean } };
                     if (!snap.herramientas) return null;
                     return (
                       <>
-                        <p>Herramientas de IA incluidas en el precio: <strong>{formatMXN(snap.herramientas.mensualMXN)} al mes</strong> ({snap.herramientas.asientos} asiento(s)).
+                        <p>Herramientas de IA incluidas en el precio: <strong>{formatMXN(snap.herramientas.mensualMXN)} al mes</strong> ({snap.herramientas.asientos} asiento(s), uno por persona técnica, nivel {snap.herramientas.nivel === "basico" ? "básico" : snap.herramientas.nivel === "maximo" ? "máximo" : "típico"}{(snap.herramientas.asientosConPlanPropio ?? 0) > 0 ? `, ${snap.herramientas.asientosConPlanPropio} con plan propio` : ""}).
                           {snap.pericia?.aplica ? ` Pericia del equipo con la IA ${snap.pericia.promedio} de 5: se acredita ${Math.round(snap.pericia.factor * 100)}% del ahorro nominal.` : ""}</p>
                         {probable.mode === "low_code" && snap.herramientas.mensualUsuariosFinalesMXN > 0 && (
                           <p className="text-amber-800">Después de entregar: {snap.herramientas.usuariosFinales} usuario(s) × {snap.herramientas.usdPorUsuarioFinal} USD = <strong>{formatMXN(snap.herramientas.mensualUsuariosFinalesMXN)} al mes</strong> en licencias mientras se use{snap.herramientas.usuariosFinalesSupuestos ? " (usuarios supuestos)" : ""}. No está en el precio.</p>

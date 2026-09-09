@@ -18,6 +18,15 @@
       "notes": "Convierte a pesos los precios en dolares de las herramientas de IA y de las plataformas de armado (AI_TOOL_COSTS). Se actualiza en /admin/parametros cuando el dolar se mueva; no cambia ninguna cuota fiscal."
     },
     {
+      "key": "AI_TOOL_AUMENTO_ANUAL",
+      "value": 0.15,
+      "unit": "rate",
+      "source": "Cambios de precio publicados 2025-2026: Cursor reestructuro planes y agrego Ultra (200 USD); Windsurf paso a cuotas diarias/semanales el 19-mar-2026; Google anuncio que Gemini 3.8 Flash sube de 0.75/3.75 a 1.50/7.50 USD por millon de tokens en 2027",
+      "source_url": "https://ai.google.dev/gemini-api/docs/pricing",
+      "effective_from": "2026-09-09",
+      "notes": "Aumento anual esperado de los planes de IA (0.15 = 15 %). Solo entra en el escenario conservador (si hay tropiezos), prorrateado a los meses del proyecto: herramientas x (1 + 0.15 x meses / 12). En optimista y probable no se aplica. Es un supuesto de planeacion, no una cuota; se actualiza cuando cambien los precios."
+    },
+    {
       "key": "IVA_GENERAL",
       "value": 0.16,
       "unit": "rate",
@@ -463,13 +472,14 @@
       "https://docs.cloud.google.com/gemini/docs/codeassist/overview (Gemini Code Assist 19 a 45)",
       "https://www.diputados.gob.mx/LeyesBiblio/pdf/LIVA.pdf (IVA a servicios digitales extranjeros, art. 18-B)"
     ],
-    "_uso_motor": "herramientas_mes_mxn = asientos_tecnicos * usd_por_persona_mes * (1 + sobreconsumo) * TIPO_CAMBIO_USD_MXN; costo_proyecto = (nomina_con_cargas + herramientas_mes_mxn + otras_herramientas + administracion) * meses + liquidacion",
+    "_niveles": "En la vida real cada quien trae su plan: basico (Copilot Pro 10; Cursor Teams o Copilot Pro+ 40; Claude Max 5x 100; Power Apps Premium 20), tipico (el de usd_por_persona_mes) y maximo (Copilot Pro+ 39 + Claude Pro 20 = 60; Claude Max 20x 200; Claude Max 20x 200 + Cursor Ultra 200 = 400; Premium + asistente de IA de pago 60). El nivel se elige por proyecto en Calcular; ademas cada persona puede traer su propio plan (TeamProfile.aiToolUsdMonthly) y ese asiento cobra lo suyo.",
+    "_uso_motor": "herramientas_mes_mxn = (asientos_al_nivel * usd_del_nivel + suma_planes_propios) * (1 + sobreconsumo) * TIPO_CAMBIO_USD_MXN; en el escenario conservador se multiplica por (1 + AI_TOOL_AUMENTO_ANUAL * meses / 12); costo_proyecto = (nomina_con_cargas + herramientas_mes_mxn + otras_herramientas + administracion) * meses + liquidacion",
     "por_modo": {
-      "traditional": { "usd_por_persona_mes": 0, "sobreconsumo": 0, "descripcion": "Sin herramientas de IA." },
-      "ai_assisted": { "usd_por_persona_mes": 30, "sobreconsumo": 0.10, "descripcion": "Copilot Business o Cursor Pro mas un asistente (Claude Pro o ChatGPT Plus).", "evidencia": "Copilot Business 19 + Claude Pro 20 = 39; Cursor Pro 20 + Copilot Pro 10 = 30. Sobreconsumo bajo: el uso es de autocompletado y chat." },
-      "hybrid": { "usd_por_persona_mes": 100, "sobreconsumo": 0.20, "descripcion": "Claude Max 5x, o Cursor Pro+ mas Copilot Business y Claude Pro.", "evidencia": "Claude Max 5x 100; Cursor Pro+ 60 + Copilot Business 19 + Claude Pro 20 = 99. Los planes de 100 son lo comun segun DX 2026." },
-      "bytecoding_prompts": { "usd_por_persona_mes": 250, "sobreconsumo": 0.30, "descripcion": "Claude Max 20x o Cursor Ultra mas consumo de agentes.", "evidencia": "Claude Max 20x 200 o Cursor Ultra 200 mas excedente; gasto real con agentes 150 a 250 tipico y 200 a 500 en una de cada cuatro organizaciones (Gartner citado por morphllm, 2026)." },
-      "low_code": { "usd_por_persona_mes": 40, "sobreconsumo": 0, "descripcion": "Asiento de constructor (Power Apps Premium) mas asistente de IA.", "usd_por_usuario_final_mes": 20, "usuarios_finales_supuestos": 10, "evidencia": "Power Apps Premium 20 por usuario al mes (por usuario FINAL, no por desarrollador): cada persona de la oficina que use el sistema paga licencia mientras lo use. AppSheet Core 10, Appian 75 a 100. Es un costo que sigue despues de entregar." }
+      "traditional": { "usd_por_persona_mes": 0, "sobreconsumo": 0, "niveles": { "basico": 0, "tipico": 0, "maximo": 0 }, "descripcion": "Sin herramientas de IA." },
+      "ai_assisted": { "usd_por_persona_mes": 30, "sobreconsumo": 0.10, "niveles": { "basico": 10, "tipico": 30, "maximo": 60 }, "descripcion": "Copilot Business o Cursor Pro mas un asistente (Claude Pro o ChatGPT Plus).", "evidencia": "Copilot Business 19 + Claude Pro 20 = 39; Cursor Pro 20 + Copilot Pro 10 = 30. Sobreconsumo bajo: el uso es de autocompletado y chat." },
+      "hybrid": { "usd_por_persona_mes": 100, "sobreconsumo": 0.20, "niveles": { "basico": 40, "tipico": 100, "maximo": 200 }, "descripcion": "Claude Max 5x, o Cursor Pro+ mas Copilot Business y Claude Pro.", "evidencia": "Claude Max 5x 100; Cursor Pro+ 60 + Copilot Business 19 + Claude Pro 20 = 99. Los planes de 100 son lo comun segun DX 2026." },
+      "bytecoding_prompts": { "usd_por_persona_mes": 250, "sobreconsumo": 0.30, "niveles": { "basico": 100, "tipico": 250, "maximo": 400 }, "descripcion": "Claude Max 20x o Cursor Ultra mas consumo de agentes.", "evidencia": "Claude Max 20x 200 o Cursor Ultra 200 mas excedente; gasto real con agentes 150 a 250 tipico y 200 a 500 en una de cada cuatro organizaciones (Gartner citado por morphllm, 2026)." },
+      "low_code": { "usd_por_persona_mes": 40, "sobreconsumo": 0, "niveles": { "basico": 20, "tipico": 40, "maximo": 60 }, "descripcion": "Asiento de constructor (Power Apps Premium) mas asistente de IA.", "usd_por_usuario_final_mes": 20, "usuarios_finales_supuestos": 10, "evidencia": "Power Apps Premium 20 por usuario al mes (por usuario FINAL, no por desarrollador): cada persona de la oficina que use el sistema paga licencia mientras lo use. AppSheet Core 10, Appian 75 a 100. Es un costo que sigue despues de entregar." }
     }
   },
   "ai_skill_factors": {

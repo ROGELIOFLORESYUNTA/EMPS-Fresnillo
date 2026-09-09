@@ -24,6 +24,7 @@ import { TarjetasDeOpcion, PorQueImportaLaForma, type TarjetaDeOpcion } from "@/
 import { PreguntasDelPatron } from "@/components/preguntas-del-patron";
 import { computeOnTimeRisk, computeMunicipalQuebrarRisk, computeProviderViabilityRatio, computeMaintenanceMonthly, computeChangeRangeByType } from "@/lib/engine/reports-insights";
 import { VEREDICTO_ETIQUETA } from "@/lib/engine/aptitud";
+import { NIVEL_ETIQUETA, type NivelHerramienta } from "@/lib/engine/herramientas";
 import type { PasoDeCalculo } from "@/lib/engine/explicacion";
 
 export default async function ProjectDetailPage({
@@ -283,7 +284,7 @@ export default async function ProjectDetailPage({
 
   // Herramientas de IA, pericia y costos fijos de cada estimación: quedan en su snapshot.
   interface SnapshotEstimacion {
-    herramientas?: { asientos: number; usdPorAsiento: number; sobreconsumo: number; tipoCambio: number; mensualMXN: number; descripcion: string; usuariosFinales: number; usuariosFinalesSupuestos: boolean; usdPorUsuarioFinal: number; mensualUsuariosFinalesMXN: number };
+    herramientas?: { asientos: number; usdPorAsiento: number; sobreconsumo: number; tipoCambio: number; mensualMXN: number; descripcion: string; usuariosFinales: number; usuariosFinalesSupuestos: boolean; usdPorUsuarioFinal: number; mensualUsuariosFinalesMXN: number; nivel?: NivelHerramienta; asientosAlNivel?: number; asientosConPlanPropio?: number; usdPlanesPropios?: number };
     pericia?: { promedio: number; conDato: boolean; factor: number; aplica: boolean };
     otrosCostosMensuales?: { herramientas: number; administracion: number };
   }
@@ -686,7 +687,7 @@ export default async function ProjectDetailPage({
 
       {/* Resumen financiero */}
       {selectedTotal && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
           <SummaryCard
             label="Precio cotizado al cliente"
             value={formatMXN(Number(selectedTotal))}
@@ -711,7 +712,7 @@ export default async function ProjectDetailPage({
               !herramientasSel
                 ? "Esta estimación se guardó antes de que se cobraran las herramientas. Vuelve a calcular."
                 : herramientasSel.mensualMXN > 0
-                  ? `${herramientasSel.asientos} asiento(s) × ${herramientasSel.usdPorAsiento} USD${herramientasSel.sobreconsumo > 0 ? ` + ${Math.round(herramientasSel.sobreconsumo * 100)}% de sobreconsumo` : ""}, a ${herramientasSel.tipoCambio} por dólar. Ya está dentro del precio.${licenciasSel ? ` Después de entregar: ${licenciasSel.usuarios} usuario(s) × ${licenciasSel.usdPorUsuario} USD = ${formatMXN(licenciasSel.mensualMXN)} al mes en licencias, aparte.` : ""}`
+                  ? `Por persona, no por equipo: ${herramientasSel.asientosAlNivel ?? herramientasSel.asientos} asiento(s) al nivel ${NIVEL_ETIQUETA[herramientasSel.nivel ?? "tipico"]} × ${herramientasSel.usdPorAsiento} USD${(herramientasSel.asientosConPlanPropio ?? 0) > 0 ? ` más ${herramientasSel.asientosConPlanPropio} con plan propio (${herramientasSel.usdPlanesPropios} USD)` : ""}${herramientasSel.sobreconsumo > 0 ? ` + ${Math.round(herramientasSel.sobreconsumo * 100)}% de sobreconsumo` : ""}, a ${herramientasSel.tipoCambio} por dólar. Ya está dentro del precio; el nivel se cambia en Calcular.${licenciasSel ? ` Después de entregar: ${licenciasSel.usuarios} usuario(s) × ${licenciasSel.usdPorUsuario} USD = ${formatMXN(licenciasSel.mensualMXN)} al mes en licencias, aparte.` : ""}`
                   : "Esta forma de hacerlo no usa herramientas de IA."
             }
             info={{
@@ -1271,7 +1272,7 @@ function SummaryCard({
           <span>{label}</span>
           {info && <InfoTip title={info.title}>{info.body}</InfoTip>}
         </p>
-        <p className="text-2xl font-bold">{value}</p>
+        <p className="text-xl xl:text-2xl font-bold leading-tight break-words">{value}</p>
         {hint && <p className="text-xs text-muted-foreground mt-1">{hint}</p>}
       </CardContent>
     </Card>

@@ -148,6 +148,7 @@ const NOMBRES_ES: Record<string, string> = {
   AI_TOOL_COSTS: "Lo que cuestan las herramientas de IA por persona, según la forma de hacerlo",
   AI_SKILL_FACTORS: "Qué parte del ahorro de la IA se acredita según la pericia del equipo",
   TIPO_CAMBIO_USD_MXN: "Tipo de cambio para las herramientas cotizadas en dólares",
+  AI_TOOL_AUMENTO_ANUAL: "Aumento anual esperado de los planes de IA (solo en el escenario conservador)",
 
   // Cambios a medio proyecto
   CHANGE_ARTIFACT_WEIGHTS: "Trabajo que implica cada cosa que hay que rehacer",

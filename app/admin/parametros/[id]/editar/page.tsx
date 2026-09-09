@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { api, apiPut, apiDelete } from "@/lib/api-client";
 import { ChevronLeft, Save, RotateCcw, AlertCircle, UserCheck } from "lucide-react";
 import { ParameterManualSheet } from "@/components/parameter-manual-sheet";
+import { EditorTablaParametro } from "@/components/editor-tabla-parametro";
 
 interface ParameterRow {
   id: string;
@@ -153,13 +154,7 @@ export default function EditarParametroPage({ params }: { params: Promise<{ id: 
             <div className="grid gap-2">
               <Label htmlFor="value">Valor</Label>
               {isJson ? (
-                <Textarea
-                  id="value"
-                  rows={8}
-                  className="font-mono text-xs"
-                  value={param.value ?? ""}
-                  onChange={(e) => setParam({ ...param, value: e.target.value })}
-                />
+                <EditorTablaParametro valor={param.value ?? ""} onChange={(v) => setParam({ ...param, value: v })} />
               ) : (
                 <Input
                   id="value"

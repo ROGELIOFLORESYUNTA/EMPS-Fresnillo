@@ -16,8 +16,15 @@ interface HerramientasResp {
   asientos: number;
   pericia: { promedio: number; conDato: boolean };
   tipoCambio: number;
-  porModo: Record<string, { mensualMXN: number; factor: number; aplica: boolean; mensualUsuariosFinalesMXN: number; usuariosFinales: number; usuariosFinalesSupuestos: boolean }>;
+  aumentoAnual: number;
+  porModo: Record<string, { mensualMXN: number; factor: number; aplica: boolean; mensualUsuariosFinalesMXN: number; usuariosFinales: number; usuariosFinalesSupuestos: boolean; niveles: Record<string, { usd: number; mensualMXN: number }>; asientosConPlanPropio: number }>;
 }
+
+const NIVELES = [
+  { v: "basico", t: "Básico", d: "Planes de entrada (Copilot Pro, Claude Max 5x)." },
+  { v: "tipico", t: "Típico", d: "Lo que usa la mayoría (Cursor Pro+, Claude Max 20x en bytecoding)." },
+  { v: "maximo", t: "Máximo", d: "Lo más alto por persona (Claude Max 20x más Cursor Ultra)." },
+] as const;
 import { Calculator, Lightbulb, AlertCircle } from "lucide-react";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 
@@ -30,6 +37,7 @@ export default function EstimatePage({ params }: { params: Promise<{ id: string 
   // La capacidad semanal se calcula del equipo (disponibilidad x 40 h); solo
   // se fija a mano si el usuario lo pide, porque divide el precio.
   const [capacidadDelEquipo, setCapacidadDelEquipo] = useState(true);
+  const [aiToolLevel, setAiToolLevel] = useState<"basico" | "tipico" | "maximo">("tipico");
   const [proyecto, setProyecto] = useState<{ estimatedBudget: string | number | null; targetDate: string | null; team: { availabilityPercent: string | number }[] } | null>(null);
   useEffect(() => {
     api<{ project: { estimatedBudget: string | number | null; targetDate: string | null; team: { availabilityPercent: string | number }[] } }>(`/api/projects/${projectId}`)
@@ -69,6 +77,7 @@ export default function EstimatePage({ params }: { params: Promise<{ id: string 
         mode,
         targetMargin: form.targetMarginPct / 100,
         weeklyTeamCapacityHours: capacidadDelEquipo ? undefined : form.weeklyTeamCapacityHours,
+        aiToolLevel,
         costMode: form.costMode,
         capitalDeclaredByProvider: form.capitalDeclaredByProvider,
         cashFlowAssumptions: {
@@ -210,14 +219,15 @@ export default function EstimatePage({ params }: { params: Promise<{ id: string 
                     if (!h) return null;
                     return (
                       <li key={m.value}>
-                        {m.label}: <strong>{formatMXN(h.mensualMXN)}</strong> al mes
+                        {m.label}: <strong>{formatMXN(h.niveles?.[aiToolLevel]?.mensualMXN ?? h.mensualMXN)}</strong> al mes (nivel {NIVELES.find((n) => n.v === aiToolLevel)?.t.toLowerCase()})
+                        {h.asientosConPlanPropio > 0 ? ` · ${h.asientosConPlanPropio} persona(s) con plan propio` : ""}
                         {h.aplica && h.factor !== 1 ? ` · se acredita ${Math.round(h.factor * 100)} % del ahorro de la IA` : ""}
                         {h.mensualUsuariosFinalesMXN > 0 ? ` · después de entregar, ${formatMXN(h.mensualUsuariosFinalesMXN)} al mes de licencias para ${h.usuariosFinales} usuario(s)${h.usuariosFinalesSupuestos ? " (supuestos)" : ""}` : ""}
                       </li>
                     );
                   })}
                 </ul>
-                <p className="text-muted-foreground">Entran al costo y al precio con el mismo número, sin IVA porque es acreditable. La pericia se captura en Equipo; los precios y el tipo de cambio están en Fuentes.</p>
+                <p className="text-muted-foreground">Se cobra por persona (asiento), no por equipo. Entran al costo y al precio con el mismo número, sin IVA porque es acreditable. El nivel se elige abajo en Ajustar detalles; la pericia y el plan propio de cada persona, en Equipo; los precios y el tipo de cambio, en Fuentes.</p>
               </div>
             )}
           </CardContent>
@@ -226,8 +236,25 @@ export default function EstimatePage({ params }: { params: Promise<{ id: string 
         <details className="mt-4 rounded-lg border">
           <summary className="cursor-pointer px-4 py-3 text-sm">
             <span className="font-medium">Ajustar detalles</span>
-            <span className="text-muted-foreground"> · anticipo {form.anticipoPct} %, pago final {form.finalPaymentPct} %, otras herramientas {formatMXN(form.monthlyToolsCost)} al mes, administración {formatMXN(form.monthlyAdminCost)} al mes, el proveedor puede adelantar {formatMXN(form.capitalDeclaredByProvider)}</span>
+            <span className="text-muted-foreground"> · anticipo {form.anticipoPct} %, pago final {form.finalPaymentPct} %, otras herramientas {formatMXN(form.monthlyToolsCost)} al mes, administración {formatMXN(form.monthlyAdminCost)} al mes, el proveedor puede adelantar {formatMXN(form.capitalDeclaredByProvider)}, herramientas de IA nivel {NIVELES.find((n) => n.v === aiToolLevel)?.t.toLowerCase()}</span>
           </summary>
+          <div className="px-4 pb-3 space-y-2">
+            <Label>Nivel de herramientas de IA por persona</Label>
+            <div className="grid sm:grid-cols-3 gap-2">
+              {NIVELES.map((n) => (
+                <button key={n.v} type="button" onClick={() => setAiToolLevel(n.v)} className={`rounded-md border p-3 text-left text-sm hover:bg-accent ${aiToolLevel === n.v ? "border-primary ring-1 ring-primary" : ""}`}>
+                  <p className="font-medium">{n.t}</p>
+                  <p className="text-xs text-muted-foreground">{n.d}</p>
+                  {herramientas && (
+                    <p className="text-xs mt-1">
+                      {DEVELOPMENT_MODES.filter((m) => m.value !== "traditional").map((m) => `${m.label.split(" ")[0]} ${herramientas.porModo[m.value]?.niveles?.[n.v]?.usd ?? 0} USD`).join(" · ")}
+                    </p>
+                  )}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">USD por persona al mes. En la vida real cada quien trae su plan: si alguien ya paga el suyo, captúralo en Equipo y ese asiento cobra lo suyo. En el escenario conservador se suma {herramientas ? Math.round(herramientas.aumentoAnual * 100) : 15} % anual de aumento de planes, prorrateado.</p>
+          </div>
         <Card className="border-0 shadow-none">
           <CardHeader>
             <CardTitle className="text-base">Calendario de pagos</CardTitle>

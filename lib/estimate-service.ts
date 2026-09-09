@@ -38,7 +38,7 @@ import {
   type ModuleInput,
 } from "./engine";
 import { construirExplicacion, type PasoDeCalculo } from "./engine/explicacion";
-import { asientosDeHerramienta, periciaDelEquipo, ajustarPorPericia, costoHerramientasPorModo } from "./engine/herramientas";
+import { periciaDelEquipo, ajustarPorPericia, costoHerramientasPorModo, factorAumentoPlanes, type NivelHerramienta } from "./engine/herramientas";
 
 interface CashFlowAssumptions {
   anticipoPct: number;
@@ -59,6 +59,8 @@ interface EstimateRequest {
   costMode?: "detailed" | "estimated";
   cashFlowAssumptions?: CashFlowAssumptions;
   capitalDeclaredByProvider?: number;
+  /** Nivel de herramientas de IA por persona: básico, típico (default) o máximo. */
+  aiToolLevel?: NivelHerramienta;
   createdById?: string;
   /** FASE G.I — si se pasa, las ediciones del workspace en /admin/parametros
    *  (WorkspaceParameterOverride) sobreescriben los valores globales en este
@@ -87,7 +89,7 @@ interface EstimateOutput {
   /** Capacidad semanal usada y de dónde salió. */
   capacidad: { horasSemana: number; calculadaDelEquipo: boolean };
   /** Herramientas de IA del modo (asientos y pesos al mes, sin IVA) y pericia del equipo con la IA. */
-  herramientas: { asientos: number; usdPorAsiento: number; sobreconsumo: number; tipoCambio: number; mensualMXN: number; usuariosFinales: number; mensualUsuariosFinalesMXN: number };
+  herramientas: { asientos: number; usdPorAsiento: number; nivel: NivelHerramienta; asientosConPlanPropio: number; sobreconsumo: number; tipoCambio: number; mensualMXN: number; usuariosFinales: number; mensualUsuariosFinalesMXN: number };
   pericia: { promedio: number; conDato: boolean; factor: number; aplica: boolean };
 }
 
@@ -282,16 +284,17 @@ export async function runEstimate(req: EstimateRequest): Promise<EstimateOutput>
   // IVA) y los otros costos fijos capturados (servidores, administración).
   // Entran al costo, al precio y al flujo de efectivo con el mismo número:
   // son renglones distintos y ninguno se cobra dos veces.
+  const nivelHerramientas: NivelHerramienta = req.aiToolLevel ?? "tipico";
   const herramientas = costoHerramientasPorModo({
     mode: req.mode,
-    asientos: asientosDeHerramienta(project.team),
+    team: project.team,
+    nivel: nivelHerramientas,
     tabla: ctx.aiToolCosts,
     tipoCambio: ctx.tipoCambio,
     usuariosFinales: project.expectedUsers ?? null,
   });
   const otrosHerramientasMensual = Math.max(0, cfa?.monthlyToolsCost ?? 0);
   const administracionMensual = Math.max(0, cfa?.monthlyAdminCost ?? 0);
-  const costoMensualIndirecto = herramientas.mensualMXN + otrosHerramientasMensual + administracionMensual;
   const capitalDeclarado = req.capitalDeclaredByProvider ?? 100000;
   const scenariosToCompute = (req.scenarios ?? ["optimistic", "probable", "conservative"]) as Scenario[];
   const out: EstimateOutput["estimates"] = [];
@@ -316,6 +319,8 @@ export async function runEstimate(req: EstimateRequest): Promise<EstimateOutput>
     capitalDeclaredByProvider: capitalDeclarado,
     riesgo: { ...riesgo, cambiosRegistrados: project._count.changes, claridadPromedio },
     herramientas,
+    aiToolLevel: nivelHerramientas,
+    aiToolAumentoAnual: ctx.aiToolAumentoAnual,
     pericia: {
       ...pericia,
       factor: modoAjustado.factor,
@@ -372,6 +377,11 @@ export async function runEstimate(req: EstimateRequest): Promise<EstimateOutput>
     // Las horas de endurecimiento de bytecoding ya están dentro de las
     // semanas; no se vuelven a multiplicar aquí. indirectCost es la parte que
     // no es nómina, ya incluida en el costo total.
+    // En el escenario conservador los planes de IA pueden subir de precio
+    // mientras dura el proyecto: se prorratea el aumento anual esperado.
+    const factorAumento = scen === "conservative" ? factorAumentoPlanes(ctx.aiToolAumentoAnual, realMonthsOfMode) : 1;
+    const herramientasMesEscenario = herramientas.mensualMXN * factorAumento;
+    const costoMensualIndirecto = herramientasMesEscenario + otrosHerramientasMensual + administracionMensual;
     const baseCost = (monthlyTeamCost + costoMensualIndirecto) * realMonthsOfMode;
     const indirectCost = costoMensualIndirecto * realMonthsOfMode;
     const totalCost = baseCost + lftRisk.estimatedTerminationCost;
@@ -387,7 +397,7 @@ export async function runEstimate(req: EstimateRequest): Promise<EstimateOutput>
           finalPaymentPct: cfa.finalPaymentPct,
           monthlyOutflowPayroll: monthlyTeamCost,
           monthlyOutflowTaxes: monthlyTeamCost * 0.10,
-          monthlyOutflowTools: herramientas.mensualMXN + otrosHerramientasMensual,
+          monthlyOutflowTools: herramientasMesEscenario + otrosHerramientasMensual,
           monthlyOutflowAdmin: administracionMensual,
           durationMonths: cashflowMonthsThisMode,
         })
@@ -444,6 +454,12 @@ export async function runEstimate(req: EstimateRequest): Promise<EstimateOutput>
         tipoCambio: herramientas.tipoCambio,
         mensualMXN: herramientas.mensualMXN,
         descripcion: herramientas.descripcion,
+        nivel: nivelHerramientas,
+        asientosAlNivel: herramientas.asientosAlNivel,
+        asientosConPlanPropio: herramientas.asientosConPlanPropio,
+        usdPlanesPropios: herramientas.usdPlanesPropios,
+        factorAumento,
+        aumentoAnual: ctx.aiToolAumentoAnual,
       },
       otrosCostos: { herramientasMensual: otrosHerramientasMensual, administracionMensual },
       costoTotal: totalCost,
@@ -573,6 +589,8 @@ export async function runEstimate(req: EstimateRequest): Promise<EstimateOutput>
     herramientas: {
       asientos: herramientas.asientos,
       usdPorAsiento: herramientas.usdPorAsiento,
+      nivel: herramientas.nivel,
+      asientosConPlanPropio: herramientas.asientosConPlanPropio,
       sobreconsumo: herramientas.sobreconsumo,
       tipoCambio: herramientas.tipoCambio,
       mensualMXN: herramientas.mensualMXN,

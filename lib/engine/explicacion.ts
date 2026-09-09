@@ -64,8 +64,16 @@ export interface EntradasExplicacion {
     usdPorAsiento: number;
     sobreconsumo: number;
     tipoCambio: number;
+    /** Pesos al mes sin el aumento del escenario. */
     mensualMXN: number;
     descripcion: string;
+    nivel?: string;
+    asientosAlNivel?: number;
+    asientosConPlanPropio?: number;
+    usdPlanesPropios?: number;
+    /** 1 salvo en el escenario conservador, donde prorratea el aumento anual de los planes. */
+    factorAumento?: number;
+    aumentoAnual?: number;
   };
   /** Otras herramientas (servidores, dominios) y administración capturadas, al mes. */
   otrosCostos?: {
@@ -197,15 +205,23 @@ export function construirExplicacion(e: EntradasExplicacion): PasoDeCalculo[] {
     operacion: `${e.personas} persona(s): sueldo + prestaciones de ley + IMSS + INFONAVIT + impuesto sobre nómina, según el tipo de contrato de cada una.`,
   });
 
-  const herramientasMes = e.herramientas?.mensualMXN ?? 0;
+  const factorAumento = e.herramientas?.factorAumento ?? 1;
+  const herramientasMes = (e.herramientas?.mensualMXN ?? 0) * factorAumento;
   if (e.herramientas && herramientasMes > 0) {
+    const h = e.herramientas;
+    const alNivel = h.asientosAlNivel ?? h.asientos;
+    const propios = h.asientosConPlanPropio ?? 0;
+    const partes: string[] = [];
+    if (alNivel > 0) partes.push(`${alNivel} asiento(s) al nivel ${h.nivel ?? "típico"} × ${h.usdPorAsiento} USD`);
+    if (propios > 0) partes.push(`${propios} con plan propio (${r2(h.usdPlanesPropios ?? 0)} USD entre todos)`);
+    const aumento = factorAumento > 1 ? ` × ${factorAumento} (planes ${Math.round((h.aumentoAnual ?? 0) * 100)}% más caros al año, prorrateado: solo en este escenario)` : "";
     pasos.push({
       clave: "herramientas",
       etiqueta: "Herramientas de IA del equipo, al mes",
       valor: r2(herramientasMes),
       unidad: "pesos",
-      operacion: `${e.herramientas.asientos} asiento(s) × ${e.herramientas.usdPorAsiento} USD × ${r2(1 + e.herramientas.sobreconsumo)} de sobreconsumo × ${e.herramientas.tipoCambio} pesos por dólar`,
-      nota: `Sin IVA: es acreditable si la plataforma está inscrita en el SAT.${e.herramientas.descripcion ? ` Canasta: ${e.herramientas.descripcion}` : ""}`,
+      operacion: `(${partes.join(" + ")}) × ${r2(1 + h.sobreconsumo)} de sobreconsumo × ${h.tipoCambio} pesos por dólar${aumento}`,
+      nota: `Se cobra por persona, no por equipo. Sin IVA: es acreditable si la plataforma está inscrita en el SAT.${h.descripcion ? ` Canasta típica: ${h.descripcion}` : ""}`,
     });
   }
 

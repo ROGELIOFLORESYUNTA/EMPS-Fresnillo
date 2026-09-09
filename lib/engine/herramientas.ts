@@ -34,6 +34,22 @@ export interface CostoHerramientaModo {
   usd_por_usuario_final_mes?: number;
   /** Cuántos usuarios finales se asumen si el proyecto no lo capturó. */
   usuarios_finales_supuestos?: number;
+  /** Lo que pasa en la vida real: hay planes básicos, típicos y máximos. USD por persona al mes. */
+  niveles?: { basico: number; tipico: number; maximo: number };
+}
+
+export type NivelHerramienta = "basico" | "tipico" | "maximo";
+export const NIVELES_HERRAMIENTA: NivelHerramienta[] = ["basico", "tipico", "maximo"];
+export const NIVEL_ETIQUETA: Record<NivelHerramienta, string> = { basico: "básico", tipico: "típico", maximo: "máximo" };
+
+/** Aumento anual esperado de los planes (0.15 = 15 %); solo entra en el escenario conservador. */
+export const AUMENTO_ANUAL_POR_OMISION = 0.15;
+
+/** 1 + aumento prorrateado a los meses del proyecto; nunca menor a 1. */
+export function factorAumentoPlanes(aumentoAnual: number, meses: number): number {
+  const a = Math.max(0, Number(aumentoAnual) || 0);
+  const m = Math.max(0, Number(meses) || 0);
+  return Math.round((1 + (a * m) / 12) * 10000) / 10000;
 }
 
 export interface TablaHerramientas {
@@ -46,16 +62,17 @@ export type FactoresPericia = Record<string, number>;
 
 export const HERRAMIENTAS_POR_OMISION: TablaHerramientas = {
   por_modo: {
-    traditional: { usd_por_persona_mes: 0, sobreconsumo: 0, descripcion: "Sin herramientas de IA." },
-    ai_assisted: { usd_por_persona_mes: 30, sobreconsumo: 0.10, descripcion: "Copilot Business o Cursor Pro más un asistente (Claude Pro o ChatGPT Plus)." },
-    hybrid: { usd_por_persona_mes: 100, sobreconsumo: 0.20, descripcion: "Claude Max 5x, o Cursor Pro+ más Copilot Business y Claude Pro." },
-    bytecoding_prompts: { usd_por_persona_mes: 250, sobreconsumo: 0.30, descripcion: "Claude Max 20x o Cursor Ultra más consumo de agentes." },
+    traditional: { usd_por_persona_mes: 0, sobreconsumo: 0, descripcion: "Sin herramientas de IA.", niveles: { basico: 0, tipico: 0, maximo: 0 } },
+    ai_assisted: { usd_por_persona_mes: 30, sobreconsumo: 0.10, descripcion: "Copilot Business o Cursor Pro más un asistente (Claude Pro o ChatGPT Plus).", niveles: { basico: 10, tipico: 30, maximo: 60 } },
+    hybrid: { usd_por_persona_mes: 100, sobreconsumo: 0.20, descripcion: "Claude Max 5x, o Cursor Pro+ más Copilot Business y Claude Pro.", niveles: { basico: 40, tipico: 100, maximo: 200 } },
+    bytecoding_prompts: { usd_por_persona_mes: 250, sobreconsumo: 0.30, descripcion: "Claude Max 20x o Cursor Ultra más consumo de agentes.", niveles: { basico: 100, tipico: 250, maximo: 400 } },
     low_code: {
       usd_por_persona_mes: 40,
       sobreconsumo: 0,
       descripcion: "Asiento de constructor (Power Apps Premium) más asistente de IA.",
       usd_por_usuario_final_mes: 20,
       usuarios_finales_supuestos: 10,
+      niveles: { basico: 20, tipico: 40, maximo: 60 },
     },
   },
 };
@@ -77,6 +94,8 @@ export interface PersonaHerramienta {
   role: string;
   availabilityPercent: number | string;
   aiSkill?: number | null;
+  /** Si esta persona ya trae su propio plan, lo que paga en USD al mes; null = el nivel del proyecto. */
+  aiToolUsdMonthly?: number | string | { toString(): string } | null;
 }
 
 const esTecnico = (p: PersonaHerramienta) => (ROLES_CON_ASIENTO as readonly string[]).includes(p.role);
@@ -164,7 +183,13 @@ export function ajustarPorPericia(
 
 export interface ResultadoHerramientas {
   asientos: number;
+  /** USD por asiento del nivel elegido (lo que pagan los asientos sin plan propio). */
   usdPorAsiento: number;
+  nivel: NivelHerramienta;
+  asientosAlNivel: number;
+  asientosConPlanPropio: number;
+  /** Suma de los USD al mes de las personas que traen plan propio. */
+  usdPlanesPropios: number;
   sobreconsumo: number;
   tipoCambio: number;
   /** Pesos al mes, sin IVA (acreditable si la plataforma está inscrita en el SAT). */
@@ -177,9 +202,21 @@ export interface ResultadoHerramientas {
   mensualUsuariosFinalesMXN: number;
 }
 
+/** USD por persona al mes del nivel pedido; sin tabla de niveles, el típico es usd_por_persona_mes. */
+export function usdDelNivel(fila: CostoHerramientaModo, nivel: NivelHerramienta): number {
+  const base = Math.max(0, Number(fila.usd_por_persona_mes) || 0);
+  const n = fila.niveles?.[nivel];
+  if (n == null || !Number.isFinite(Number(n))) return nivel === "tipico" ? base : base;
+  return Math.max(0, Number(n));
+}
+
 export function costoHerramientasPorModo(input: {
   mode: DevelopmentMode | string;
-  asientos: number;
+  /** Asientos sin detalle por persona (se usa si no viene el equipo). */
+  asientos?: number;
+  /** Con el equipo se respeta el plan propio de cada persona. */
+  team?: PersonaHerramienta[];
+  nivel?: NivelHerramienta;
   tabla?: TablaHerramientas;
   tipoCambio?: number;
   usuariosFinales?: number | null;
@@ -187,10 +224,31 @@ export function costoHerramientasPorModo(input: {
   const tabla = input.tabla ?? HERRAMIENTAS_POR_OMISION;
   const tipoCambio = input.tipoCambio && input.tipoCambio > 0 ? input.tipoCambio : TIPO_CAMBIO_POR_OMISION;
   const fila = tabla.por_modo[input.mode] ?? HERRAMIENTAS_POR_OMISION.por_modo[input.mode] ?? { usd_por_persona_mes: 0, sobreconsumo: 0 };
-  const usd = Math.max(0, Number(fila.usd_por_persona_mes) || 0);
+  const nivel: NivelHerramienta = input.nivel ?? "tipico";
+  const usd = usdDelNivel(fila, nivel);
   const sobre = Math.max(0, Number(fila.sobreconsumo) || 0);
-  const asientos = Math.max(0, Math.floor(input.asientos));
   const r2 = (n: number) => Math.round(n * 100) / 100;
+
+  // Quién paga qué: los asientos sin plan propio van al nivel del proyecto; los
+  // que traen plan propio cobran lo suyo (a mano, nada: no hay herramientas).
+  let asientosAlNivel = 0;
+  let asientosConPlanPropio = 0;
+  let usdPlanesPropios = 0;
+  if (input.team) {
+    for (const p of input.team.filter(esTecnico)) {
+      // Prisma entrega Decimal; Number() lo convierte por su toString/valueOf.
+      const propio = p.aiToolUsdMonthly != null && p.aiToolUsdMonthly !== "" ? Number(String(p.aiToolUsdMonthly)) : null;
+      if (propio != null && Number.isFinite(propio) && input.mode !== "traditional") {
+        asientosConPlanPropio += 1;
+        usdPlanesPropios += Math.max(0, propio);
+      } else {
+        asientosAlNivel += 1;
+      }
+    }
+  } else {
+    asientosAlNivel = Math.max(0, Math.floor(input.asientos ?? 0));
+  }
+  const asientos = asientosAlNivel + asientosConPlanPropio;
 
   const usdUsuario = Math.max(0, Number(fila.usd_por_usuario_final_mes) || 0);
   const supuestos = !(input.usuariosFinales != null && input.usuariosFinales > 0);
@@ -199,9 +257,13 @@ export function costoHerramientasPorModo(input: {
   return {
     asientos,
     usdPorAsiento: usd,
+    nivel,
+    asientosAlNivel,
+    asientosConPlanPropio,
+    usdPlanesPropios: r2(usdPlanesPropios),
     sobreconsumo: sobre,
     tipoCambio,
-    mensualMXN: r2(asientos * usd * (1 + sobre) * tipoCambio),
+    mensualMXN: r2((asientosAlNivel * usd + usdPlanesPropios) * (1 + sobre) * tipoCambio),
     descripcion: fila.descripcion ?? "",
     usuariosFinales,
     usuariosFinalesSupuestos: usdUsuario > 0 && supuestos,

@@ -293,3 +293,12 @@ prototipo_efectivo  = 1 + (prototype_speedup - 1) * f
 ```
 
 Aplica a ai_assisted, hybrid y bytecoding_prompts; traditional y low_code no cambian. Aptitud: bytecoding no se recomienda con pericia menor a 2 y va con reservas por debajo de 3; asistido e hibrido van con reservas por debajo de 2. Evidencia: METR 2025 (-19 % con pocas horas en la herramienta), Google 2024 (+21 %), Peng et al. 2023 (+56 %), McKinsey 2023, DORA 2025, Stack Overflow 2025, arXiv 2507.18638.
+
+**Niveles, plan propio y aumento de precios** (lo que pasa en la vida real): cada forma de hacerlo tiene tres niveles de plan por persona (`niveles.basico / tipico / maximo`, por ejemplo casi todo con IA 100 / 250 / 400 USD) que se eligen por proyecto (`aiToolLevel`, default tipico); cada persona puede traer su propio plan (`TeamProfile.aiToolUsdMonthly`) y ese asiento cobra lo suyo:
+
+```
+herramientas_mes = (asientos_al_nivel * usd_del_nivel + suma_planes_propios) * (1 + sobreconsumo) * TIPO_CAMBIO_USD_MXN
+escenario conservador: herramientas_mes * (1 + AI_TOOL_AUMENTO_ANUAL * meses / 12)     (0.15 por omision; optimista y probable sin aumento)
+```
+
+Los precios (`AI_TOOL_COSTS`), la pericia (`AI_SKILL_FACTORS`) y el aumento se editan en /admin/parametros con el editor de tablas (campo por campo, conservando las fuentes) y quedan como override del workspace.

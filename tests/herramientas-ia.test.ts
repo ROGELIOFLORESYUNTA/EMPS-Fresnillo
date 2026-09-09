@@ -14,6 +14,8 @@ import {
   factorDePericia,
   ajustarPorPericia,
   costoHerramientasPorModo,
+  factorAumentoPlanes,
+  usdDelNivel,
   HERRAMIENTAS_POR_OMISION,
   PERICIA_POR_OMISION,
   construirExplicacion,
@@ -187,5 +189,78 @@ describe("la cadena de cálculo con herramientas y pericia sigue cuadrando", () 
     });
     expect(pasos.find((p) => p.clave === "herramientas")).toBeUndefined();
     expect(pasos.find((p) => p.clave === "otros_costos")).toBeUndefined();
+  });
+});
+
+describe("niveles, plan propio y aumento de precios (la vida real)", () => {
+  const equipo = [
+    { role: "lider_tecnico", availabilityPercent: 100, aiSkill: 4 },
+    { role: "dev_senior", availabilityPercent: 100, aiSkill: 3, aiToolUsdMonthly: 400 },
+    { role: "dev_junior", availabilityPercent: 50, aiSkill: 2, aiToolUsdMonthly: 0 },
+    { role: "contador", availabilityPercent: 20 },
+  ];
+
+  it("el nivel cambia el USD por asiento: básico, típico y máximo", () => {
+    const fila = HERRAMIENTAS_POR_OMISION.por_modo.bytecoding_prompts;
+    expect(usdDelNivel(fila, "basico")).toBe(100);
+    expect(usdDelNivel(fila, "tipico")).toBe(250);
+    expect(usdDelNivel(fila, "maximo")).toBe(400);
+    const max = costoHerramientasPorModo({ mode: "bytecoding_prompts", asientos: 4, nivel: "maximo", tipoCambio: 16.92 });
+    expect(max.mensualMXN).toBeCloseTo(4 * 400 * 1.3 * 16.92, 2);
+    expect(max.nivel).toBe("maximo");
+  });
+
+  it("con el equipo, quien trae plan propio cobra lo suyo y los demás el nivel", () => {
+    const r = costoHerramientasPorModo({ mode: "bytecoding_prompts", team: equipo, nivel: "tipico", tipoCambio: 16.92 });
+    expect(r.asientos).toBe(3);
+    expect(r.asientosAlNivel).toBe(1);
+    expect(r.asientosConPlanPropio).toBe(2);
+    expect(r.usdPlanesPropios).toBe(400);
+    // (1 × 250 + 400 + 0) × 1.3 × 16.92
+    expect(r.mensualMXN).toBeCloseTo((250 + 400) * 1.3 * 16.92, 2);
+  });
+
+  it("a mano nadie cobra herramientas, aunque traiga plan propio", () => {
+    const r = costoHerramientasPorModo({ mode: "traditional", team: equipo, tipoCambio: 16.92 });
+    expect(r.mensualMXN).toBe(0);
+    expect(r.asientosConPlanPropio).toBe(0);
+  });
+
+  it("sin nivel ni planes propios, el resultado es el mismo que con asientos sueltos (regresión)", () => {
+    const sinDatos = equipo.map((p) => ({ role: p.role, availabilityPercent: p.availabilityPercent }));
+    const a = costoHerramientasPorModo({ mode: "hybrid", team: sinDatos, tipoCambio: 16.92 });
+    const b = costoHerramientasPorModo({ mode: "hybrid", asientos: 3, tipoCambio: 16.92 });
+    expect(a.mensualMXN).toBe(b.mensualMXN);
+    expect(a.nivel).toBe("tipico");
+  });
+
+  it("el aumento anual se prorratea a los meses y nunca baja de 1", () => {
+    expect(factorAumentoPlanes(0.15, 12)).toBeCloseTo(1.15, 4);
+    expect(factorAumentoPlanes(0.15, 2.9)).toBeCloseTo(1 + 0.15 * 2.9 / 12, 4);
+    expect(factorAumentoPlanes(0, 6)).toBe(1);
+    expect(factorAumentoPlanes(-1, 6)).toBe(1);
+  });
+
+  it("la cadena muestra el nivel, el plan propio y el aumento del escenario conservador", () => {
+    const pasos = construirExplicacion({
+      puntosBase: 100, factorClaridad: 1, claridadPromedio: 4, factorRiesgo: 1,
+      riesgo: { cambios: 0, clienteAusente: 0, rotacion: 0, sinDatoDeCliente: false },
+      esfuerzoTecnico: 100, repartoFases: 1.1, horasTrasReparto: 110, eficienciaModo: 0.65, nombreModo: "casi todo con IA", horasModo: 71.5,
+      factorEscenario: 1.3, nombreEscenario: "si hay tropiezos", horasEscenario: 92.95,
+      capacidadSemanal: 100, capacidadCalculadaDelEquipo: true, velocidadModo: 3, semanas: 0.31, meses: 0.5,
+      costoMensualEquipo: 100000, personas: 3, liquidacionLFT: 0,
+      pericia: { promedio: 4, conDato: true, factor: 1, aplica: true, eficienciaNominal: 0.65, velocidadNominal: 3 },
+      herramientas: { asientos: 3, usdPorAsiento: 250, sobreconsumo: 0.3, tipoCambio: 16.92, mensualMXN: 14297.4, descripcion: "", nivel: "tipico", asientosAlNivel: 1, asientosConPlanPropio: 2, usdPlanesPropios: 400, factorAumento: 1.00625, aumentoAnual: 0.15 },
+      otrosCostos: { herramientasMensual: 0, administracionMensual: 0 },
+      costoTotal: 57193.2, margen: 0.2, subtotal: 71491.5, tasaIva: 0.16, iva: 11438.64, total: 82930.14,
+    });
+    const h = pasos.find((p) => p.clave === "herramientas")!;
+    expect(h.valor).toBeCloseTo(14297.4 * 1.00625, 1);
+    expect(h.operacion).toMatch(/1 asiento\(s\) al nivel tipico × 250 USD/);
+    expect(h.operacion).toMatch(/2 con plan propio/);
+    expect(h.operacion).toMatch(/15% más caros al año/);
+    expect(h.nota).toMatch(/por persona, no por equipo/);
+    const v = (k: string) => pasos.find((p) => p.clave === k)!.valor;
+    expect(v("costo_directo")).toBeCloseTo((v("costo_mensual") + h.valor) * v("meses"), 0);
   });
 });

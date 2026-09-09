@@ -10,7 +10,7 @@ import { prisma } from "@/lib/db";
 import { getCurrentWorkspaceId } from "@/lib/workspace";
 import { loadAllForEstimate } from "@/lib/parameters";
 import { MODOS } from "@/lib/engine/aptitud";
-import { asientosDeHerramienta, periciaDelEquipo, ajustarPorPericia, costoHerramientasPorModo } from "@/lib/engine/herramientas";
+import { asientosDeHerramienta, periciaDelEquipo, ajustarPorPericia, costoHerramientasPorModo, NIVELES_HERRAMIENTA } from "@/lib/engine/herramientas";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -30,11 +30,18 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
   const porModo: Record<string, unknown> = {};
   for (const mode of MODOS) {
-    const h = costoHerramientasPorModo({ mode, asientos, tabla: ctx.aiToolCosts, tipoCambio: ctx.tipoCambio, usuariosFinales: project.expectedUsers ?? null });
+    const h = costoHerramientasPorModo({ mode, team: project.team, nivel: "tipico", tabla: ctx.aiToolCosts, tipoCambio: ctx.tipoCambio, usuariosFinales: project.expectedUsers ?? null });
     const a = ajustarPorPericia(ctx.velocity[mode], mode, pericia.promedio, ctx.aiSkillFactors);
+    const niveles: Record<string, { usd: number; mensualMXN: number }> = {};
+    for (const nivel of NIVELES_HERRAMIENTA) {
+      const hn = costoHerramientasPorModo({ mode, team: project.team, nivel, tabla: ctx.aiToolCosts, tipoCambio: ctx.tipoCambio, usuariosFinales: project.expectedUsers ?? null });
+      niveles[nivel] = { usd: hn.usdPorAsiento, mensualMXN: hn.mensualMXN };
+    }
     porModo[mode] = {
       mensualMXN: h.mensualMXN,
       usdPorAsiento: h.usdPorAsiento,
+      niveles,
+      asientosConPlanPropio: h.asientosConPlanPropio,
       sobreconsumo: h.sobreconsumo,
       descripcion: h.descripcion,
       usuariosFinales: h.usuariosFinales,
@@ -53,6 +60,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     asientos,
     pericia: { promedio: pericia.promedio, conDato: pericia.conDato },
     tipoCambio: ctx.tipoCambio,
+    aumentoAnual: ctx.aiToolAumentoAnual,
     porModo,
   });
 }
