@@ -18,6 +18,7 @@ import type { RecommendationRole } from "@/lib/engine/recommendation";
 import { recomendacionDelProyecto } from "@/lib/recomendacion-proyecto";
 import { getCurrentWorkspaceId, peekWorkspace } from "@/lib/workspace";
 import { TresRespuestas } from "@/components/tres-respuestas";
+import { CompartirEnlace } from "@/components/compartir-enlace";
 import { ExplicacionDelNumero } from "@/components/explicacion-del-numero";
 import { TarjetasDeOpcion, PorQueImportaLaForma, type TarjetaDeOpcion } from "@/components/tarjetas-de-opcion";
 import { PreguntasDelPatron } from "@/components/preguntas-del-patron";
@@ -760,6 +761,7 @@ export default async function ProjectDetailPage({
           <Button variant="outline" asChild><Link href={`/projects/${id}/estimate`}><Calculator className="w-4 h-4 mr-2" />Recalcular</Link></Button>
           <Button asChild><Link href={`/projects/${id}/reports`}><FileText className="w-4 h-4 mr-2" />Ver reportes</Link></Button>
           <RecalcularButton projectId={id} />
+          {!project.isTemplate && <CompartirEnlace projectId={id} token={project.shareToken} />}
         </div>
       )}
 

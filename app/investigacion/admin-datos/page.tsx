@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { isAdmin } from "@/lib/admin-auth";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { tiempoPrimeraCifra } from "@/lib/tiempo-primera-cifra";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -26,6 +27,7 @@ export default async function AdminDatosPage() {
     overrides,
     activityLog,
     totalWorkspaces,
+    eventosDeTiempo,
   ] = await Promise.all([
     prisma.workspace.findMany({
       orderBy: { lastSeenAt: "desc" },
@@ -54,7 +56,14 @@ export default async function AdminDatosPage() {
       take: 50,
     }),
     prisma.workspace.count(),
+    prisma.workspaceActivityLog.findMany({
+      where: { eventType: { in: ["project_created", "estimate_run", "option_chosen", "cotizacion_rapida"] } },
+      select: { eventType: true, payloadJson: true, createdAt: true },
+      orderBy: { createdAt: "asc" },
+    }),
   ]);
+  const tiempo = tiempoPrimeraCifra(eventosDeTiempo);
+  const min = (v: number | null) => (v == null ? "sin datos" : v < 1 ? `${Math.round(v * 60)} s` : v < 120 ? `${v.toFixed(1)} min` : `${(v / 60).toFixed(1)} h`);
 
   // Distribuciones
   const modeCount = new Map<string, number>();
@@ -128,6 +137,31 @@ export default async function AdminDatosPage() {
         <Stat label="Estimaciones corridas" value={String(estimates.length)} icon={<Activity className="w-4 h-4" />} />
         <Stat label="Cambios capturados" value={String(changes.length)} icon={<Activity className="w-4 h-4" />} />
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Tiempo de la primera cifra</CardTitle>
+          <CardDescription>
+            Cuánto tarda una persona en pasar de crear el proyecto a tener un número, y cuántas se quedan a medio camino. Sale de la bitácora
+            (project_created, estimate_run, option_chosen, cotizacion_rapida); mediana, no promedio, para que un caso raro no la mueva.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
+          <Stat label="De crear a la primera cifra" value={min(tiempo.medianaMinutosACifra)} icon={<Activity className="w-4 h-4" />} />
+          <Stat label="De crear a elegir opción" value={min(tiempo.medianaMinutosAEleccion)} icon={<Activity className="w-4 h-4" />} />
+          <Stat label="Crean y nunca estiman" value={`${tiempo.sinCifra} de ${tiempo.proyectosCreados}`} icon={<Activity className="w-4 h-4" />} />
+          <Stat label="Estiman y nunca eligen" value={`${tiempo.conCifraSinEleccion} de ${tiempo.conCifra}`} icon={<Activity className="w-4 h-4" />} />
+          <div className="sm:col-span-2 lg:col-span-4 grid sm:grid-cols-2 gap-3 pt-2 border-t">
+            <p>
+              <strong>Cotizar en un minuto:</strong> {tiempo.rapida.proyectos} proyecto(s); mediana {min(tiempo.rapida.medianaMinutosACifra)} a la cifra
+              {tiempo.rapida.medianaSegundosEnLlenar != null && <>, {Math.round(tiempo.rapida.medianaSegundosEnLlenar)} s llenando el formulario</>}.
+            </p>
+            <p>
+              <strong>Flujo completo:</strong> {tiempo.completo.proyectos} proyecto(s); mediana {min(tiempo.completo.medianaMinutosACifra)} a la cifra.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

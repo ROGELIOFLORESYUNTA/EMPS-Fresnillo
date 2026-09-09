@@ -18,7 +18,7 @@ export function TresRespuestas(p: {
   decision: { modoLabel: string; escenarioLabel: string; fecha: Date; por: string | null } | null;
   esLaElegida: boolean;
   esRecomendada: boolean;
-  hrefReporte: string;
+  hrefReporte?: string;
 }) {
   const meses = p.semanas != null ? p.semanas / 4.33 : null;
   const diferencia = p.presupuesto != null ? p.presupuesto - p.total : null;
@@ -75,7 +75,7 @@ export function TresRespuestas(p: {
               <p className="text-xs text-muted-foreground">Cuando decidas, usa &quot;Elegir esta opción&quot; y aquí queda registrado.</p>
             </>
           )}
-          <Link href={p.hrefReporte} className="text-xs underline">Ver el reporte para llevar</Link>
+          {p.hrefReporte && <Link href={p.hrefReporte} className="text-xs underline">Ver el reporte para llevar</Link>}
         </div>
       </CardContent>
     </Card>
