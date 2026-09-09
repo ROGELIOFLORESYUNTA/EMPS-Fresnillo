@@ -14,8 +14,18 @@ import { InfoTip } from "@/components/info-tip";
 import { RecommendationCard } from "@/components/recommendation-card";
 import { DecisionSection, type DecisionTimelineItem } from "@/components/decision-section";
 import { ElegirOpcionButton } from "@/components/elegir-opcion-button";
-import { recommendBestOption, type RecommendationRole } from "@/lib/engine/recommendation";
+import type { RecommendationRole } from "@/lib/engine/recommendation";
+import { recomendacionDelProyecto } from "@/lib/recomendacion-proyecto";
 import { getCurrentWorkspaceId, peekWorkspace } from "@/lib/workspace";
+import { TresRespuestas } from "@/components/tres-respuestas";
+import { CompartirEnlace } from "@/components/compartir-enlace";
+import { ExplicacionDelNumero } from "@/components/explicacion-del-numero";
+import { TarjetasDeOpcion, PorQueImportaLaForma, type TarjetaDeOpcion } from "@/components/tarjetas-de-opcion";
+import { PreguntasDelPatron } from "@/components/preguntas-del-patron";
+import { computeOnTimeRisk, computeMunicipalQuebrarRisk, computeProviderViabilityRatio, computeMaintenanceMonthly, computeChangeRangeByType } from "@/lib/engine/reports-insights";
+import { VEREDICTO_ETIQUETA } from "@/lib/engine/aptitud";
+import { NIVEL_ETIQUETA, type NivelHerramienta } from "@/lib/engine/herramientas";
+import type { PasoDeCalculo } from "@/lib/engine/explicacion";
 
 export default async function ProjectDetailPage({
   params,
@@ -26,8 +36,6 @@ export default async function ProjectDetailPage({
 }) {
   const { id } = await params;
   const sp = await searchParams;
-  const selectedMode = sp.mode ?? "hybrid";
-  const selectedScenario = sp.scenario ?? "probable";
   const project = await prisma.project.findUnique({
     where: { id },
     include: {
@@ -101,12 +109,6 @@ export default async function ProjectDetailPage({
       return (SCENARIO_ORDER[a.scenario] ?? 99) - (SCENARIO_ORDER[b.scenario] ?? 99);
     });
 
-  // Estimación seleccionada por el usuario via searchParams (default: hybrid + probable).
-  const selectedEstimate = latestEstimates.find((e) => e.mode === selectedMode && e.scenario === selectedScenario)
-    ?? latestEstimates.find((e) => e.mode === "hybrid" && e.scenario === "probable")
-    ?? latestEstimates.find((e) => e.scenario === "probable")
-    ?? latestEstimates[0];
-  const selectedTotal = selectedEstimate?.total ?? null;
   const workingCapitalRequired = project.cashflow[0]?.workingCapitalRequired ?? 0;
   const modeLabels = Object.fromEntries(DEVELOPMENT_MODES.map((m) => [m.value, m.label]));
   const scenarioLabels: Record<string, string> = {
@@ -115,15 +117,142 @@ export default async function ProjectDetailPage({
     conservative: "conservador",
   };
 
-  // Análisis comparativo entre modos para detectar el riesgo de cotizar barato y ejecutar caro.
-  // (ej. cotizar barato asumiendo bytecoding pero ejecutar en tradicional -> quiebra)
-  const probableEstimatesByMode = latestEstimates.filter((e) => e.scenario === "probable");
-  const probableTotals = probableEstimatesByMode.map((e) => Number(e.total));
-  const minProbable = probableTotals.length > 0 ? Math.min(...probableTotals) : 0;
-  const maxProbable = probableTotals.length > 0 ? Math.max(...probableTotals) : 0;
-  const rangeMultiplier = minProbable > 0 ? maxProbable / minProbable : 1;
-  const cheapestMode = probableEstimatesByMode.find((e) => Number(e.total) === minProbable);
-  const mostExpensiveMode = probableEstimatesByMode.find((e) => Number(e.total) === maxProbable);
+  // ===== Recomendación "¿cuál opción te conviene?" según el rol del visitante =====
+  // Una sola recomendación para todo el sistema (pantalla y reportes): mismas
+  // estimaciones, misma aptitud por modo para ESTE proyecto, misma brecha.
+  const { recomendacion: recommendation, aptitud } = recomendacionDelProyecto({
+    role: visitorRole,
+    project: {
+      priority: project.priority,
+      targetDate: project.targetDate,
+      estimatedBudget: project.estimatedBudget !== null ? Number(project.estimatedBudget) : null,
+      systemType: project.systemType,
+    },
+    modules: project.modules.map((m) => ({
+      complexity: m.complexity,
+      clarity: m.clarity,
+      criticality: m.criticality,
+      screensCount: m.screensCount,
+      reportsCount: m.reportsCount,
+      catalogsCount: m.catalogsCount,
+      integrationsCount: m.integrationsCount,
+      sensitiveData: m.sensitiveData,
+    })),
+    estimates: latestEstimates.map((e) => ({
+      mode: e.mode,
+      scenario: e.scenario,
+      total: Number(e.total),
+      weeksTotal: e.weeksTotal !== null ? Number(e.weeksTotal) : null,
+      weeksToPrototype: e.weeksToPrototype !== null ? Number(e.weeksToPrototype) : null,
+      riskScore: Number(e.riskScore),
+      riskLevel: e.riskLevel,
+      margin: Number(e.margin),
+    })),
+    team: project.team.map((t) => ({ role: t.role, availabilityPercent: t.availabilityPercent, aiSkill: t.aiSkill })),
+    workingCapitalRequired: Number(workingCapitalRequired),
+  });
+  const brecha = recommendation?.brecha ?? null;
+
+  // ===== Decisión activa + cronología de lo que pasó después =====
+  const allDecisions = await prisma.projectDecision.findMany({
+    where: { projectId: id },
+    orderBy: { createdAt: "desc" },
+  });
+  const activeDecision = allDecisions.find((d) => d.supersededAt === null) ?? null;
+  const supersededCount = allDecisions.filter((d) => d.supersededAt !== null).length;
+
+  // Opción que manda en la pantalla: la elegida; si no hay, la recomendada; si
+  // no, híbrido probable. El selector la cambia (?mode=&scenario=) y con ella
+  // se mueven las cuatro respuestas de arriba y la cadena de cálculo.
+  const selectedMode = sp.mode ?? activeDecision?.mode ?? recommendation?.best.mode ?? "hybrid";
+  const selectedScenario = sp.scenario ?? activeDecision?.scenario ?? recommendation?.best.scenario ?? "probable";
+  const selectedEstimate = latestEstimates.find((e) => e.mode === selectedMode && e.scenario === selectedScenario)
+    ?? latestEstimates.find((e) => e.mode === "hybrid" && e.scenario === "probable")
+    ?? latestEstimates.find((e) => e.scenario === "probable")
+    ?? latestEstimates[0];
+  const selectedTotal = selectedEstimate?.total ?? null;
+
+  let decisionTimeline: DecisionTimelineItem[] = [];
+  let decisionCurrentTotal: number | null = null;
+  if (activeDecision) {
+    const sameOptionNow = latestEstimates.find(
+      (e) => e.mode === activeDecision.mode && e.scenario === activeDecision.scenario,
+    );
+    decisionCurrentTotal = sameOptionNow ? Number(sameOptionNow.total) : null;
+
+    if (project.workspaceId) {
+      const events = await prisma.workspaceActivityLog.findMany({
+        where: {
+          workspaceId: project.workspaceId,
+          createdAt: { gt: activeDecision.createdAt },
+          eventType: {
+            in: [
+              "project_recalculated",
+              "estimate_run",
+              "parameter_overridden",
+              "parameter_override_removed",
+              "change_request_created",
+              "change_decided",
+              "module_updated",
+              "module_created",
+              "team_updated",
+            ],
+          },
+        },
+        orderBy: { createdAt: "asc" },
+        take: 60,
+      });
+      const changesById = new Map(project.changes.map((c) => [c.id, c]));
+      for (const ev of events) {
+        let payload: Record<string, unknown> = {};
+        try {
+          payload = ev.payloadJson ? JSON.parse(ev.payloadJson) : {};
+        } catch {
+          // payload ilegible: se omite el detalle
+        }
+        const isParamEvent = ev.eventType === "parameter_overridden" || ev.eventType === "parameter_override_removed";
+        // Los eventos de parámetros son globales del workspace (no traen proyecto);
+        // el resto solo cuenta si es de ESTE proyecto.
+        if (!isParamEvent && payload.projectId !== id) continue;
+
+        let text: string | null = null;
+        switch (ev.eventType) {
+          case "project_recalculated":
+            text = "Se recalculó el proyecto con los parámetros vigentes (nueva versión de la estimación).";
+            break;
+          case "estimate_run":
+            text = `Se corrió una nueva estimación (${modeLabels[String(payload.mode)] ?? payload.mode}).`;
+            break;
+          case "parameter_overridden":
+            text = `Se editó el parámetro ${String(payload.parameterKey ?? "")} (afecta los próximos recálculos, no las cifras ya guardadas).`;
+            break;
+          case "parameter_override_removed":
+            text = `Se restauró el parámetro ${String(payload.parameterKey ?? "")} a su valor oficial.`;
+            break;
+          case "change_request_created": {
+            const cr = payload.changeRequestId ? changesById.get(String(payload.changeRequestId)) : undefined;
+            const desc = cr?.description ? `: "${cr.description.slice(0, 80)}${cr.description.length > 80 ? "..." : ""}"` : "";
+            text = `Se registró una solicitud de cambio${desc}.`;
+            break;
+          }
+          case "change_decided":
+            text = `Se decidió una solicitud de cambio (${String(payload.decision ?? "")}).`;
+            break;
+          case "module_updated":
+            text = `Se editó el módulo "${String(payload.name ?? "")}" (cambia el esfuerzo en el próximo recálculo).`;
+            break;
+          case "module_created":
+            text = `Se agregó el módulo "${String(payload.name ?? payload.type ?? "")}".`;
+            break;
+          case "team_updated":
+            text = `Se editó al equipo ("${String(payload.name ?? "")}"), cambia el costo en el próximo recálculo.`;
+            break;
+        }
+        if (text) decisionTimeline.push({ date: ev.createdAt, text });
+      }
+      decisionTimeline = decisionTimeline.slice(0, 20);
+    }
+  }
 
   // ===== Recomendación "¿cuál opción te conviene?" según el rol del visitante =====
   const recommendation = recommendBestOption({
@@ -245,6 +374,71 @@ export default async function ProjectDetailPage({
     ? (Number(workingCapitalRequired) / Number(selectedTotal)) * 100
     : 0;
 
+  // ===== Lo que la pantalla contesta primero: cuánto, cuándo, si alcanza, qué se eligió =====
+  const totalSel = selectedTotal != null ? Number(selectedTotal) : null;
+  const semanasSel = selectedEstimate?.weeksTotal != null ? Number(selectedEstimate.weeksTotal) : null;
+  const costoDirectoSel = selectedEstimate ? Number(selectedEstimate.directCost) : 0;
+  const utilidadSel = selectedEstimate ? Math.max(0, Number(selectedEstimate.subtotal) - costoDirectoSel) : 0;
+  const capitalRequerido = Number(workingCapitalRequired);
+  const onTime = computeOnTimeRisk(semanasSel ?? 0, project.targetDate ?? null, new Date());
+  const quebrar = computeMunicipalQuebrarRisk(capitalRequerido, totalSel ?? 0);
+  const viabilidad = computeProviderViabilityRatio(capitalRequerido, utilidadSel);
+  const mantenimiento = computeMaintenanceMonthly(totalSel ?? 0);
+  const rangosCambio = computeChangeRangeByType(semanasSel && semanasSel > 0 ? costoDirectoSel / semanasSel : 0);
+  const esLaElegida = !!activeDecision && activeDecision.mode === selectedMode && activeDecision.scenario === selectedScenario;
+  const esLaRecomendada = !!recommendation && recommendation.best.mode === selectedMode && recommendation.best.scenario === selectedScenario;
+  let pasosExplicacion: PasoDeCalculo[] = [];
+  try {
+    pasosExplicacion = selectedEstimate?.explanationJson ? (JSON.parse(selectedEstimate.explanationJson) as PasoDeCalculo[]) : [];
+  } catch {
+    pasosExplicacion = [];
+  }
+
+  // Herramientas de IA, pericia y costos fijos de cada estimación: quedan en su snapshot.
+  interface SnapshotEstimacion {
+    herramientas?: { asientos: number; usdPorAsiento: number; sobreconsumo: number; tipoCambio: number; mensualMXN: number; descripcion: string; usuariosFinales: number; usuariosFinalesSupuestos: boolean; usdPorUsuarioFinal: number; mensualUsuariosFinalesMXN: number; nivel?: NivelHerramienta; asientosAlNivel?: number; asientosConPlanPropio?: number; usdPlanesPropios?: number };
+    pericia?: { promedio: number; conDato: boolean; factor: number; aplica: boolean };
+    otrosCostosMensuales?: { herramientas: number; administracion: number };
+  }
+  const leerSnapshot = (e: { inputsSnapshot: string } | null | undefined): SnapshotEstimacion | null => {
+    if (!e) return null;
+    try {
+      return JSON.parse(e.inputsSnapshot) as SnapshotEstimacion;
+    } catch {
+      return null;
+    }
+  };
+  const snapSel = leerSnapshot(selectedEstimate);
+  const herramientasSel = snapSel?.herramientas ?? null;
+  const periciaSel = snapSel?.pericia ?? null;
+  const licenciasSel = selectedMode === "low_code" && herramientasSel && herramientasSel.mensualUsuariosFinalesMXN > 0
+    ? { usuarios: herramientasSel.usuariosFinales, usdPorUsuario: herramientasSel.usdPorUsuarioFinal, mensualMXN: herramientasSel.mensualUsuariosFinalesMXN, supuestos: herramientasSel.usuariosFinalesSupuestos }
+    : null;
+
+  // Tres tarjetas en lugar de 15 renglones: la recomendada, la elegida y la más segura.
+  const buscar = (mode?: string | null, scenario?: string | null) =>
+    mode && scenario ? latestEstimates.find((e) => e.mode === mode && e.scenario === scenario) ?? null : null;
+  const tarjeta = (titulo: string, e: (typeof latestEstimates)[number] | null, porque: string): TarjetaDeOpcion => ({
+    titulo,
+    modoLabel: e ? modeLabels[e.mode] ?? e.mode : "",
+    escenarioLabel: e ? scenarioLabels[e.scenario] ?? e.scenario : "",
+    total: e ? Number(e.total) : null,
+    semanas: e?.weeksTotal != null ? Number(e.weeksTotal) : null,
+    riskLevel: e?.riskLevel ?? null,
+    veredicto: e ? VEREDICTO_ETIQUETA[aptitud[e.mode]?.veredicto ?? "apto"] : null,
+    porque: e ? `${porque} Herramientas de IA: ${formatMXN(leerSnapshot(e)?.herramientas?.mensualMXN ?? 0)} al mes, ya en el precio.` : porque,
+    href: e ? `/projects/${id}?mode=${e.mode}&scenario=${e.scenario}` : `/projects/${id}`,
+    activa: !!e && e.mode === selectedMode && e.scenario === selectedScenario,
+  });
+  const estRecomendada = buscar(recommendation?.best.mode, recommendation?.best.scenario);
+  const estElegida = buscar(activeDecision?.mode, activeDecision?.scenario);
+  const estSegura = buscar(activeDecision?.mode ?? recommendation?.best.mode ?? selectedMode, "conservative");
+  const tarjetas: TarjetaDeOpcion[] = [
+    tarjeta("Recomendada para ti", estRecomendada, recommendation?.reasons[0] ?? "Aún no hay recomendación: corre la estimación comparando las 5 formas de hacerlo."),
+    tarjeta("La que elegiste", estElegida, activeDecision ? (activeDecision.note || `Elegida el ${activeDecision.createdAt.toLocaleDateString("es-MX")}.`) : "Cuando elijas una opción con el botón de arriba, aquí aparece."),
+    tarjeta("La más segura", estSegura, "La misma forma de hacerlo con margen por si hay tropiezos: es lo más que podrías llegar a pagar."),
+  ];
+
   // Checklist de progreso
   const tieneDatos = !!project.name && !!project.objective;
   const tieneModulos = project.modules.length > 0;
@@ -282,6 +476,20 @@ export default async function ProjectDetailPage({
         </div>
       )}
 
+      {/* Vino de Cotizar en un minuto: la cifra sale de valores típicos; invitar a afinar */}
+      {project.notes?.startsWith("Creado con Cotizar en un minuto") && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50/60 p-4 text-sm flex flex-wrap items-center justify-between gap-3">
+          <div className="max-w-2xl">
+            <p className="font-medium text-amber-900">Esta cifra sale de valores típicos</p>
+            <p className="text-amber-800">Cada parte se tomó de tamaño mediano y el equipo es un desarrollador. Afina los módulos y el equipo, vuelve a calcular, y el número será el tuyo.</p>
+          </div>
+          <div className="flex gap-2">
+            <Button size="sm" asChild><Link href={`/projects/${id}/modules`}>Afinar módulos</Link></Button>
+            <Button size="sm" variant="outline" asChild><Link href={`/projects/${id}/team`}>Afinar equipo</Link></Button>
+          </div>
+        </div>
+      )}
+
       {/* Encabezado */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
@@ -292,17 +500,44 @@ export default async function ProjectDetailPage({
             <Badge variant="secondary">Prioridad {labelOf(PRIORITY_LABELS, project.priority).toLowerCase()}</Badge>
             <Badge variant="outline">{labelOf(SYSTEM_TYPE_LABELS, project.systemType)}</Badge>
           </div>
+          {activeDecision && (
+            <p className="mt-2 text-sm">
+              <strong>Decisión:</strong> {modeLabels[activeDecision.mode] ?? activeDecision.mode}, escenario {scenarioLabels[activeDecision.scenario] ?? activeDecision.scenario}, {formatMXN(Number(activeDecision.totalAtDecision))}, elegida el {activeDecision.createdAt.toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" })}{activeDecision.decidedByName ? ` por ${activeDecision.decidedByName}` : ""}.
+            </p>
+          )}
         </div>
       </div>
+
+      {/* Lo primero: cuánto, cuándo, si alcanza y qué se eligió */}
+      {selectedEstimate && totalSel != null && (
+        <TresRespuestas
+          total={totalSel}
+          semanas={semanasSel}
+          presupuesto={project.estimatedBudget != null ? Number(project.estimatedBudget) : null}
+          onTime={onTime}
+          modoLabel={modeLabels[selectedEstimate.mode] ?? selectedEstimate.mode}
+          escenarioLabel={scenarioLabels[selectedEstimate.scenario] ?? selectedEstimate.scenario}
+          decision={activeDecision ? {
+            modoLabel: modeLabels[activeDecision.mode] ?? activeDecision.mode,
+            escenarioLabel: scenarioLabels[activeDecision.scenario] ?? activeDecision.scenario,
+            fecha: activeDecision.createdAt,
+            por: activeDecision.decidedByName,
+          } : null}
+          esLaElegida={esLaElegida}
+          esRecomendada={esLaRecomendada}
+          hrefReporte={`/projects/${id}/reports/${visitorRole === "proveedor" ? "provider" : "municipal"}`}
+        />
+      )}
 
       {/* Acerca de este proyecto - campos capturados en /projects/new que
           antes no se mostraban (description, targetDate, estimatedBudget, responsable, objective). */}
       {(project.description || project.objective || project.targetDate || project.estimatedBudget || project.responsible || project.notes) && (
         <Card>
-          <CardHeader>
+          <details>
+          <summary className="cursor-pointer list-none"><CardHeader>
             <CardTitle className="text-base">Acerca de este proyecto</CardTitle>
-            <CardDescription>Lo que se registró cuando se creó el proyecto. Para cambiarlo, editar el proyecto.</CardDescription>
-          </CardHeader>
+            <CardDescription>Objetivo, descripción, responsable y notas. Haz clic para verlos; para cambiarlos, editar el proyecto.</CardDescription>
+          </CardHeader></summary>
           <CardContent className="grid sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
             {project.objective && (
               <div className="sm:col-span-2">
@@ -351,6 +586,7 @@ export default async function ProjectDetailPage({
               </p>
             </div>
           </CardContent>
+        </details>
         </Card>
       )}
 
@@ -444,7 +680,8 @@ export default async function ProjectDetailPage({
 
       {/* Checklist de progreso */}
       <Card>
-        <CardHeader>
+        <details open={pasosCompletos < pasos.length}>
+          <summary className="cursor-pointer list-none"><CardHeader>
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div>
               <CardTitle className="text-base">Progreso del proyecto</CardTitle>
@@ -458,7 +695,7 @@ export default async function ProjectDetailPage({
               </Button>
             )}
           </div>
-        </CardHeader>
+        </CardHeader></summary>
         <CardContent>
           {/* Barra de progreso */}
           <div className="w-full h-2 bg-muted rounded-full overflow-hidden mb-4">
@@ -493,6 +730,7 @@ export default async function ProjectDetailPage({
             ))}
           </ol>
         </CardContent>
+      </details>
       </Card>
 
       {/* Selector de modo + escenario */}
@@ -514,6 +752,15 @@ export default async function ProjectDetailPage({
             </div>
           )}
         </div>
+      )}
+
+      {/* De dónde sale este número: la cadena de cálculo de la opción seleccionada */}
+      {selectedEstimate && (
+        <ExplicacionDelNumero
+          pasos={pasosExplicacion}
+          modoLabel={modeLabels[selectedEstimate.mode] ?? selectedEstimate.mode}
+          escenarioLabel={scenarioLabels[selectedEstimate.scenario] ?? selectedEstimate.scenario}
+        />
       )}
 
       {/* Recomendación según quién usa el sistema */}
@@ -552,7 +799,7 @@ export default async function ProjectDetailPage({
 
       {/* Resumen financiero */}
       {selectedTotal && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
           <SummaryCard
             label="Precio cotizado al cliente"
             value={formatMXN(Number(selectedTotal))}
@@ -561,11 +808,35 @@ export default async function ProjectDetailPage({
               title: "¿De dónde sale este precio?",
               body: (
                 <>
-                  <strong>Costo del equipo</strong> durante los meses reales del modo elegido (sueldo + IMSS + INFONAVIT + ISN/UAZ + prestaciones LFT). Si el proyecto pasa de 6 meses con personal en nómina, suma indemnización LFT por terminación de contrato.
+                  <strong>Costo del proyecto</strong> durante los meses reales de la forma de hacerlo elegida: el equipo con sus cargas (sueldo + IMSS + INFONAVIT + ISN/UAZ + prestaciones LFT), las herramientas de IA de esa forma de hacerlo, otras herramientas y administración. Si el proyecto pasa de 6 meses con personal en nómina, suma indemnización LFT por terminación de contrato.
                   <br /><br />
                   Sobre ese costo se aplica el margen objetivo y el IVA 16%. Cambia el modo arriba: el precio sube o baja porque cada modo tarda distinto.
                   <br /><br />
                   Fuente: motor de cálculo, parámetros 2026 (DOF, CONASAMI, IMSS, SEFIN Zacatecas).
+                </>
+              ),
+            }}
+          />
+          <SummaryCard
+            label="Herramientas de IA, al mes"
+            value={herramientasSel ? formatMXN(herramientasSel.mensualMXN) : "Sin dato"}
+            hint={
+              !herramientasSel
+                ? "Esta estimación se guardó antes de que se cobraran las herramientas. Vuelve a calcular."
+                : herramientasSel.mensualMXN > 0
+                  ? `Por persona, no por equipo: ${herramientasSel.asientosAlNivel ?? herramientasSel.asientos} asiento(s) al nivel ${NIVEL_ETIQUETA[herramientasSel.nivel ?? "tipico"]} × ${herramientasSel.usdPorAsiento} USD${(herramientasSel.asientosConPlanPropio ?? 0) > 0 ? ` más ${herramientasSel.asientosConPlanPropio} con plan propio (${herramientasSel.usdPlanesPropios} USD)` : ""}${herramientasSel.sobreconsumo > 0 ? ` + ${Math.round(herramientasSel.sobreconsumo * 100)}% de sobreconsumo` : ""}, a ${herramientasSel.tipoCambio} por dólar. Ya está dentro del precio; el nivel se cambia en Calcular.${licenciasSel ? ` Después de entregar: ${licenciasSel.usuarios} usuario(s) × ${licenciasSel.usdPorUsuario} USD = ${formatMXN(licenciasSel.mensualMXN)} al mes en licencias, aparte.` : ""}`
+                  : "Esta forma de hacerlo no usa herramientas de IA."
+            }
+            info={{
+              title: "¿Qué herramientas y por qué se cobran?",
+              body: (
+                <>
+                  Cada forma de hacerlo lleva una canasta típica de herramientas por persona técnica (precios de lista consultados el 9 de septiembre de 2026, ver Fuentes)
+                  {herramientasSel?.descripcion ? <>: {herramientasSel.descripcion}</> : null}. Se cobran sin IVA porque es acreditable.
+                  <br /><br />
+                  {periciaSel && periciaSel.aplica
+                    ? <>Pericia del equipo con la IA: <strong>{periciaSel.promedio} de 5</strong>{periciaSel.conDato ? "" : " (no capturada; se asume 3)"}. Se acredita el {Math.round(periciaSel.factor * 100)}% del ahorro nominal de esta forma de hacerlo: un modelo potente en manos de quien no sabe darle instrucciones no ahorra tiempo.</>
+                    : <>La pericia del equipo con la IA no cambia esta forma de hacerlo.</>}
                 </>
               ),
             }}
@@ -591,48 +862,30 @@ export default async function ProjectDetailPage({
               ),
             }}
           />
-          {cheapestMode && mostExpensiveMode && cheapestMode.mode !== mostExpensiveMode.mode ? (
-            rangeMultiplier > 1.5 ? (
-              <Card className="border-orange-300 bg-orange-50/40">
-                <CardContent className="py-4">
-                  <p className="text-xs uppercase tracking-wide text-orange-800 mb-1 font-semibold flex items-center gap-1">
-                    <span>Riesgo de cotización</span>
-                    <InfoTip title="¿Por qué hay riesgo?">
-                      <p>Compara los precios del MISMO proyecto en dos modos de desarrollo distintos. El número de arriba es el factor: el modo más caro vale tantas veces el más barato.</p>
-                      <p>Si es alto (&gt;1.5×), una mala elección de modo cambia mucho el costo. <strong>Cotizar como bytecoding y ejecutar como tradicional puede llevar al proveedor a quiebra</strong>.</p>
-                      <p><strong>Recomendación:</strong> cotiza al cliente con el modo que realmente vas a usar. Si vas a usar bytecoding, presenta evidencia de pruebas de calidad; si vas a usar tradicional, justifícalo.</p>
-                    </InfoTip>
-                  </p>
-                  <p className="text-2xl font-bold text-orange-900">{rangeMultiplier.toFixed(1)}×</p>
-                  <p className="text-xs text-orange-900 mt-1 leading-snug">
-                    <strong>{modeLabels[mostExpensiveMode.mode]}</strong>: {formatMXN(maxProbable)}<br />
-                    <strong>{modeLabels[cheapestMode.mode]}</strong>: {formatMXN(minProbable)}<br />
-                    <span className="text-orange-800">El más caro vale {rangeMultiplier.toFixed(1)} veces el más barato.</span>
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              <SummaryCard
-                label="Comparación entre modos"
-                value={`${rangeMultiplier.toFixed(1)}× brecha`}
-                hint={`${modeLabels[mostExpensiveMode.mode]} (${formatMXN(maxProbable)}) vs ${modeLabels[cheapestMode.mode]} (${formatMXN(minProbable)}). Brecha baja, la elección de modo no es crítica.`}
-                info={{
-                  title: "Comparación entre modos",
-                  body: (
-                    <p>Factor entre el precio probable del modo más caro y el más barato. Cuando es bajo (&lt;1.5×) la elección del modo no es crítica para el costo total.</p>
-                  ),
-                }}
-              />
-            )
+          {brecha ? (
+            <SummaryCard
+              label="La forma de hacerlo es lo que más pesa"
+              value={formatMXN(brecha.diferencia)}
+              hint={`De diferencia entre hacerlo ${(modeLabels[brecha.modoCaro] ?? brecha.modoCaro).toLowerCase()} (${formatMXN(brecha.maximo)}) y ${(modeLabels[brecha.modoBarato] ?? brecha.modoBarato).toLowerCase()} (${formatMXN(brecha.minimo)}), escenario ${scenarioLabels[brecha.escenario] ?? brecha.escenario}. Pide que te digan con cuál te están cotizando.`}
+              info={{
+                title: "¿Por qué tanta diferencia?",
+                body: (
+                  <>
+                    <p>Es el mismo proyecto, con el mismo equipo. Lo único que cambia es la forma de hacerlo: cuánto trabajo se hace a mano, con ayuda de la IA o con herramientas de armado.</p>
+                    <p>Por eso la decisión que más pesa no es el precio, sino con qué forma de hacerlo te están cotizando y si esa forma sirve para tu proyecto. Arriba, en &quot;¿Cuál opción te conviene?&quot;, se dice cuáles sirven para este caso y cuáles no.</p>
+                  </>
+                ),
+              }}
+            />
           ) : (
             <SummaryCard
-              label="Comparación entre modos"
-              value="Solo 1 modo"
-              hint="Aún no hay estimaciones en otros modos para comparar. Corre la estimación en otro modo para ver la brecha de costo y decidir mejor."
+              label="La forma de hacerlo es lo que más pesa"
+              value="Solo 1 forma"
+              hint="Aún no hay estimaciones en otras formas de hacerlo para comparar. Corre la estimación comparando las 5."
               info={{
                 title: "¿Por qué no hay comparación?",
                 body: (
-                  <p>Esta tarjeta compara el precio del mismo proyecto bajo dos modos de desarrollo distintos (ej. tradicional vs bytecoding). Solo hay 1 estimación probable registrada hoy, así que no se puede comparar. Genera una estimación adicional en otro modo para ver la diferencia.</p>
+                  <p>Esta tarjeta compara el precio del mismo proyecto bajo distintas formas de hacerlo. Hoy solo hay una, así que no hay nada que comparar.</p>
                 ),
               }}
             />
@@ -645,6 +898,20 @@ export default async function ProjectDetailPage({
         </div>
       )}
 
+      {/* Las preguntas del reporte, aquí mismo */}
+      {selectedEstimate && totalSel != null && (
+        <PreguntasDelPatron
+          onTime={onTime}
+          capitalRequerido={capitalRequerido}
+          quebrar={quebrar}
+          viabilidad={viabilidad}
+          mantenimiento={mantenimiento}
+          rangosCambio={rangosCambio}
+          esProveedor={visitorRole === "proveedor"}
+          licenciasUsuarioFinal={licenciasSel}
+        />
+      )}
+
       {/* Acciones rápidas */}
       {tieneEstimacion && (
         <div className="flex flex-wrap gap-2">
@@ -654,6 +921,7 @@ export default async function ProjectDetailPage({
           <Button variant="outline" asChild><Link href={`/projects/${id}/estimate`}><Calculator className="w-4 h-4 mr-2" />Recalcular</Link></Button>
           <Button asChild><Link href={`/projects/${id}/reports`}><FileText className="w-4 h-4 mr-2" />Ver reportes</Link></Button>
           <RecalcularButton projectId={id} />
+          {!project.isTemplate && <CompartirEnlace projectId={id} token={project.shareToken} />}
         </div>
       )}
 
@@ -665,9 +933,13 @@ export default async function ProjectDetailPage({
               <TrendingUp className="w-4 h-4" />
               Comparador de modos · Versión {latestVersion}
             </CardTitle>
-            <CardDescription>Última estimación. Compara escenarios optimista, probable y conservador.</CardDescription>
+            <CardDescription>Las tres que importan primero. Abajo, plegadas, las 15 combinaciones (5 formas de hacerlo por 3 escenarios).</CardDescription>
           </CardHeader>
-          <CardContent className="p-0">
+          <CardContent className="space-y-4">
+            <TarjetasDeOpcion tarjetas={tarjetas} />
+            <PorQueImportaLaForma />
+            <details className="rounded-md border">
+              <summary className="cursor-pointer px-4 py-2 text-sm font-medium">Ver las 15 combinaciones</summary>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -711,13 +983,15 @@ export default async function ProjectDetailPage({
                 })}
               </TableBody>
             </Table>
+            </details>
           </CardContent>
         </Card>
       )}
 
       {/* Módulos */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <details>
+          <summary className="cursor-pointer list-none"><CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle className="text-base flex items-center gap-2">
               <Layers className="w-4 h-4" />Qué se va a construir ({project.modules.length} módulos)
@@ -729,7 +1003,7 @@ export default async function ProjectDetailPage({
           <Button size="sm" variant="outline" asChild>
             <Link href={`/projects/${id}/modules`}>Agregar / editar módulos</Link>
           </Button>
-        </CardHeader>
+        </CardHeader></summary>
         <CardContent className="p-0">
           {project.modules.length === 0 ? (
             <p className="p-6 text-sm text-muted-foreground text-center">Aún no hay módulos. Agregar al menos uno antes de estimar.</p>
@@ -833,23 +1107,25 @@ export default async function ProjectDetailPage({
             </Table>
           )}
         </CardContent>
+      </details>
       </Card>
 
       {/* Equipo */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <details>
+          <summary className="cursor-pointer list-none"><CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle className="text-base flex items-center gap-2">
               <Users className="w-4 h-4" />Quién va a trabajar ({project.team.length} {project.team.length === 1 ? "persona" : "personas"})
             </CardTitle>
             <CardDescription className="max-w-3xl mt-1">
-              Personas que el proveedor asigna al proyecto. El salario, tipo de contrato y meses asignados se usan para calcular el costo real con IMSS, ISN, prestaciones y posibles indemnizaciones LFT.
+              Personas que el proveedor asigna al proyecto. El sueldo, el tipo de contrato y la disponibilidad de cada persona se usan para calcular el costo real (IMSS, impuesto sobre nómina, prestaciones y, si aplica, liquidación) y las horas por semana con que se divide el trabajo.
             </CardDescription>
           </div>
           <Button size="sm" variant="outline" asChild>
             <Link href={`/projects/${id}/team`}>Agregar / editar personas</Link>
           </Button>
-        </CardHeader>
+        </CardHeader></summary>
         <CardContent className="p-0">
           {project.team.length === 0 ? (
             <p className="p-6 text-sm text-muted-foreground text-center">Aún no hay perfiles. Agregar al equipo antes de estimar.</p>
@@ -880,12 +1156,14 @@ export default async function ProjectDetailPage({
             </Table>
           )}
         </CardContent>
+      </details>
       </Card>
 
       {/* Cambios */}
       {project.changes.length > 0 && (
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
+          <details>
+          <summary className="cursor-pointer list-none"><CardHeader className="flex flex-row items-center justify-between">
             <div>
               <CardTitle className="text-base flex items-center gap-2">
                 <GitPullRequest className="w-4 h-4" />Solicitudes de cambio ({project.changes.length})
@@ -897,7 +1175,7 @@ export default async function ProjectDetailPage({
             <Button size="sm" variant="outline" asChild>
               <Link href={`/projects/${id}/changes`}>Ver y evaluar cambios</Link>
             </Button>
-          </CardHeader>
+          </CardHeader></summary>
           <CardContent className="p-0">
             <Table>
               <TableHeader>
@@ -924,6 +1202,7 @@ export default async function ProjectDetailPage({
               </TableBody>
             </Table>
           </CardContent>
+        </details>
         </Card>
       )}
 
@@ -949,7 +1228,8 @@ export default async function ProjectDetailPage({
         }
         return (
         <Card>
-          <CardHeader>
+          <details>
+          <summary className="cursor-pointer list-none"><CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <Activity className="w-4 h-4" />Flujo de efectivo · {modeLabels[selectedMode] ?? selectedMode} · escenario {scenarioLabels[selectedScenario] ?? selectedScenario}
               <InfoTip title="¿Por qué este modo y escenario?">
@@ -978,7 +1258,7 @@ export default async function ProjectDetailPage({
                 <>(aparece en el mes <strong>{worstAccumulated.monthNumber}</strong>, marcado abajo). Es el saldo más profundo en negativo: lo que el proveedor debe tener en banco antes de arrancar.</>
               )}
             </CardDescription>
-          </CardHeader>
+          </CardHeader></summary>
           <CardContent className="p-0">
             <Table>
               <TableHeader>
@@ -1078,6 +1358,7 @@ export default async function ProjectDetailPage({
               <p><strong className="text-foreground">Nota:</strong> el saldo acumulado SIEMPRE incluye los meses anteriores. La columna <strong>Operación</strong> muestra la suma explícita (acum mes anterior + saldo de este mes = acum nuevo) para que NO necesites calculadora. Si las cifras no cuadran, hay un error, repórtalo.</p>
             </div>
           </CardContent>
+        </details>
         </Card>
         );
       })()}
@@ -1103,7 +1384,7 @@ function SummaryCard({
           <span>{label}</span>
           {info && <InfoTip title={info.title}>{info.body}</InfoTip>}
         </p>
-        <p className="text-2xl font-bold">{value}</p>
+        <p className="text-[clamp(1rem,1.6vw,1.5rem)] font-bold leading-tight tabular-nums">{value}</p>
         {hint && <p className="text-xs text-muted-foreground mt-1">{hint}</p>}
       </CardContent>
     </Card>

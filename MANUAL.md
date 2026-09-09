@@ -359,3 +359,9 @@ Las estimaciones generadas son preliminares. La determinación oficial fiscal y 
 **Autor:** Rogelio Flores Rodríguez · Ingeniería en Software · UAZ
 
 **Repositorio:** https://github.com/ROGELIOFLORESYUNTA/EMPS-Fresnillo
+
+---
+
+### Nota de septiembre de 2026: herramientas de IA y pericia del equipo
+
+El motor ahora cobra las herramientas de IA de cada forma de hacerlo (asientos por persona tecnica, precios de lista del 09-09-2026 convertidos con el tipo de cambio del DOF, sin IVA porque es acreditable) y acredita el ahorro de la IA segun la pericia del equipo (campo "Que tanto usa la IA para programar", 1 a 5, en Equipo). Las otras herramientas y la administracion capturadas en Calcular tambien entran al costo y al precio, no solo al flujo. Parametros: `AI_TOOL_COSTS`, `AI_SKILL_FACTORS`, `TIPO_CAMBIO_USD_MXN` (ver /fuentes; se actualizan con `npx tsx prisma/update-parameters.ts`). Formulas en `07_motor_formulas.md`, seccion 11.

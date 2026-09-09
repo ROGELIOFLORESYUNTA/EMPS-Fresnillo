@@ -63,7 +63,11 @@ export function computeBasePoints(project: ProjectInput): number {
     return acc + Math.max(40, moduleScore); // mínimo 40h por módulo (5 días-persona — evita absurdos)
   }, 0);
 
-  const externalIntegrations = project.externalIntegrationsCount * 80;  // arquitectura + seguridad
+  // Las integraciones ya se cobraron en cada modulo (x50 arriba). Antes se
+  // sumaban otra vez aqui (x80) con el mismo conteo: cada integracion valia 130 h.
+  // externalIntegrationsCount se conserva solo como senal para el escenario
+  // conservador y el riesgo tecnico.
+  const externalIntegrations = 0;
   const dataMigration = project.dataMigration ? 120 : 0;                 // ETL + validación + rollback + verificación
   const totalReports = project.modules.reduce((a, m) => a + m.reportsCount, 0);
   const reports = totalReports * 12;                                      // dashboard ejecutivo

@@ -11,6 +11,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { api, apiPost, apiPut, apiDelete } from "@/lib/api-client";
 import { formatMXN, CONTRACT_LABELS, CONTRACT_HELP, ROLE_LABELS, LEVEL_LABELS, labelOf } from "@/lib/utils";
 import { Breadcrumbs } from "@/components/breadcrumbs";
+import { periciaDelEquipo, PERICIA_ETIQUETAS } from "@/lib/engine/herramientas";
+import { BarraDePasos } from "@/components/barra-de-pasos";
 import { Plus, Trash2, Pencil, X, Save } from "lucide-react";
 
 interface TeamItem {
@@ -24,6 +26,8 @@ interface TeamItem {
   contractType: string;
   turnoverRisk: number;
   supervisionRequired: number;
+  aiSkill: number;
+  aiToolUsdMonthly: string | number | null;
 }
 
 const FORM_DEFAULT = {
@@ -36,6 +40,8 @@ const FORM_DEFAULT = {
   contractType: "nomina",
   turnoverRisk: 2,
   supervisionRequired: 2,
+  aiSkill: 3,
+  aiToolUsdMonthly: null as number | null,
 };
 
 export default function ProjectTeamPage({ params }: { params: Promise<{ id: string }> }) {
@@ -66,6 +72,8 @@ export default function ProjectTeamPage({ params }: { params: Promise<{ id: stri
       contractType: p.contractType,
       turnoverRisk: p.turnoverRisk,
       supervisionRequired: p.supervisionRequired,
+      aiSkill: p.aiSkill ?? 3,
+      aiToolUsdMonthly: p.aiToolUsdMonthly != null ? Number(p.aiToolUsdMonthly) : null,
     });
   }
 
@@ -105,12 +113,14 @@ export default function ProjectTeamPage({ params }: { params: Promise<{ id: stri
         { label: "Proyecto", href: `/projects/${projectId}` },
         { label: "Equipo" },
       ]} />
+      <BarraDePasos projectId={projectId} actual={3} />
 
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Equipo del proyecto</h1>
           <p className="text-muted-foreground text-sm">
-            {team.length} perfiles · las personas que el PROVEEDOR asigna. Su salario es lo que el proveedor les paga (su costo), no lo que cobra al cliente.
+            {team.length} persona(s) · las que el proveedor pone a trabajar. Su sueldo es lo que el proveedor les paga (su costo), no lo que cobra al cliente.
+            Si eres del Ayuntamiento y no conoces al equipo, deja uno típico (un desarrollador con experiencia) o pide al proveedor su lista y captúrala aquí.
           </p>
         </div>
         {!showForm && (
@@ -131,7 +141,7 @@ export default function ProjectTeamPage({ params }: { params: Promise<{ id: stri
                   <Input value={form.name} required onChange={(e) => setForm({ ...form, name: e.target.value })} />
                 </div>
                 <div className="grid gap-2">
-                  <Label>Rol</Label>
+                  <Label>Puesto</Label>
                   <Select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
                     <option value="lider_tecnico">Líder técnico</option>
                     <option value="dev_senior">Desarrollador senior</option>
@@ -154,7 +164,7 @@ export default function ProjectTeamPage({ params }: { params: Promise<{ id: stri
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="grid gap-2">
-                  <Label>Salario mensual (MXN, bruto)</Label>
+                  <Label>Sueldo mensual (pesos, antes de impuestos)</Label>
                   <Input type="number" min={0} value={form.monthlySalary} placeholder="ej. 30000" onChange={(e) => setForm({ ...form, monthlySalary: +e.target.value })} />
                   <p className="text-xs text-muted-foreground">
                     Lo que el proveedor le paga a esta persona al mes, antes de impuestos.
@@ -162,15 +172,13 @@ export default function ProjectTeamPage({ params }: { params: Promise<{ id: stri
                   </p>
                 </div>
                 <div className="grid gap-2">
-                  <Label>Disponibilidad %</Label>
+                  <Label>Qué parte de su tiempo dedica al proyecto (%)</Label>
                   <Input type="number" min={0} max={100} value={form.availabilityPercent} onChange={(e) => setForm({ ...form, availabilityPercent: +e.target.value })} />
                   <p className="text-xs text-muted-foreground">% de su jornada dedicado a ESTE proyecto. 100 = tiempo completo; 50 = medio tiempo.</p>
                 </div>
-                <div className="grid gap-2">
-                  <Label>Meses asignados</Label>
-                  <Input type="number" min={0} step={0.5} value={form.monthsAssigned} onChange={(e) => setForm({ ...form, monthsAssigned: +e.target.value })} />
-                  <p className="text-xs text-muted-foreground">Cuántos meses va a trabajar en el proyecto. Acepta medios (2.5).</p>
-                </div>
+                {/* Los meses los calcula el sistema a partir de las horas y la
+                    forma de hacerlo; pedirlos aqui era circular y el motor no los
+                    leia. El campo sigue en el esquema. */}
               </div>
               <div className="grid gap-2">
                 <Label>Tipo de contrato</Label>
@@ -182,21 +190,34 @@ export default function ProjectTeamPage({ params }: { params: Promise<{ id: stri
                   <option value="freelance">Freelance</option>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  {CONTRACT_HELP[form.contractType]} Este dato cambia el costo real del perfil (cargas patronales).
+                  {CONTRACT_HELP[form.contractType]} Nómina carga IMSS, INFONAVIT y prestaciones; asimilados solo impuesto sobre nómina; honorarios, RESICO y freelance cuestan lo pactado.
                 </p>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label>Riesgo de que renuncie (1-5)</Label>
-                  <Input type="number" min={1} max={5} value={form.turnoverRisk} onChange={(e) => setForm({ ...form, turnoverRisk: +e.target.value })} />
-                  <p className="text-xs text-muted-foreground">1 = persona estable y comprometida · 5 = muy probable que deje el proyecto a medias. Sube el riesgo de la estimación.</p>
-                </div>
-                <div className="grid gap-2">
-                  <Label>Supervisión que necesita (1-5)</Label>
-                  <Input type="number" min={1} max={5} value={form.supervisionRequired} onChange={(e) => setForm({ ...form, supervisionRequired: +e.target.value })} />
-                  <p className="text-xs text-muted-foreground">1 = trabaja solo sin revisión · 5 = necesita revisión constante de alguien senior (le quita tiempo al líder).</p>
-                </div>
+              <div className="grid gap-2">
+                <Label>¿Qué tan probable es que deje el proyecto a medias? (1-5)</Label>
+                <Input type="number" min={1} max={5} value={form.turnoverRisk} onChange={(e) => setForm({ ...form, turnoverRisk: +e.target.value })} />
+                <p className="text-xs text-muted-foreground">1 = persona estable · 5 = muy probable que se vaya. Entra al factor de riesgo de la estimación: 1 no agrega nada, 5 agrega hasta 30% de horas.</p>
               </div>
+              <div className="grid gap-2">
+                <Label>¿Qué tanto usa la IA para programar? (1-5)</Label>
+                <Select value={String(form.aiSkill)} onChange={(e) => setForm({ ...form, aiSkill: +e.target.value })}>
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <option key={n} value={n}>{n} · {PERICIA_ETIQUETAS[n]}</option>
+                  ))}
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Solo cuenta en las formas de hacerlo con IA (con ayuda de IA, híbrido, casi todo con IA). Los ahorros de la IA están calibrados para el nivel 4;
+                  con menos pericia se acredita solo una parte (1: 35 %, 2: 65 %, 3: 85 %) y con 5 un poco más (115 %). Un modelo muy potente en manos de quien no sabe darle instrucciones no ahorra tiempo.
+                </p>
+              </div>
+              <div className="grid gap-2">
+                <Label>Herramientas de IA que ya paga esta persona (USD al mes, opcional)</Label>
+                <Input type="number" min={0} step={1} value={form.aiToolUsdMonthly ?? ""} placeholder="vacío = el nivel elegido en Calcular" onChange={(e) => setForm({ ...form, aiToolUsdMonthly: e.target.value === "" ? null : +e.target.value })} />
+                <p className="text-xs text-muted-foreground">
+                  En la vida real cada quien trae su plan. Si lo dejas vacío, este asiento cobra el nivel del proyecto (básico, típico o máximo). Si escribes un monto, ese es el que se cobra en todas las formas de hacerlo con IA (0 si no usa ninguna).
+                </p>
+              </div>
+              {/* "Supervision que necesita" se dejo de pedir: el motor nunca lo leyo. Sigue en el esquema. */}
               {error && <p className="text-sm text-destructive">{error}</p>}
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={cancelEdit}>
@@ -225,6 +246,7 @@ export default function ProjectTeamPage({ params }: { params: Promise<{ id: stri
                   <TableHead className="text-right">Salario</TableHead>
                   <TableHead className="text-center">Disponibilidad</TableHead>
                   <TableHead className="text-center">Meses</TableHead>
+                  <TableHead className="text-center">Usa IA (1-5)</TableHead>
                   <TableHead>Contrato</TableHead>
                   <TableHead></TableHead>
                 </TableRow>
@@ -237,6 +259,7 @@ export default function ProjectTeamPage({ params }: { params: Promise<{ id: stri
                     <TableCell className="text-right">{formatMXN(Number(p.monthlySalary))}</TableCell>
                     <TableCell className="text-center">{p.availabilityPercent}%</TableCell>
                     <TableCell className="text-center">{Number(p.monthsAssigned).toFixed(1)}</TableCell>
+                    <TableCell className="text-center">{p.aiSkill ?? 3}{p.aiToolUsdMonthly != null ? <span className="block text-[10px] text-muted-foreground">plan propio {Number(p.aiToolUsdMonthly)} USD</span> : null}</TableCell>
                     <TableCell><Badge variant="outline">{labelOf(CONTRACT_LABELS, p.contractType)}</Badge></TableCell>
                     <TableCell>
                       <div className="flex gap-1">
@@ -255,6 +278,17 @@ export default function ProjectTeamPage({ params }: { params: Promise<{ id: stri
           )}
         </CardContent>
       </Card>
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/30 p-4">
+        <p className="text-sm">
+          <strong>{team.length} persona(s)</strong> · {formatMXN(team.reduce((a, t) => a + Number(t.monthlySalary), 0))} al mes en sueldos; las cuotas del IMSS, INFONAVIT e impuesto sobre nómina se suman al calcular.
+          {team.length > 0 && <> · Pericia con la IA: <strong>{periciaDelEquipo(team).promedio} de 5</strong> (promedio de los puestos técnicos).</>}
+        </p>
+        {team.length > 0 ? (
+          <Button asChild><Link href={`/projects/${projectId}/estimate`}>Continuar: calcular</Link></Button>
+        ) : (
+          <p className="text-xs text-muted-foreground">Agrega al menos a una persona para continuar.</p>
+        )}
+      </div>
     </div>
   );
 }

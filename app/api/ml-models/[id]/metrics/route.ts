@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
+import { isAdmin } from "@/lib/admin-auth";
 
 const metricSchema = z.object({
   datasetSplit: z.enum(["train", "validation", "test", "local"]),
@@ -14,6 +15,9 @@ const metricSchema = z.object({
 });
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  if (!(await isAdmin())) {
+    return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+  }
   const { id } = await params;
   const metrics = await prisma.mLModelMetric.findMany({
     where: { modelId: id },
@@ -23,6 +27,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  if (!(await isAdmin())) {
+    return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+  }
   try {
     const { id } = await params;
     const body = await req.json();

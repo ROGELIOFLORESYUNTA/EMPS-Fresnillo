@@ -27,7 +27,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const inputs = JSON.parse(last.inputsSnapshot) as {
       mode: DevelopmentMode;
       targetMargin: number;
-      weeklyTeamCapacityHours: number;
+      weeklyTeamCapacityHours?: number;
+      capacidadCalculadaDelEquipo?: boolean;
+      capitalDeclaredByProvider?: number;
+      aiToolLevel?: "basico" | "tipico" | "maximo";
       costMode?: "detailed" | "estimated";
       scenarios?: Scenario[];
       cashFlowAssumptions?: {
@@ -45,7 +48,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       projectId: id,
       mode: inputs.mode,
       targetMargin: inputs.targetMargin,
-      weeklyTeamCapacityHours: inputs.weeklyTeamCapacityHours,
+      // Si la capacidad salio del equipo, se vuelve a calcular del equipo actual.
+      weeklyTeamCapacityHours: inputs.capacidadCalculadaDelEquipo ? undefined : inputs.weeklyTeamCapacityHours,
+      capitalDeclaredByProvider: inputs.capitalDeclaredByProvider,
+      aiToolLevel: inputs.aiToolLevel,
       costMode: inputs.costMode,
       scenarios: inputs.scenarios,
       cashFlowAssumptions: inputs.cashFlowAssumptions,

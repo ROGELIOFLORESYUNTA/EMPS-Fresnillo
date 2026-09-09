@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
+import { isAdmin } from "@/lib/admin-auth";
 
 const createSchema = z.object({
   code: z.string().min(2),
@@ -14,6 +15,9 @@ const createSchema = z.object({
 });
 
 export async function GET() {
+  if (!(await isAdmin())) {
+    return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+  }
   const datasets = await prisma.estimationDatasetSource.findMany({
     orderBy: { code: "asc" },
     include: { _count: { select: { imports: true } } },
@@ -22,6 +26,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  if (!(await isAdmin())) {
+    return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+  }
   try {
     const body = await req.json();
     const data = createSchema.parse(body);

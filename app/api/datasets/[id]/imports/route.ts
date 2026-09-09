@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
+import { isAdmin } from "@/lib/admin-auth";
 
 const importSchema = z.object({
   sourceVersion: z.string().optional(),
@@ -13,6 +14,9 @@ const importSchema = z.object({
 });
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  if (!(await isAdmin())) {
+    return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+  }
   const { id } = await params;
   const imports = await prisma.datasetImportBatch.findMany({
     where: { datasetSourceId: id },
@@ -22,6 +26,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  if (!(await isAdmin())) {
+    return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+  }
   try {
     const { id } = await params;
     const body = await req.json();

@@ -7,7 +7,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { formatMXN, formatHours, formatWeeks, RISK_LEVELS, DEVELOPMENT_MODES, SYSTEM_TYPE_LABELS, SCENARIO_LABELS, ROLE_LABELS, LEVEL_LABELS, labelOf } from "@/lib/utils";
 import { ChevronLeft, AlertTriangle, CheckCircle2, Clock, ShieldAlert, Cog, GitBranch, Wrench, CalendarClock, Wallet, TrendingDown, TrendingUp } from "lucide-react";
 import { PrintButton } from "@/components/print-button";
-import { recommendBestOption } from "@/lib/engine/recommendation";
+import { recomendacionDelProyecto } from "@/lib/recomendacion-proyecto";
 import {
   computeProviderOpportunityCost,
   computeProviderViabilityRatio,
@@ -56,6 +56,8 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
   const optimistic = probable ? latest.find((e) => e.scenario === "optimistic" && e.mode === probable.mode) : undefined;
   const conservative = probable ? latest.find((e) => e.scenario === "conservative" && e.mode === probable.mode) : undefined;
   const wcap = Number(project.cashflow[0]?.workingCapitalRequired ?? 0);
+  // Rastro de la decision: el reporte dice que se eligio, cuando y por quien.
+  const decisionActiva = await prisma.projectDecision.findFirst({ where: { projectId: id, supersededAt: null }, orderBy: { createdAt: "desc" } });
   const modeLabels = Object.fromEntries(DEVELOPMENT_MODES.map((m) => [m.value, m.label]));
   const meta = REPORT_LABELS[type];
 
@@ -89,17 +91,29 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
   const maintenance = computeMaintenanceMonthly(totalPrice);
   const changeRanges = computeChangeRangeByType(weeklyTeamRate);
 
-  // Recomendación REAL para el reporte municipal (rol forzado: el lector es el
-  // Ayuntamiento). Antes aquí se mostraba el default hybrid como "recomendado".
-  const municipalRecommendation = recommendBestOption({
-    role: "operador_municipal",
+  // La MISMA recomendación que la pantalla del proyecto (mismo helper, misma
+  // aptitud por modo, misma brecha). El rol lo decide el tipo de reporte: el
+  // municipal se lee desde el Ayuntamiento, el de proveedor desde el proveedor.
+  const rolDelReporte = type === "municipal" ? "operador_municipal" : type === "provider" ? "proveedor" : null;
+  const { recomendacion: municipalRecommendation } = recomendacionDelProyecto({
+    role: rolDelReporte,
     project: {
       priority: project.priority,
       targetDate: project.targetDate,
       estimatedBudget: project.estimatedBudget !== null ? Number(project.estimatedBudget) : null,
       systemType: project.systemType,
     },
-    options: latest.map((e) => ({
+    modules: project.modules.map((m) => ({
+      complexity: m.complexity,
+      clarity: m.clarity,
+      criticality: m.criticality,
+      screensCount: m.screensCount,
+      reportsCount: m.reportsCount,
+      catalogsCount: m.catalogsCount,
+      integrationsCount: m.integrationsCount,
+      sensitiveData: m.sensitiveData,
+    })),
+    estimates: latest.map((e) => ({
       mode: e.mode,
       scenario: e.scenario,
       total: Number(e.total),
@@ -109,6 +123,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
       riskLevel: e.riskLevel,
       margin: Number(e.margin),
     })),
+    team: project.team.map((t) => ({ role: t.role, availabilityPercent: t.availabilityPercent, aiSkill: t.aiSkill })),
     workingCapitalRequired: wcap,
   });
 
@@ -117,8 +132,8 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
     traditional: "El proveedor escribirá todo el código manualmente. Es predecible pero más lento. Pídele evidencia de pruebas y revisión.",
     ai_assisted: "El proveedor usará IA como asistente, no como reemplazo. Buena combinación calidad/velocidad.",
     hybrid: "El proveedor mezclará codificación manual con asistencia generativa. Razonable; pídele que diga qué módulos van con cada técnica.",
-    bytecoding_prompts: "El proveedor usará IA para generar código rápido y entregarte una versión funcional pronto. Implica que el código debe ser revisado y endurecido antes de producción; pregúntale qué pruebas va a correr.",
-    low_code: "El proveedor usará una plataforma visual. Rápido para formularios y catálogos, pero ATENCIÓN al licenciamiento mensual y al riesgo de dependencia de la plataforma. Pídele documentación de cómo migrar si la plataforma sube precio.",
+    bytecoding_prompts: "El proveedor usará IA para generar código rápido y entregarte una versión funcional pronto. Implica que el código debe ser revisado y endurecido antes de producción; pregúntale qué pruebas va a correr. El precio incluye las herramientas de IA (agentes) de su equipo, y el ahorro depende de qué tanto sepan usarlas.",
+    low_code: "El proveedor usará una plataforma visual. Rápido para formularios y catálogos, pero ATENCIÓN: cada persona de la oficina que use el sistema paga licencia mientras lo use (ese costo sigue después de entregar y no está en el precio) y hay dependencia de la plataforma. Pídele documentación de cómo migrar si la plataforma sube precio.",
   };
 
   return (
@@ -137,6 +152,11 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
             <div>
               <h1 className="text-2xl font-bold">{meta.title}</h1>
               <p className="text-muted-foreground">Para: {meta.audience}</p>
+              {decisionActiva && (
+                <p className="text-sm mt-1">
+                  <strong>Decisión:</strong> {modeLabels[decisionActiva.mode] ?? decisionActiva.mode}, escenario {decisionActiva.scenario === "optimistic" ? "optimista" : decisionActiva.scenario === "conservative" ? "conservador" : "probable"}, {formatMXN(Number(decisionActiva.totalAtDecision))}, elegida el {decisionActiva.createdAt.toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" })}{decisionActiva.decidedByName ? ` por ${decisionActiva.decidedByName}` : ""}.
+                </p>
+              )}
             </div>
             <div className="text-right text-sm text-muted-foreground">
               <p>Generado: {new Date().toLocaleDateString("es-MX")}</p>
@@ -265,6 +285,23 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
               <CardContent className="text-sm space-y-2">
                 <p>El proveedor cotizó con el modo <strong>{modeLabels[probable.mode] ?? probable.mode}</strong>.</p>
                 <p className="text-muted-foreground">{MODE_CLIENT_EXPLANATION[probable.mode] ?? "Modo no documentado en lenguaje cliente."}</p>
+                {(() => {
+                  try {
+                    const snap = JSON.parse(probable.inputsSnapshot) as { herramientas?: { asientos: number; nivel?: string; asientosConPlanPropio?: number; mensualMXN: number; usuariosFinales: number; usdPorUsuarioFinal: number; mensualUsuariosFinalesMXN: number; usuariosFinalesSupuestos: boolean }; pericia?: { promedio: number; factor: number; aplica: boolean } };
+                    if (!snap.herramientas) return null;
+                    return (
+                      <>
+                        <p>Herramientas de IA incluidas en el precio: <strong>{formatMXN(snap.herramientas.mensualMXN)} al mes</strong> ({snap.herramientas.asientos} asiento(s), uno por persona técnica, nivel {snap.herramientas.nivel === "basico" ? "básico" : snap.herramientas.nivel === "maximo" ? "máximo" : "típico"}{(snap.herramientas.asientosConPlanPropio ?? 0) > 0 ? `, ${snap.herramientas.asientosConPlanPropio} con plan propio` : ""}).
+                          {snap.pericia?.aplica ? ` Pericia del equipo con la IA ${snap.pericia.promedio} de 5: se acredita ${Math.round(snap.pericia.factor * 100)}% del ahorro nominal.` : ""}</p>
+                        {probable.mode === "low_code" && snap.herramientas.mensualUsuariosFinalesMXN > 0 && (
+                          <p className="text-amber-800">Después de entregar: {snap.herramientas.usuariosFinales} usuario(s) × {snap.herramientas.usdPorUsuarioFinal} USD = <strong>{formatMXN(snap.herramientas.mensualUsuariosFinalesMXN)} al mes</strong> en licencias mientras se use{snap.herramientas.usuariosFinalesSupuestos ? " (usuarios supuestos)" : ""}. No está en el precio.</p>
+                        )}
+                      </>
+                    );
+                  } catch {
+                    return null;
+                  }
+                })()}
               </CardContent>
             </Card>
           )}
@@ -474,7 +511,8 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
             <CardHeader><CardTitle className="text-base">Resumen financiero</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4 text-sm">
-                <ResumenItem label="Costo directo" value={formatMXN(Number(probable.directCost))} />
+                <ResumenItem label="Costo del proyecto" value={formatMXN(Number(probable.directCost))} />
+                <ResumenItem label="De ese costo, herramientas y administración" value={formatMXN(Number(probable.indirectCost))} />
                 <ResumenItem label="Subtotal con margen" value={formatMXN(Number(probable.subtotal))} />
                 <ResumenItem label="IVA trasladado" value={formatMXN(Number(probable.vat))} />
                 <ResumenItem label="Total facturable" value={formatMXN(Number(probable.total))} highlight />
@@ -485,7 +523,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
               </div>
               <div className="rounded-md bg-muted/50 p-3 text-xs space-y-1">
                 <p className="font-semibold text-sm">Cómo se conectan estas cifras (para no sacar la calculadora):</p>
-                <p><strong>Costo directo</strong> {formatMXN(Number(probable.directCost))} (sueldos + IMSS + INFONAVIT + ISN + prestaciones del equipo) ÷ (1 − margen {(Number(probable.margin) * 100).toFixed(0)}%) = <strong>Subtotal</strong> {formatMXN(Number(probable.subtotal))}</p>
+                <p><strong>Costo del proyecto</strong> {formatMXN(Number(probable.directCost))} (equipo con sus cargas + herramientas de IA + otras herramientas + administración, por los meses que dura) ÷ (1 − margen {(Number(probable.margin) * 100).toFixed(0)}%) = <strong>Subtotal</strong> {formatMXN(Number(probable.subtotal))}</p>
                 <p><strong>Subtotal</strong> {formatMXN(Number(probable.subtotal))} + <strong>IVA 16%</strong> {formatMXN(Number(probable.vat))} = <strong>Total facturable</strong> {formatMXN(Number(probable.total))} (esto es lo que se cotiza al cliente)</p>
                 <p><strong>ISR estimado</strong> {formatMXN(Number(probable.isrEstimated))}: impuesto sobre la utilidad que te va a tocar pagar; el IVA no es tuyo, se traslada al SAT.</p>
                 <p><strong>Capital de trabajo</strong> {formatMXN(wcap)}: lo que vas a poner de tu bolsa en el peor mes, antes de que el cliente te alcance con los pagos (ver la tabla mes a mes de abajo).</p>

@@ -93,17 +93,20 @@ async function main() {
   }
 
   // Bloques JSON del motor (mismos que el seed completo)
-  const jsonBlocks: Array<[string, unknown, string]> = [
+  const jsonBlocks: Array<[string, unknown, string, string?]> = [
     ["DEV_MODE_FACTORS", seedData.development_mode_factors, "Coeficientes de distribucion por fase para cada modo."],
     ["DEV_MODE_VELOCITY", seedData.development_mode_velocity, "Velocidad calendario y aceleracion a prototipo por modo."],
     ["SCENARIO_FACTORS", seedData.scenario_factors, "Factores optimista/probable/conservador para escenarios."],
     ["DEFAULT_CARGA_PATRONAL_ESTIMADA", seedData.default_carga_patronal_estimada, "Factor agregado para modo 'estimado'."],
+    ["AI_TOOL_COSTS", seedData.ai_tool_costs, "Costo mensual de herramientas de IA por persona tecnica y por forma de hacerlo, USD sin IVA. Precios consultados el 09-sep-2026; fuentes en el JSON.", "2026-09-09"],
+    ["AI_SKILL_FACTORS", seedData.ai_skill_factors, "Parte de la ganancia nominal de cada modo que se acredita segun la pericia del equipo con la IA (1 a 5).", "2026-09-09"],
   ];
-  for (const [key, data, notes] of jsonBlocks) {
+  for (const [key, data, notes, desde] of jsonBlocks) {
     if (data === undefined) continue;
+    const effectiveFrom = new Date(desde ?? `${year}-01-01`);
     const where = {
       year_country_state_key_effectiveFrom: {
-        year, country, state, key, effectiveFrom: new Date(`${year}-01-01`),
+        year, country, state, key, effectiveFrom,
       },
     };
     const valueStr = JSON.stringify(data);
@@ -115,8 +118,8 @@ async function main() {
         year, country, state, key,
         value: valueStr,
         unit: "json",
-        source: "EMPS Fresnillo internal",
-        effectiveFrom: new Date(`${year}-01-01`),
+        source: desde ? "Investigacion en internet del 09-sep-2026: paginas de precios oficiales y estudios publicados (ver fuentes dentro del valor)" : "EMPS Fresnillo internal",
+        effectiveFrom,
         notes,
       },
     });

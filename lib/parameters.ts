@@ -4,6 +4,14 @@
  */
 import { prisma } from "./db";
 import type { FiscalRates, IMSSRiskClass, DevModeFactors, DevModeVelocity, ScenarioFactors } from "./engine/types";
+import {
+  HERRAMIENTAS_POR_OMISION,
+  PERICIA_POR_OMISION,
+  TIPO_CAMBIO_POR_OMISION,
+  AUMENTO_ANUAL_POR_OMISION,
+  type TablaHerramientas,
+  type FactoresPericia,
+} from "./engine/herramientas";
 
 const DEFAULT_YEAR = Number.parseInt(process.env.DEFAULT_FISCAL_YEAR ?? "2026", 10);
 const DEFAULT_COUNTRY = process.env.DEFAULT_COUNTRY ?? "Mexico";
@@ -186,6 +194,31 @@ export async function loadScenarioFactors(
   return getJson<ScenarioFactors>(rows, "SCENARIO_FACTORS");
 }
 
+/** Herramientas de IA por forma de hacerlo. Con respaldo: una base sin re-sembrar sigue calculando. */
+export async function loadAiToolCosts(
+  year = DEFAULT_YEAR,
+  workspaceId: string | null = null,
+): Promise<TablaHerramientas> {
+  const rows = await loadAllForYear(year, workspaceId);
+  return getJsonOr<TablaHerramientas>(rows, "AI_TOOL_COSTS", HERRAMIENTAS_POR_OMISION);
+}
+
+export async function loadAiSkillFactors(
+  year = DEFAULT_YEAR,
+  workspaceId: string | null = null,
+): Promise<FactoresPericia> {
+  const rows = await loadAllForYear(year, workspaceId);
+  return getJsonOr<FactoresPericia>(rows, "AI_SKILL_FACTORS", PERICIA_POR_OMISION);
+}
+
+export async function loadTipoCambio(
+  year = DEFAULT_YEAR,
+  workspaceId: string | null = null,
+): Promise<number> {
+  const rows = await loadAllForYear(year, workspaceId);
+  return getNumOr(rows, "TIPO_CAMBIO_USD_MXN", TIPO_CAMBIO_POR_OMISION);
+}
+
 export async function loadAllForEstimate(
   year = DEFAULT_YEAR,
   workspaceId: string | null = null,
@@ -197,7 +230,13 @@ export async function loadAllForEstimate(
     loadScenarioFactors(year, workspaceId),
     loadAllForYear(year, workspaceId),
   ]);
-  return { rates, factors, velocity, scenarios, snapshot: raw };
+  // Herramientas de IA, pericia y tipo de cambio salen de las mismas filas (con
+  // override por workspace) y con respaldo si la base aun no los tiene.
+  const aiToolCosts = getJsonOr<TablaHerramientas>(raw, "AI_TOOL_COSTS", HERRAMIENTAS_POR_OMISION);
+  const aiSkillFactors = getJsonOr<FactoresPericia>(raw, "AI_SKILL_FACTORS", PERICIA_POR_OMISION);
+  const tipoCambio = getNumOr(raw, "TIPO_CAMBIO_USD_MXN", TIPO_CAMBIO_POR_OMISION);
+  const aiToolAumentoAnual = getNumOr(raw, "AI_TOOL_AUMENTO_ANUAL", AUMENTO_ANUAL_POR_OMISION);
+  return { rates, factors, velocity, scenarios, snapshot: raw, aiToolCosts, aiSkillFactors, tipoCambio, aiToolAumentoAnual };
 }
 
 /**

@@ -260,3 +260,45 @@ Umbrales sugeridos:
 4. **Validar suma** de coeficientes de modo de desarrollo en cada cálculo.
 5. **Advertir** ante datos incompletos antes de presentar resultado.
 6. **Tests unitarios** obligatorios (RNF-02 + [14_prompt_para_claude.md](14_prompt_para_claude.md)).
+
+## 11. Herramientas de IA y pericia del equipo (septiembre 2026)
+
+Hasta septiembre de 2026 el motor acreditaba que la IA hace mas rapido el trabajo (`effort_efficiency`, `velocity_factor`) sin cobrar las herramientas y sin distinguir si el equipo sabia usarla. Se agregaron dos piezas (`lib/engine/herramientas.ts`, parametros `AI_TOOL_COSTS`, `AI_SKILL_FACTORS`, `TIPO_CAMBIO_USD_MXN`):
+
+**Herramientas por forma de hacerlo** (USD de lista por persona tecnica al mes, sin IVA porque es acreditable; precios consultados el 09-09-2026, fuentes en el seed):
+
+| Modo | USD/persona/mes | Sobreconsumo | Nota |
+|---|---|---|---|
+| traditional | 0 | 0 | sin IA |
+| ai_assisted | 30 | 10 % | Copilot o Cursor mas un asistente |
+| hybrid | 100 | 20 % | Claude Max 5x o Cursor Pro+ mas Copilot |
+| bytecoding_prompts | 250 | 30 % | Claude Max 20x o Cursor Ultra mas consumo de agentes |
+| low_code | 40 | 0 | asiento de constructor; ademas 20 USD por usuario final al mes despues de entregar (no entra al precio, se informa) |
+
+```
+asientos = personas con puesto tecnico (lider_tecnico, dev_senior, dev_junior, tester, disenador, analista); no se prorratea por disponibilidad
+herramientas_mes = asientos * usd_por_persona_mes * (1 + sobreconsumo) * TIPO_CAMBIO_USD_MXN
+costo_proyecto = (nomina_con_cargas + herramientas_mes + otras_herramientas_mes + administracion_mes) * meses_del_modo + liquidacion_LFT
+Estimate.indirectCost = (herramientas_mes + otras_herramientas_mes + administracion_mes) * meses   (parte del costo que no es nomina; ya incluida en directCost)
+flujo: toolsOutflow = herramientas_mes + otras_herramientas_mes; adminOutflow = administracion_mes   (mismo numero que entra al precio)
+```
+
+**Pericia del equipo con la IA** (`TeamProfile.aiSkill`, 1 a 5; promedio ponderado por disponibilidad entre puestos tecnicos; 3 si no hay dato):
+
+```
+f = AI_SKILL_FACTORS[pericia]   (1: 0.35, 2: 0.65, 3: 0.85, 4: 1.00, 5: 1.15; interpolado entre niveles)
+eficiencia_efectiva = 1 - (1 - effort_efficiency) * f      (nunca mayor a 1)
+velocidad_efectiva  = 1 + (velocity_factor - 1) * f
+prototipo_efectivo  = 1 + (prototype_speedup - 1) * f
+```
+
+Aplica a ai_assisted, hybrid y bytecoding_prompts; traditional y low_code no cambian. Aptitud: bytecoding no se recomienda con pericia menor a 2 y va con reservas por debajo de 3; asistido e hibrido van con reservas por debajo de 2. Evidencia: METR 2025 (-19 % con pocas horas en la herramienta), Google 2024 (+21 %), Peng et al. 2023 (+56 %), McKinsey 2023, DORA 2025, Stack Overflow 2025, arXiv 2507.18638.
+
+**Niveles, plan propio y aumento de precios** (lo que pasa en la vida real): cada forma de hacerlo tiene tres niveles de plan por persona (`niveles.basico / tipico / maximo`, por ejemplo casi todo con IA 100 / 250 / 400 USD) que se eligen por proyecto (`aiToolLevel`, default tipico); cada persona puede traer su propio plan (`TeamProfile.aiToolUsdMonthly`) y ese asiento cobra lo suyo:
+
+```
+herramientas_mes = (asientos_al_nivel * usd_del_nivel + suma_planes_propios) * (1 + sobreconsumo) * TIPO_CAMBIO_USD_MXN
+escenario conservador: herramientas_mes * (1 + AI_TOOL_AUMENTO_ANUAL * meses / 12)     (0.15 por omision; optimista y probable sin aumento)
+```
+
+Los precios (`AI_TOOL_COSTS`), la pericia (`AI_SKILL_FACTORS`) y el aumento se editan en /admin/parametros con el editor de tablas (campo por campo, conservando las fuentes) y quedan como override del workspace.

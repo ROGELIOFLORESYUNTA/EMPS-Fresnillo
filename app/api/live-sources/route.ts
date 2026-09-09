@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
+import { isAdmin } from "@/lib/admin-auth";
 
 const createSchema = z.object({
   sourceKey: z.string().min(2),
@@ -16,6 +17,9 @@ const createSchema = z.object({
 });
 
 export async function GET(req: NextRequest) {
+  if (!(await isAdmin())) {
+    return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+  }
   const url = new URL(req.url);
   const category = url.searchParams.get("category");
   const where = category ? { category } : {};
@@ -28,6 +32,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  if (!(await isAdmin())) {
+    return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+  }
   try {
     const body = await req.json();
     const data = createSchema.parse(body);

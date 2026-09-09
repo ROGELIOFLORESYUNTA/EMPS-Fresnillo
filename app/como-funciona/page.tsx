@@ -78,7 +78,7 @@ export default async function HowItWorksPage() {
           <Term term="Capital de trabajo" def="Cantidad de dinero que necesita tener el proveedor antes de cobrar el primer pago. Si excede su capital declarado, hay riesgo financiero." />
           <Term term="UMA 2026" def="$117.31 diarios. Base para multas, IMSS, INFONAVIT. Distinto del salario mínimo." />
           <Term term="ISN Zacatecas" def="3.5% sobre la nómina, más 10% adicional para la UAZ. Carga combinada efectiva: 3.85%." />
-          <Term term="Bytecoding" def="Generación de código mediante instrucciones en lenguaje natural. Prototipo 3.5× más rápido pero requiere mayor revisión y endurecimiento." />
+          <Term term="Bytecoding" def="Generación de código mediante instrucciones en lenguaje natural. Llega al prototipo varias veces más rápido (hasta 7 con un equipo que domina la IA) pero requiere mayor revisión y endurecimiento; el precio incluye las herramientas de IA del equipo." />
           <Term term="Riesgo agregado" def="Suma de cinco riesgos: técnico + requerimientos + fiscal + flujo de efectivo + cambios. Niveles: bajo, medio, alto, crítico." />
           <Term term="Tres escenarios" def="Optimista (×0.85), Probable (×1.00), Conservador (×1.25 a ×1.80 según incertidumbre acumulada)." />
         </div>

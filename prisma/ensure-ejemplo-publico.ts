@@ -51,6 +51,7 @@ async function main() {
       status: "captura",
       notes: "Proyecto piloto que servirá de plantilla para 6 municipios más en Zacatecas. Datos personales: CURP, RFC, dirección.",
       isTemplate: true,
+      expectedUsers: 25, // personas de las oficinas que van a usar el sistema (licencias por usuario final en low-code)
       workspaceId: null,
       modules: {
         create: [
@@ -66,10 +67,10 @@ async function main() {
       },
       team: {
         create: [
-          { name: "Líder técnico: Ana Pérez", role: "lider_tecnico", level: "senior", monthlySalary: 55000, availabilityPercent: 100, monthsAssigned: 6, contractType: "nomina", productivityFactor: 1.0, turnoverRisk: 2, supervisionRequired: 1 },
-          { name: "Dev senior backend: Luis Ortiz", role: "dev_senior", level: "senior", monthlySalary: 42000, availabilityPercent: 100, monthsAssigned: 6, contractType: "nomina", productivityFactor: 1.0, turnoverRisk: 2, supervisionRequired: 2 },
-          { name: "Dev mid frontend: Sofía Reyes", role: "dev_senior", level: "mid", monthlySalary: 30000, availabilityPercent: 100, monthsAssigned: 6, contractType: "nomina", productivityFactor: 1.0, turnoverRisk: 3, supervisionRequired: 3 },
-          { name: "QA + soporte: Carlos Vega", role: "tester", level: "mid", monthlySalary: 26000, availabilityPercent: 80, monthsAssigned: 4, contractType: "nomina", productivityFactor: 1.0, turnoverRisk: 2, supervisionRequired: 2 },
+          { name: "Líder técnico: Ana Pérez", role: "lider_tecnico", level: "senior", monthlySalary: 55000, availabilityPercent: 100, monthsAssigned: 6, contractType: "nomina", productivityFactor: 1.0, turnoverRisk: 2, supervisionRequired: 1, aiSkill: 4 },
+          { name: "Dev senior backend: Luis Ortiz", role: "dev_senior", level: "senior", monthlySalary: 42000, availabilityPercent: 100, monthsAssigned: 6, contractType: "nomina", productivityFactor: 1.0, turnoverRisk: 2, supervisionRequired: 2, aiSkill: 4 },
+          { name: "Dev mid frontend: Sofía Reyes", role: "dev_senior", level: "mid", monthlySalary: 30000, availabilityPercent: 100, monthsAssigned: 6, contractType: "nomina", productivityFactor: 1.0, turnoverRisk: 3, supervisionRequired: 3, aiSkill: 3 },
+          { name: "QA + soporte: Carlos Vega", role: "tester", level: "mid", monthlySalary: 26000, availabilityPercent: 80, monthsAssigned: 4, contractType: "nomina", productivityFactor: 1.0, turnoverRisk: 2, supervisionRequired: 2, aiSkill: 3 },
         ],
       },
     },
@@ -122,7 +123,6 @@ async function main() {
       projectId: project.id,
       mode,
       targetMargin: 0.20,
-      weeklyTeamCapacityHours: 4 * 40, // 4 personas × 40h
       costMode: "detailed",
       capitalDeclaredByProvider: 250000,
       cashFlowAssumptions: {

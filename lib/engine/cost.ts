@@ -256,9 +256,38 @@ export function computeProfileCost(
   input: ProfileCostInput,
   rates: FiscalRates,
 ): ProfileCostBreakdown {
+  const contrato = input.contractType ?? "nomina";
+  if (contrato !== "nomina") return computeProfileCostSinNomina(input, rates, contrato);
   return input.useEstimatedFactor
     ? computeProfileCostEstimated(input, rates)
     : computeProfileCostDetailed(input, rates);
+}
+
+/**
+ * Perfiles que NO son nomina. Antes se les cargaba IMSS, INFONAVIT y
+ * provisiones de ley como si lo fueran, aunque la pantalla decia lo contrario.
+ *   asimilados: sin IMSS ni INFONAVIT ni prestaciones; el ISN si aplica
+ *               (Zacatecas grava las remuneraciones asimiladas).
+ *   honorarios, resico_pf, freelance: solo el pago acordado.
+ */
+export function computeProfileCostSinNomina(
+  input: ProfileCostInput,
+  rates: FiscalRates,
+  contractType: string,
+): ProfileCostBreakdown {
+  const isnTotal = contractType === "asimilados" ? input.monthlySalary * rates.ISN * (1 + rates.UAZ) : 0;
+  const toolsCost = input.toolsCost ?? 0;
+  const adminOverhead = input.adminOverhead ?? 0;
+  return {
+    salary: input.monthlySalary,
+    benefitsProvision: 0,
+    imssPatronal: 0,
+    infonavit: 0,
+    isnTotal,
+    toolsCost,
+    adminOverhead,
+    total: input.monthlySalary + isnTotal + toolsCost + adminOverhead,
+  };
 }
 
 /**

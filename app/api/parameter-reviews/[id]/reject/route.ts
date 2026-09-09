@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
+import { isAdmin } from "@/lib/admin-auth";
 
 const rejectSchema = z.object({
   rejectedBy: z.string().min(2),
@@ -8,6 +9,9 @@ const rejectSchema = z.object({
 });
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  if (!(await isAdmin())) {
+    return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+  }
   try {
     const { id } = await params;
     const body = await req.json();

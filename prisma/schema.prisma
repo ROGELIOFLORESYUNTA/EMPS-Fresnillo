@@ -23,14 +23,14 @@ model User {
   id        String   @id @default(cuid())
   email     String   @unique
   name      String
-  role      String   // admin | estimador | ayuntamiento | proveedor | auditor
+  role      String // admin | estimador | ayuntamiento | proveedor | auditor
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  estimates    Estimate[]
-  changes      ChangeRequest[] @relation("ChangeRequester")
-  audit        AuditLog[]
+  estimates Estimate[]
+  changes   ChangeRequest[] @relation("ChangeRequester")
+  audit     AuditLog[]
 }
 
 // ============================================================
@@ -38,34 +38,37 @@ model User {
 // ============================================================
 
 model Project {
-  id              String    @id @default(cuid())
-  name            String
-  description     String? @db.Text
-  client          String
-  clientType      String    // municipal | paramunicipal | externo
-  municipalArea   String
-  objective       String @db.Text
-  systemType      String    // crud_interno | portal_ciudadano | integrador | etc.
-  responsible     String?
-  estimatedBudget Decimal?
-  targetDate      DateTime?
-  priority        String    @default("media")  // baja|media|alta|critica
-  status          String    @default("borrador") // borrador|captura|estimado|aprobado|en_ejecucion|cerrado|archivado
-  notes           String? @db.Text
+  id                      String    @id @default(cuid())
+  name                    String
+  description             String?
+  client                  String
+  clientType              String // municipal | paramunicipal | externo
+  municipalArea           String
+  objective               String
+  systemType              String // crud_interno | portal_ciudadano | integrador | etc.
+  responsible             String?
+  estimatedBudget         Decimal?
+  clientAvailabilityLevel String? // alta | media | baja: que tan disponible esta el cliente para dudas (entra al riesgo)
+  shareToken              String?   @unique // enlace de solo lectura /r/[token]; null = no compartido
+  expectedUsers           Int? // cuantas personas van a usar el sistema (licencias por usuario final en low-code)
+  targetDate              DateTime?
+  priority                String    @default("media") // baja|media|alta|critica
+  status                  String    @default("borrador") // borrador|captura|estimado|aprobado|en_ejecucion|cerrado|archivado
+  notes                   String?
   // FASE G.I: aislamiento por workspace (cookie). NULL = proyecto template público.
-  workspaceId     String?
-  isTemplate      Boolean   @default(false)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  workspaceId             String?
+  isTemplate              Boolean   @default(false)
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
 
-  modules        Module[]
-  team           TeamProfile[]
-  estimates      Estimate[]
-  changes        ChangeRequest[]
-  cashflow       CashFlowLine[]
-  resources      ProjectResourceCost[]
-  decisions      ProjectDecision[]
-  workspace      Workspace?      @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  modules   Module[]
+  team      TeamProfile[]
+  estimates Estimate[]
+  changes   ChangeRequest[]
+  cashflow  CashFlowLine[]
+  resources ProjectResourceCost[]
+  decisions ProjectDecision[]
+  workspace Workspace?            @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
 
   @@index([status])
   @@index([priority])
@@ -77,25 +80,25 @@ model Project {
 // ============================================================
 
 model Module {
-  id                  String  @id @default(cuid())
-  projectId           String
-  name                String
-  type                String  // catalogo | transaccional | reporte | integracion | flujo
-  description         String? @db.Text
-  complexity          Int     // 1-5
-  clarity             Int     // 1-5
-  criticality         Int     // 1-5
-  screensCount        Int     @default(0)
-  reportsCount        Int     @default(0)
-  catalogsCount       Int     @default(0)
-  integrationsCount   Int     @default(0)
-  rolesPermissions    String? @db.Text
-  sensitiveData       Boolean @default(false)
-  notes               String? @db.Text
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  id                String   @id @default(cuid())
+  projectId         String
+  name              String
+  type              String // catalogo | transaccional | reporte | integracion | flujo
+  description       String?
+  complexity        Int // 1-5
+  clarity           Int // 1-5
+  criticality       Int // 1-5
+  screensCount      Int      @default(0)
+  reportsCount      Int      @default(0)
+  catalogsCount     Int      @default(0)
+  integrationsCount Int      @default(0)
+  rolesPermissions  String?
+  sensitiveData     Boolean  @default(false)
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
-  project Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
   stories UserStory[]
   changes ChangeRequest[]
 
@@ -110,14 +113,14 @@ model UserStory {
   id                 String   @id @default(cuid())
   moduleId           String
   actor              String
-  need               String @db.Text
-  benefit            String @db.Text
-  rules              String? @db.Text
-  dataRequired       String? @db.Text
-  acceptanceCriteria String? @db.Text
-  evidenceExpected   String? @db.Text
-  maturityLevel      Int      @default(1)  // 1-5
-  risks              String? @db.Text
+  need               String
+  benefit            String
+  rules              String?
+  dataRequired       String?
+  acceptanceCriteria String?
+  evidenceExpected   String?
+  maturityLevel      Int      @default(1) // 1-5
+  risks              String?
   priority           String   @default("media")
   status             String   @default("borrador") // borrador|validada|lista|descartada
   createdAt          DateTime @default(now())
@@ -133,20 +136,22 @@ model UserStory {
 // ============================================================
 
 model TeamProfile {
-  id                  String  @id @default(cuid())
+  id                  String   @id @default(cuid())
   projectId           String
   name                String
-  role                String  // lider_tecnico|dev_senior|dev_junior|analista|tester|disenador|soporte|contador|administrativo
-  level               String  @default("mid")  // junior|mid|senior|lead
+  role                String // lider_tecnico|dev_senior|dev_junior|analista|tester|disenador|soporte|contador|administrativo
+  level               String   @default("mid") // junior|mid|senior|lead
   monthlySalary       Decimal
   hourlyCost          Decimal?
-  availabilityPercent Int     @default(100)
+  availabilityPercent Int      @default(100)
   monthsAssigned      Decimal
-  contractType        String  @default("nomina") // asimilados|honorarios|nomina|resico_pf|freelance
-  productivityFactor  Decimal @default(1.0)
-  turnoverRisk        Int     @default(2)  // 1-5
-  supervisionRequired Int     @default(2)  // 1-5
-  notes               String? @db.Text
+  contractType        String   @default("nomina") // asimilados|honorarios|nomina|resico_pf|freelance
+  productivityFactor  Decimal  @default(1.0)
+  turnoverRisk        Int      @default(2) // 1-5
+  supervisionRequired Int      @default(2) // 1-5
+  aiSkill             Int      @default(3) // 1-5: pericia con la IA para programar (1 nunca la ha usado, 4 la usa a diario, 5 arma flujos con agentes)
+  aiToolUsdMonthly    Decimal? // si ya trae su propio plan de IA, USD al mes; null = el nivel del proyecto
+  notes               String?
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
@@ -165,11 +170,11 @@ model Parameter {
   country        String    @default("Mexico")
   state          String?
   key            String
-  value          String? @db.LongText // JSON-serialized for tables; numeric strings for scalars
-  unit           String    // rate | MXN | dias_salario | table | etc.
-  base           String?   // SBC | UMA | SBC_EXCEDENTE_3_UMA | etc.
-  source         String @db.Text
-  sourceUrl      String? @db.Text
+  value          String? // JSON-serialized for tables; numeric strings for scalars
+  unit           String // rate | MXN | dias_salario | table | etc.
+  base           String? // SBC | UMA | SBC_EXCEDENTE_3_UMA | etc.
+  source         String
+  sourceUrl      String?
   effectiveFrom  DateTime
   effectiveUntil DateTime?
   notes          String? @db.Text
@@ -185,47 +190,48 @@ model Parameter {
 // ============================================================
 
 model Estimate {
-  id                  String   @id @default(cuid())
-  projectId           String
-  version             Int      // incrementa por proyecto, no se sobreescribe
-  mode                String   // traditional|assisted|bytecoding|hybrid
-  scenario            String   // optimistic|probable|conservative
+  id        String @id @default(cuid())
+  projectId String
+  version   Int // incrementa por proyecto, no se sobreescribe
+  mode      String // traditional|assisted|bytecoding|hybrid
+  scenario  String // optimistic|probable|conservative
 
   // Esfuerzo por fase (horas)
-  analysisHours       Decimal  @default(0)
-  designHours         Decimal  @default(0)
-  codingHours         Decimal  @default(0)
-  reviewHours         Decimal  @default(0)
-  testingHours        Decimal  @default(0)
-  documentationHours  Decimal  @default(0)
-  deploymentHours     Decimal  @default(0)
-  trainingHours       Decimal  @default(0)
-  supportHours        Decimal  @default(0)
-  hardeningHours      Decimal  @default(0)  // solo bytecoding
+  analysisHours      Decimal @default(0)
+  designHours        Decimal @default(0)
+  codingHours        Decimal @default(0)
+  reviewHours        Decimal @default(0)
+  testingHours       Decimal @default(0)
+  documentationHours Decimal @default(0)
+  deploymentHours    Decimal @default(0)
+  trainingHours      Decimal @default(0)
+  supportHours       Decimal @default(0)
+  hardeningHours     Decimal @default(0) // solo bytecoding
 
   // Tiempo calendario
-  weeksTotal          Decimal?
-  weeksToPrototype    Decimal?
+  weeksTotal       Decimal?
+  weeksToPrototype Decimal?
 
   // Costos
-  directCost          Decimal  @default(0)
-  indirectCost        Decimal  @default(0)
-  subtotal            Decimal  @default(0)
-  vat                 Decimal  @default(0)
-  total               Decimal  @default(0)
-  margin              Decimal  @default(0)
-  isrEstimated        Decimal  @default(0)
+  directCost   Decimal @default(0)
+  indirectCost Decimal @default(0) // parte del costo que son herramientas de IA, otras herramientas y administracion (ya incluida en directCost)
+  subtotal     Decimal @default(0)
+  vat          Decimal @default(0)
+  total        Decimal @default(0)
+  margin       Decimal @default(0)
+  isrEstimated Decimal @default(0)
 
   // Riesgo
-  riskScore           Decimal  @default(0)
-  riskLevel           String   @default("bajo") // bajo|medio|alto|critico
+  riskScore Decimal @default(0)
+  riskLevel String  @default("bajo") // bajo|medio|alto|critico
 
   // Auditoria (RNF-03)
-  parametersSnapshot  String @db.LongText // JSON con copia de los Parameters usados
-  inputsSnapshot      String @db.LongText // JSON con los inputs usados (modules count, complexities, etc.)
+  parametersSnapshot String // JSON con copia de los Parameters usados
+  inputsSnapshot     String // JSON con los inputs usados (modules count, complexities, etc.)
+  explanationJson    String? // cadena de calculo paso a paso ("de donde sale este numero")
 
-  createdById         String?
-  createdAt           DateTime @default(now())
+  createdById String?
+  createdAt   DateTime @default(now())
 
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   createdBy User?   @relation(fields: [createdById], references: [id])
@@ -239,36 +245,36 @@ model Estimate {
 // ============================================================
 
 model ChangeRequest {
-  id                   String   @id @default(cuid())
-  projectId            String
-  moduleId             String?
-  requesterId          String?
-  requesterName        String   // por si no es usuario del sistema
-  description          String @db.Text
-  type                 String   // correccion|garantia|ajuste_menor|mejora|nuevo_alcance|cambio_estructural
-  reason               String? @db.Text
-  timeImpactHours      Decimal?
-  costImpact           Decimal?
-  testingImpact        String? @db.Text
-  trainingImpact       String? @db.Text
-  documentationImpact  String? @db.Text
-  decision             String   @default("pendiente") // pendiente|aceptado|rechazado|incluido|diferido|requires_clarification
-  decidedBy            String?
-  decidedAt            DateTime?
+  id                  String    @id @default(cuid())
+  projectId           String
+  moduleId            String?
+  requesterId         String?
+  requesterName       String // por si no es usuario del sistema
+  description         String
+  type                String // correccion|garantia|ajuste_menor|mejora|nuevo_alcance|cambio_estructural
+  reason              String?
+  timeImpactHours     Decimal?
+  costImpact          Decimal?
+  testingImpact       String?
+  trainingImpact      String?
+  documentationImpact String?
+  decision            String    @default("pendiente") // pendiente|aceptado|rechazado|incluido|diferido|requires_clarification
+  decidedBy           String?
+  decidedAt           DateTime?
   // Addendum v6 — campos opcionales del SDS 28
-  phaseAtRequest       String?
-  clientOriginalText   String?
-  approvedBy           String?
-  approvalDate         DateTime?
-  baselineVersion      Int?
-  isWarrantyClaim      Boolean  @default(false)
-  isScopeIncrease      Boolean  @default(false)
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  phaseAtRequest      String?
+  clientOriginalText  String?
+  approvedBy          String?
+  approvalDate        DateTime?
+  baselineVersion     Int?
+  isWarrantyClaim     Boolean   @default(false)
+  isScopeIncrease     Boolean   @default(false)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
-  project    Project                  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  module     Module?                  @relation(fields: [moduleId], references: [id])
-  requester  User?                    @relation("ChangeRequester", fields: [requesterId], references: [id])
+  project    Project                 @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  module     Module?                 @relation(fields: [moduleId], references: [id])
+  requester  User?                   @relation("ChangeRequester", fields: [requesterId], references: [id])
   assessment ChangeImpactAssessment?
 
   @@index([projectId])
@@ -282,61 +288,61 @@ model ChangeRequest {
 // ============================================================
 
 model ChangeImpactAssessment {
-  id                         String   @id @default(cuid())
-  projectId                  String
-  changeRequestId            String?  @unique
-  estimateId                 String?
+  id              String  @id @default(cuid())
+  projectId       String
+  changeRequestId String? @unique
+  estimateId      String?
 
-  originalText               String @db.Text
-  suggestedType              String
-  finalType                  String?
-  currentPhase               String
-  developmentMode            String
+  originalText    String
+  suggestedType   String
+  finalType       String?
+  currentPhase    String
+  developmentMode String
 
-  clarityLevel               Int
-  urgencyLevel               Int
-  affectedArtifactsJson      String @db.LongText
+  clarityLevel          Int
+  urgencyLevel          Int
+  affectedArtifactsJson String
 
-  artifactPoints             Decimal
-  clarityFactor              Decimal
-  phaseFactor                Decimal
-  modeFactor                 Decimal
-  riskFactor                 Decimal
-  contingencyRate            Decimal
+  artifactPoints  Decimal
+  clarityFactor   Decimal
+  phaseFactor     Decimal
+  modeFactor      Decimal
+  riskFactor      Decimal
+  contingencyRate Decimal
 
-  optimisticHours            Decimal
-  probableHours              Decimal
-  conservativeHours          Decimal
-  estimatedCost              Decimal
-  calendarImpactDays         Int
+  optimisticHours    Decimal
+  probableHours      Decimal
+  conservativeHours  Decimal
+  estimatedCost      Decimal
+  calendarImpactDays Int
 
-  riskLevel                  String
-  requiresNewBaseline        Boolean  @default(false)
-  requiresFormalApproval     Boolean  @default(false)
-  decisionStatus             String   @default("requires_review")
-  decisionComment            String? @db.Text
-  decidedBy                  String?
-  decidedAt                  DateTime?
+  riskLevel              String
+  requiresNewBaseline    Boolean   @default(false)
+  requiresFormalApproval Boolean   @default(false)
+  decisionStatus         String    @default("requires_review")
+  decisionComment        String?
+  decidedBy              String?
+  decidedAt              DateTime?
 
-  explanationJson            String
-  questionsToClarifyJson     String
-  parametersSnapshot         String @db.LongText
+  explanationJson        String
+  questionsToClarifyJson String
+  parametersSnapshot     String
 
   // === Addendum v7 (campos opcionales, migracion aditiva) ===
-  clientPlainExplanationJson String? @db.LongText // explicacion en lenguaje claro para el cliente (JSON array)
-  providerTechnicalJson      String? @db.LongText // desglose tecnico para el proveedor (JSON array)
-  financialBreakdownJson     String? @db.LongText // laborCost, IMSS, ISN, admin, contingencia, IVA, total
-  legalReferencesJson        String? @db.LongText // referencias legales aplicables (LIVA, LFT, LSS, LGPDPPSO)
-  maintenanceImpactMonthly   Decimal?  @default(0)  // costo mensual adicional en mantenimiento
-  minimumChargeApplied       Boolean   @default(false)  // true si el costo subio al minimo
-  freeChangeGuardrailReason  String? @db.Text // por que se bloqueo "incluido sin costo"
-  baselineBeforeVersion      Int?      // version de la linea base antes del cambio
-  baselineAfterVersion       Int?      // version de la nueva linea base si fue creada
-  sourceParameterKeysJson    String? @db.LongText // claves de Parameter usadas (auditoria)
+  clientPlainExplanationJson String? // explicacion en lenguaje claro para el cliente (JSON array)
+  providerTechnicalJson      String? // desglose tecnico para el proveedor (JSON array)
+  financialBreakdownJson     String? // laborCost, IMSS, ISN, admin, contingencia, IVA, total
+  legalReferencesJson        String? // referencias legales aplicables (LIVA, LFT, LSS, LGPDPPSO)
+  maintenanceImpactMonthly   Decimal?  @default(0) // costo mensual adicional en mantenimiento
+  minimumChargeApplied       Boolean   @default(false) // true si el costo subio al minimo
+  freeChangeGuardrailReason  String? // por que se bloqueo "incluido sin costo"
+  baselineBeforeVersion      Int? // version de la linea base antes del cambio
+  baselineAfterVersion       Int? // version de la nueva linea base si fue creada
+  sourceParameterKeysJson    String? // claves de Parameter usadas (auditoria)
   lastParameterReviewAt      DateTime? // ultima vez que se reviso si los parametros cambiaron
 
-  createdAt                  DateTime @default(now())
-  updatedAt                  DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   changeRequest ChangeRequest? @relation(fields: [changeRequestId], references: [id], onDelete: Cascade)
 
@@ -355,15 +361,15 @@ model ChangeImpactAssessment {
 // ============================================================
 
 model CalculationExplanation {
-  id          String   @id @default(cuid())
-  entityType  String   // estimate | change | cashflow | team
-  entityId    String
-  label       String
-  formula     String
-  inputJson   String @db.LongText
-  outputJson  String @db.LongText
-  sourceJson  String @db.LongText
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  entityType String // estimate | change | cashflow | team
+  entityId   String
+  label      String
+  formula    String
+  inputJson  String
+  outputJson String
+  sourceJson String
+  createdAt  DateTime @default(now())
 
   @@index([entityType, entityId])
   @@index([createdAt])
@@ -374,18 +380,18 @@ model CalculationExplanation {
 // ============================================================
 
 model CashFlowLine {
-  id                       String  @id @default(cuid())
-  projectId                String
-  monthNumber              Int
-  income                   Decimal @default(0)
-  payrollOutflow           Decimal @default(0)
-  taxOutflow               Decimal @default(0)
-  toolsOutflow             Decimal @default(0)
-  adminOutflow             Decimal @default(0)
-  netFlow                  Decimal @default(0)
-  accumulatedFlow          Decimal @default(0)
-  workingCapitalRequired   Decimal @default(0)
-  notes                    String? @db.Text
+  id                     String  @id @default(cuid())
+  projectId              String
+  monthNumber            Int
+  income                 Decimal @default(0)
+  payrollOutflow         Decimal @default(0)
+  taxOutflow             Decimal @default(0)
+  toolsOutflow           Decimal @default(0)
+  adminOutflow           Decimal @default(0)
+  netFlow                Decimal @default(0)
+  accumulatedFlow        Decimal @default(0)
+  workingCapitalRequired Decimal @default(0)
+  notes                  String?
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
@@ -398,15 +404,15 @@ model CashFlowLine {
 // ============================================================
 
 model AuditLog {
-  id         String   @id @default(cuid())
-  userId     String?
-  entity     String   // Project | Estimate | Parameter | etc.
-  entityId   String
-  action     String   // create | update | delete | recalculate | export
-  before     String? @db.Text // JSON snapshot before
-  after      String? @db.Text // JSON snapshot after
-  context    String? @db.Text // texto libre describiendo motivo
-  createdAt  DateTime @default(now())
+  id        String   @id @default(cuid())
+  userId    String?
+  entity    String // Project | Estimate | Parameter | etc.
+  entityId  String
+  action    String // create | update | delete | recalculate | export
+  before    String? // JSON snapshot before
+  after     String? // JSON snapshot after
+  context   String? // texto libre describiendo motivo
+  createdAt DateTime @default(now())
 
   user User? @relation(fields: [userId], references: [id])
 
@@ -429,7 +435,7 @@ model AuditLog {
 // 1) Catalogo de modos de desarrollo (5: traditional, ai_assisted, bytecoding_prompts, low_code, hybrid)
 model DevModeCatalog {
   id          String   @id @default(cuid())
-  code        String   @unique  // traditional | ai_assisted | bytecoding_prompts | low_code | hybrid
+  code        String   @unique // traditional | ai_assisted | bytecoding_prompts | low_code | hybrid
   name        String
   description String? @db.Text
   isActive    Boolean  @default(true)
@@ -441,23 +447,23 @@ model DevModeCatalog {
 
 // 2) Factores de productividad por modo y escenario (multiplicadores per-fase del addendum 22)
 model ScenarioProductivityFactor {
-  id                    String   @id @default(cuid())
+  id                    String    @id @default(cuid())
   devModeCode           String
-  scenarioName          String   // optimistic | probable | conservative | benchmark
-  requirementsFactor    Decimal  @default(1.0)
-  codingFactor          Decimal  @default(1.0)
-  reviewFactor          Decimal  @default(1.0)
-  testingFactor         Decimal  @default(1.0)
-  refactorFactor        Decimal  @default(1.0)
-  documentationFactor   Decimal  @default(1.0)
-  maintenanceRiskFactor Decimal  @default(1.0)
-  minMultiplier         Decimal  @default(0.7)
-  maxMultiplier         Decimal  @default(1.5)
-  evidenceLevel         String   @default("expert_assumption")  // expert_assumption | dataset | local_case | published_study
+  scenarioName          String // optimistic | probable | conservative | benchmark
+  requirementsFactor    Decimal   @default(1.0)
+  codingFactor          Decimal   @default(1.0)
+  reviewFactor          Decimal   @default(1.0)
+  testingFactor         Decimal   @default(1.0)
+  refactorFactor        Decimal   @default(1.0)
+  documentationFactor   Decimal   @default(1.0)
+  maintenanceRiskFactor Decimal   @default(1.0)
+  minMultiplier         Decimal   @default(0.7)
+  maxMultiplier         Decimal   @default(1.5)
+  evidenceLevel         String    @default("expert_assumption") // expert_assumption | dataset | local_case | published_study
   sourceNote            String?
   validFrom             DateTime?
   validTo               DateTime?
-  createdAt             DateTime @default(now())
+  createdAt             DateTime  @default(now())
 
   devMode DevModeCatalog @relation(fields: [devModeCode], references: [code])
 
@@ -466,17 +472,17 @@ model ScenarioProductivityFactor {
 
 // 3) Datasets publicos registrados (D1-D7)
 model EstimationDatasetSource {
-  id            String   @id @default(cuid())
-  code          String   @unique  // D1_PUBLIC_JIRA, D2_JOSSE, etc.
+  id            String    @id @default(cuid())
+  code          String    @unique // D1_PUBLIC_JIRA, D2_JOSSE, etc.
   name          String
-  sourceType    String   // zenodo | csv | local_capture
-  sourceUrl     String? @db.Text
+  sourceType    String // zenodo | csv | local_capture
+  sourceUrl     String?
   doi           String?
   license       String?
   description   String? @db.Text
   intendedUse   String?
   lastCheckedAt DateTime?
-  createdAt     DateTime @default(now())
+  createdAt     DateTime  @default(now())
 
   imports DatasetImportBatch[]
 }
@@ -491,11 +497,11 @@ model DatasetImportBatch {
   fileName        String?
   fileHash        String?
   rowsImported    Int      @default(0)
-  status          String   @default("pending")  // pending | running | completed | failed
-  notes           String? @db.Text
+  status          String   @default("pending") // pending | running | completed | failed
+  notes           String?
 
-  source         EstimationDatasetSource @relation(fields: [datasetSourceId], references: [id])
-  externalTasks  ExternalTaskRecord[]
+  source        EstimationDatasetSource @relation(fields: [datasetSourceId], references: [id])
+  externalTasks ExternalTaskRecord[]
 
   @@index([datasetSourceId])
   @@index([status])
@@ -519,7 +525,7 @@ model ExternalTaskRecord {
   changeCount         Int?
   commentCount        Int?
   linkCount           Int?
-  rawJson             String? @db.LongText // JSONB en Postgres
+  rawJson             String? // JSONB en Postgres
   createdAt           DateTime @default(now())
 
   batch DatasetImportBatch? @relation(fields: [importBatchId], references: [id])
@@ -530,34 +536,34 @@ model ExternalTaskRecord {
 
 // 6) Casos de entrenamiento (publicos + locales) para ML
 model TrainingCase {
-  id                       String   @id @default(cuid())
-  sourceKind               String   // public_dataset | local_capture | simulated_case
-  sourceRecordId           String?
-  projectType              String?
-  municipalArea            String?
-  moduleCount              Int?
-  userStoryCount           Int?
-  integrationCount         Int?
-  screenCount              Int?
-  reportCount              Int?
-  sensitiveData            Boolean  @default(false)
-  requirementsClarity      Decimal? // 0-100
-  stakeholderAvailability  Decimal? // 0-100
-  changeVolatility         Decimal? // 0-100
-  teamExperience           Decimal? // 0-100
-  devModeCode              String?
-  estimatedEffortHours     Decimal?
-  actualEffortHours        Decimal?
-  estimatedCostMxn         Decimal?
-  actualCostMxn            Decimal?
-  changeCount              Int?
-  maintenanceMonths        Int?
-  fiscalLaborRiskScore     Decimal?
-  paymentScheme            String?  // ej. "40_40_20"
-  rawFeatures              String? @db.LongText // JSONB en Postgres
-  labelQuality             String   @default("unknown")  // unknown | weak | moderate | strong
-  notes                    String? @db.Text
-  createdAt                DateTime @default(now())
+  id                      String   @id @default(cuid())
+  sourceKind              String // public_dataset | local_capture | simulated_case
+  sourceRecordId          String?
+  projectType             String?
+  municipalArea           String?
+  moduleCount             Int?
+  userStoryCount          Int?
+  integrationCount        Int?
+  screenCount             Int?
+  reportCount             Int?
+  sensitiveData           Boolean  @default(false)
+  requirementsClarity     Decimal? // 0-100
+  stakeholderAvailability Decimal? // 0-100
+  changeVolatility        Decimal? // 0-100
+  teamExperience          Decimal? // 0-100
+  devModeCode             String?
+  estimatedEffortHours    Decimal?
+  actualEffortHours       Decimal?
+  estimatedCostMxn        Decimal?
+  actualCostMxn           Decimal?
+  changeCount             Int?
+  maintenanceMonths       Int?
+  fiscalLaborRiskScore    Decimal?
+  paymentScheme           String? // ej. "40_40_20"
+  rawFeatures             String? // JSONB en Postgres
+  labelQuality            String   @default("unknown") // unknown | weak | moderate | strong
+  notes                   String?
+  createdAt               DateTime @default(now())
 
   devMode DevModeCatalog? @relation(fields: [devModeCode], references: [code])
 
@@ -567,19 +573,19 @@ model TrainingCase {
 
 // 7) Registro de modelos ML
 model MLModelRegistry {
-  id                    String   @id @default(cuid())
-  modelKey              String   @unique  // effort_range_model | change_risk_model | cost_deviation_model | mode_factor_model
-  modelName             String
-  targetVariable        String   // effort_hours | change_risk | cost_deviation | mode_factor
-  algorithm             String @db.Text // linear_regression | random_forest | gradient_boosting | ...
-  trainingDatasetNotes  String?
-  featureSchema         String? @db.LongText // JSONB en Postgres
-  modelArtifactPath     String?
-  status                String   @default("draft")  // draft | trained | approved | retired
-  trainedAt             DateTime?
-  approvedAt            DateTime?
-  approvedBy            String?
-  createdAt             DateTime @default(now())
+  id                   String    @id @default(cuid())
+  modelKey             String    @unique // effort_range_model | change_risk_model | cost_deviation_model | mode_factor_model
+  modelName            String
+  targetVariable       String // effort_hours | change_risk | cost_deviation | mode_factor
+  algorithm            String // linear_regression | random_forest | gradient_boosting | ...
+  trainingDatasetNotes String?
+  featureSchema        String? // JSONB en Postgres
+  modelArtifactPath    String?
+  status               String    @default("draft") // draft | trained | approved | retired
+  trainedAt            DateTime?
+  approvedAt           DateTime?
+  approvedBy           String?
+  createdAt            DateTime  @default(now())
 
   metrics     MLModelMetric[]
   predictions MLPrediction[]
@@ -587,14 +593,14 @@ model MLModelRegistry {
 
 // 8) Metricas de modelos ML (MAE, RMSE, MAPE, coverage, ...)
 model MLModelMetric {
-  id            String   @id @default(cuid())
-  modelId       String
-  datasetSplit  String   // train | validation | test | local
-  metricName    String   // mae | rmse | mape | r2 | range_coverage_pct | error_by_mode
-  metricValue   Decimal
-  sampleSize    Int?
-  notes         String? @db.Text
-  createdAt     DateTime @default(now())
+  id           String   @id @default(cuid())
+  modelId      String
+  datasetSplit String // train | validation | test | local
+  metricName   String // mae | rmse | mape | r2 | range_coverage_pct | error_by_mode
+  metricValue  Decimal
+  sampleSize   Int?
+  notes        String?
+  createdAt    DateTime @default(now())
 
   model MLModelRegistry @relation(fields: [modelId], references: [id], onDelete: Cascade)
 
@@ -603,18 +609,18 @@ model MLModelMetric {
 
 // 9) Predicciones individuales (para auditar uso del modelo)
 model MLPrediction {
-  id                String   @id @default(cuid())
-  modelId           String?
-  projectId         String?
-  estimateId        String?
-  targetVariable    String
-  predictedMin      Decimal?
-  predictedValue    Decimal?
-  predictedMax      Decimal?
-  confidenceScore   Decimal?
-  inputFeatures     String?  // JSONB
-  explanation       String? @db.LongText // JSONB con SHAP/feature_importance si aplica
-  createdAt         DateTime @default(now())
+  id              String   @id @default(cuid())
+  modelId         String?
+  projectId       String?
+  estimateId      String?
+  targetVariable  String
+  predictedMin    Decimal?
+  predictedValue  Decimal?
+  predictedMax    Decimal?
+  confidenceScore Decimal?
+  inputFeatures   String? // JSONB
+  explanation     String? // JSONB con SHAP/feature_importance si aplica
+  createdAt       DateTime @default(now())
 
   model MLModelRegistry? @relation(fields: [modelId], references: [id])
 
@@ -625,39 +631,39 @@ model MLPrediction {
 
 // 10) Registro de fuentes vivas
 model LiveSourceRegistry {
-  id                     String   @id @default(cuid())
-  sourceKey              String   @unique  // sat_isr_articulo_9 | inegi_uma_2026 | ...
-  sourceName             String
-  category               String   // fiscal | fiscal_state | labor | dataset | procurement | research | technology
-  officialPriority       Int      @default(1)  // 1 alta | 2 media | 3 baja
-  sourceUrl              String @db.Text
-  refreshFrequency       String   @default("manual")  // manual | daily | weekly | monthly | quarterly | yearly
-  parserType             String   @default("manual_review")  // manual_review | pdf_manual | csv | json | html
-  requiresHumanApproval  Boolean  @default(true)
-  active                 Boolean  @default(true)
-  notes                  String? @db.Text
-  createdAt              DateTime @default(now())
+  id                    String   @id @default(cuid())
+  sourceKey             String   @unique // sat_isr_articulo_9 | inegi_uma_2026 | ...
+  sourceName            String
+  category              String // fiscal | fiscal_state | labor | dataset | procurement | research | technology
+  officialPriority      Int      @default(1) // 1 alta | 2 media | 3 baja
+  sourceUrl             String
+  refreshFrequency      String   @default("manual") // manual | daily | weekly | monthly | quarterly | yearly
+  parserType            String   @default("manual_review") // manual_review | pdf_manual | csv | json | html
+  requiresHumanApproval Boolean  @default(true)
+  active                Boolean  @default(true)
+  notes                 String?
+  createdAt             DateTime @default(now())
 
   snapshots LiveSourceSnapshot[]
 }
 
 // 11) Snapshots de cada revision de la fuente viva
 model LiveSourceSnapshot {
-  id              String   @id @default(cuid())
-  liveSourceId    String
-  checkedAt       DateTime @default(now())
-  contentHash     String?
-  httpStatus      Int?
-  extractedText   String?
-  extractedJson   String?  // JSONB
-  changeDetected  Boolean  @default(false)
-  reviewStatus    String   @default("pending")  // pending | approved | rejected
-  reviewedBy      String?
-  reviewedAt      DateTime?
-  notes           String? @db.Text
+  id             String    @id @default(cuid())
+  liveSourceId   String
+  checkedAt      DateTime  @default(now())
+  contentHash    String?
+  httpStatus     Int?
+  extractedText  String?
+  extractedJson  String? // JSONB
+  changeDetected Boolean   @default(false)
+  reviewStatus   String    @default("pending") // pending | approved | rejected
+  reviewedBy     String?
+  reviewedAt     DateTime?
+  notes          String?
 
-  liveSource LiveSourceRegistry @relation(fields: [liveSourceId], references: [id], onDelete: Cascade)
-  parameterReviews ParameterChangeReview[]
+  liveSource              LiveSourceRegistry       @relation(fields: [liveSourceId], references: [id], onDelete: Cascade)
+  parameterReviews        ParameterChangeReview[]
   fiscalParameterVersions FiscalParameterVersion[]
 
   @@index([liveSourceId])
@@ -666,21 +672,21 @@ model LiveSourceSnapshot {
 
 // 12) Versiones de parametros fiscales/laborales con vigencia y aprobacion
 model FiscalParameterVersion {
-  id                  String   @id @default(cuid())
-  parameterKey        String   // isr_persona_moral_rate | iva_general_rate | uma_daily_2026 | ...
-  parameterName       String
-  jurisdiction        String   @default("MX")  // MX | MX-ZAC | MX-FRESNILLO | ...
-  valueNumeric        Decimal?
-  valueText           String?
-  unit                String?
-  validFrom           DateTime?
-  validTo             DateTime?
-  sourceSnapshotId    String?
-  approvalStatus      String   @default("pending")  // pending | approved | rejected | superseded
-  approvedBy          String?
-  approvedAt          DateTime?
-  notes               String? @db.Text
-  createdAt           DateTime @default(now())
+  id               String    @id @default(cuid())
+  parameterKey     String // isr_persona_moral_rate | iva_general_rate | uma_daily_2026 | ...
+  parameterName    String
+  jurisdiction     String    @default("MX") // MX | MX-ZAC | MX-FRESNILLO | ...
+  valueNumeric     Decimal?
+  valueText        String?
+  unit             String?
+  validFrom        DateTime?
+  validTo          DateTime?
+  sourceSnapshotId String?
+  approvalStatus   String    @default("pending") // pending | approved | rejected | superseded
+  approvedBy       String?
+  approvedAt       DateTime?
+  notes            String?
+  createdAt        DateTime  @default(now())
 
   sourceSnapshot LiveSourceSnapshot? @relation(fields: [sourceSnapshotId], references: [id])
 
@@ -690,17 +696,17 @@ model FiscalParameterVersion {
 
 // 13) Revision de cambios de parametros
 model ParameterChangeReview {
-  id                  String   @id @default(cuid())
-  sourceSnapshotId    String?
-  parameterKey        String
-  oldValue            String?
-  newValue            String?
-  detectedAt          DateTime @default(now())
-  riskLevel           String   @default("medium")  // low | medium | high | critical
-  decision            String   @default("pending")  // pending | accepted | rejected
-  reviewerNotes       String?
-  decidedBy           String?
-  decidedAt           DateTime?
+  id               String    @id @default(cuid())
+  sourceSnapshotId String?
+  parameterKey     String
+  oldValue         String?
+  newValue         String?
+  detectedAt       DateTime  @default(now())
+  riskLevel        String    @default("medium") // low | medium | high | critical
+  decision         String    @default("pending") // pending | accepted | rejected
+  reviewerNotes    String?
+  decidedBy        String?
+  decidedAt        DateTime?
 
   sourceSnapshot LiveSourceSnapshot? @relation(fields: [sourceSnapshotId], references: [id])
 
@@ -710,7 +716,7 @@ model ParameterChangeReview {
 
 // 14) Resultados reales de proyectos para retroalimentar el modelo
 model ProjectActualResult {
-  id                       String   @id @default(cuid())
+  id                       String    @id @default(cuid())
   projectId                String?
   estimateId               String?
   actualStartDate          DateTime?
@@ -720,9 +726,9 @@ model ProjectActualResult {
   actualChangeCount        Int?
   actualMaintenanceCostMxn Decimal?
   wasCompleted             Boolean?
-  mainDeviationReason      String? @db.Text
-  lessonsLearned           String? @db.Text
-  createdAt                DateTime @default(now())
+  mainDeviationReason      String?
+  lessonsLearned           String?
+  createdAt                DateTime  @default(now())
 
   @@index([projectId])
   @@index([estimateId])
@@ -730,13 +736,13 @@ model ProjectActualResult {
 
 // 15) Feedback cualitativo de revisores
 model EstimationFeedback {
-  id            String   @id @default(cuid())
-  estimateId    String?
-  reviewerRole  String?  // ayuntamiento | proveedor | auditor | estimador | admin
-  feedbackType  String?  // alcance | costo | tiempo | riesgo | parametros | metodologia
-  feedbackText  String @db.Text
-  severity      String   @default("medium")  // low | medium | high
-  createdAt     DateTime @default(now())
+  id           String   @id @default(cuid())
+  estimateId   String?
+  reviewerRole String? // ayuntamiento | proveedor | auditor | estimador | admin
+  feedbackType String? // alcance | costo | tiempo | riesgo | parametros | metodologia
+  feedbackText String
+  severity     String   @default("medium") // low | medium | high
+  createdAt    DateTime @default(now())
 
   @@index([estimateId])
 }
@@ -749,18 +755,18 @@ model EstimationFeedback {
 /// Sus proyectos, parámetros editados y actividad quedan asociados a este workspace.
 /// Sin login: si limpia cookies pierde su workspace. Para producción real, futuro upgrade a NextAuth.
 model Workspace {
-  id            String   @id @default(cuid())
-  displayName   String?  // opcional, capturado por el usuario en /mi-workspace
-  role          String?  // operador_municipal | proveedor | investigador | explorando | otro
-  recoveryCode  String?  @unique // codigo corto (8 chars) para recuperar workspace en otro dispositivo
-  contactEmail  String?  // opcional, lo deja la persona al crear su primer proyecto por si pierde su llave
-  notes         String? @db.Text
-  createdAt     DateTime @default(now())
-  lastSeenAt    DateTime @default(now())
+  id           String   @id @default(cuid())
+  displayName  String? // opcional, capturado por el usuario en /mi-workspace
+  role         String? // operador_municipal | proveedor | investigador | explorando | otro
+  recoveryCode String?  @unique // codigo corto (8 chars) para recuperar workspace en otro dispositivo
+  contactEmail String? // opcional, lo deja la persona al crear su primer proyecto por si pierde su llave
+  notes        String?
+  createdAt    DateTime @default(now())
+  lastSeenAt   DateTime @default(now())
 
-  projects      Project[]
-  overrides     WorkspaceParameterOverride[]
-  activityLog   WorkspaceActivityLog[]
+  projects    Project[]
+  overrides   WorkspaceParameterOverride[]
+  activityLog WorkspaceActivityLog[]
 
   @@index([lastSeenAt])
   @@index([recoveryCode])
@@ -769,17 +775,17 @@ model Workspace {
 /// Override por workspace de un Parameter global. Si existe → el motor lo usa;
 /// si no → cae al global. Permite que cada usuario edite el IVA sin afectar a los demás.
 model WorkspaceParameterOverride {
-  id            String   @id @default(cuid())
-  workspaceId   String
-  parameterKey  String   // ej. "IVA_GENERAL", "CHANGE_PHASE_FACTOR", etc.
-  value         String @db.LongText // JSON serializado igual que Parameter.value
-  unit          String
-  source        String @db.Text @default("Editado en este workspace")
-  notes         String? @db.Text
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String   @id @default(cuid())
+  workspaceId  String
+  parameterKey String // ej. "IVA_GENERAL", "CHANGE_PHASE_FACTOR", etc.
+  value        String // JSON serializado igual que Parameter.value
+  unit         String
+  source       String   @default("Editado en este workspace")
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@unique([workspaceId, parameterKey])
   @@index([workspaceId])
@@ -789,19 +795,19 @@ model WorkspaceParameterOverride {
 /// Manual extendido por cada parámetro. Una sola entrada por clave.
 /// Cargado desde 46_parameter_manuals_2026.json (generado con ChatGPT Pro).
 model ParameterManual {
-  id                  String   @id @default(cuid())
-  parameterKey        String   @unique
-  title               String
-  originSource        String? @db.Text // ej. "Ley del Impuesto al Valor Agregado, Art. 1"
-  originUrl           String? @db.Text // URL a DOF / SAT / INEGI / CONASAMI / SEFIN
-  originDocument      String? @db.Text // ej. "DOF 07-nov-2025 (Reforma Fiscal 2026)"
-  whatItAffects       String? @db.Text // markdown: qué calcula afecta y cómo
-  howToModify         String? @db.Text // markdown: checklist antes de modificar
-  referencesMarkdown  String? @db.Text // markdown: referencias bibliográficas
-  lastReviewedAt      DateTime?
-  sourceTrustLevel    String   @default("oficial") // oficial | secundaria | comunidad
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  id                 String    @id @default(cuid())
+  parameterKey       String    @unique
+  title              String
+  originSource       String? // ej. "Ley del Impuesto al Valor Agregado, Art. 1"
+  originUrl          String? // URL a DOF / SAT / INEGI / CONASAMI / SEFIN
+  originDocument     String? // ej. "DOF 07-nov-2025 (Reforma Fiscal 2026)"
+  whatItAffects      String? // markdown: qué calcula afecta y cómo
+  howToModify        String? // markdown: checklist antes de modificar
+  referencesMarkdown String? // markdown: referencias bibliográficas
+  lastReviewedAt     DateTime?
+  sourceTrustLevel   String    @default("oficial") // oficial | secundaria | comunidad
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   @@index([sourceTrustLevel])
 }
@@ -809,19 +815,18 @@ model ParameterManual {
 /// Bitácora ligera de acciones para análisis científico (panel admin).
 /// Sin PII: solo workspaceId (opaco) + tipo de evento + payload JSON.
 model WorkspaceActivityLog {
-  id            String   @id @default(cuid())
-  workspaceId   String
-  eventType     String   // project_created | estimate_run | parameter_overridden | change_evaluated | report_viewed | etc.
-  payloadJson   String? @db.LongText
-  createdAt     DateTime @default(now())
+  id          String   @id @default(cuid())
+  workspaceId String
+  eventType   String // project_created | estimate_run | parameter_overridden | change_evaluated | report_viewed | etc.
+  payloadJson String?
+  createdAt   DateTime @default(now())
 
-  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([workspaceId])
   @@index([eventType])
   @@index([createdAt])
 }
-
 
 // ============================================================
 // Addendum v8 — Materiales y gastos indirectos asociados a proyecto/cambio
@@ -829,37 +834,37 @@ model WorkspaceActivityLog {
 // ============================================================
 
 model ProjectResourceCost {
-  id                       String   @id @default(cuid())
-  workspaceId              String
-  projectId                String
-  changeRequestId          String?
+  id              String  @id @default(cuid())
+  workspaceId     String
+  projectId       String
+  changeRequestId String?
 
-  category                 String   // equipo_computo|mobiliario|software_licencia|cloud|renta|internet|energia_agua|contabilidad_admin|transporte|consultoria|otros
-  description              String @db.Text
-  acquisitionMode          String   // existing_owned|used_owned|new_with_invoice|new_without_invoice|rented|financed|subscription
+  category        String // equipo_computo|mobiliario|software_licencia|cloud|renta|internet|energia_agua|contabilidad_admin|transporte|consultoria|otros
+  description     String
+  acquisitionMode String // existing_owned|used_owned|new_with_invoice|new_without_invoice|rented|financed|subscription
 
-  quantity                 Decimal  @default(1)
-  unitCostBeforeVat        Decimal  @default(0)
-  vatRate                  Decimal  @default(0.16)
-  vatCreditablePercent     Decimal  @default(1.0)
-  invoiceStatus            String   @default("pending") // cfdi_valid|pending|no_invoice|not_applicable
+  quantity             Decimal @default(1)
+  unitCostBeforeVat    Decimal @default(0)
+  vatRate              Decimal @default(0.16)
+  vatCreditablePercent Decimal @default(1.0)
+  invoiceStatus        String  @default("pending") // cfdi_valid|pending|no_invoice|not_applicable
 
-  allocationPercent        Decimal  @default(1.0)
-  monthsAllocated          Decimal  @default(1.0)
-  cashOutflowMonth         Int      @default(1)
+  allocationPercent Decimal @default(1.0)
+  monthsAllocated   Decimal @default(1.0)
+  cashOutflowMonth  Int     @default(1)
 
-  capitalizedAsset         Boolean  @default(false)
-  depreciationRateAnnual   Decimal?
-  usefulLifeMonths         Int?
+  capitalizedAsset       Boolean  @default(false)
+  depreciationRateAnnual Decimal?
+  usefulLifeMonths       Int?
 
-  isRecurring              Boolean  @default(false)
-  monthlyCostBeforeVat     Decimal?
+  isRecurring          Boolean  @default(false)
+  monthlyCostBeforeVat Decimal?
 
-  notes                    String? @db.Text
-  createdAt                DateTime @default(now())
-  updatedAt                DateTime @updatedAt
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  project                  Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([workspaceId])
   @@index([projectId])
@@ -868,16 +873,16 @@ model ProjectResourceCost {
 }
 
 model ResourceCostExplanation {
-  id                       String   @id @default(cuid())
-  workspaceId              String
-  projectId                String
-  resourceCostId           String?
-  calculationType          String   // project_resource|change_resource|cashflow|vat
-  inputSnapshotJson        String @db.LongText
-  resultSnapshotJson       String @db.LongText
-  legalReferencesJson      String? @db.LongText
-  warningsJson             String? @db.LongText
-  createdAt                DateTime @default(now())
+  id                  String   @id @default(cuid())
+  workspaceId         String
+  projectId           String
+  resourceCostId      String?
+  calculationType     String // project_resource|change_resource|cashflow|vat
+  inputSnapshotJson   String
+  resultSnapshotJson  String
+  legalReferencesJson String?
+  warningsJson        String?
+  createdAt           DateTime @default(now())
 
   @@index([workspaceId])
   @@index([projectId])
@@ -896,19 +901,19 @@ model ResourceCostExplanation {
 model ProjectDecision {
   id                     String    @id @default(cuid())
   projectId              String
-  estimateId             String?   // Estimate exacto (mode+scenario+version) al decidir
-  mode                   String    // traditional|ai_assisted|bytecoding_prompts|low_code|hybrid
-  scenario               String    // optimistic|probable|conservative
+  estimateId             String? // Estimate exacto (mode+scenario+version) al decidir
+  mode                   String // traditional|ai_assisted|bytecoding_prompts|low_code|hybrid
+  scenario               String // optimistic|probable|conservative
   versionAtDecision      Int
   totalAtDecision        Decimal
   weeksAtDecision        Decimal?
-  riskLevelAtDecision    String?   // bajo|medio|alto|critico
-  recommendedMode        String?   // lo que el sistema recomendaba en ese momento
+  riskLevelAtDecision    String? // bajo|medio|alto|critico
+  recommendedMode        String? // lo que el sistema recomendaba en ese momento
   recommendedScenario    String?
-  followedRecommendation Boolean?  // null = no había recomendación visible
+  followedRecommendation Boolean? // null = no había recomendación visible
   decidedByName          String?
-  note                   String? @db.Text
-  workspaceId            String?   // workspace que decidió (auditoría; el aislamiento real es vía Project)
+  note                   String?
+  workspaceId            String? // workspace que decidió (auditoría; el aislamiento real es vía Project)
   createdAt              DateTime  @default(now())
   supersededAt           DateTime? // null = decisión activa
 
@@ -917,4 +922,80 @@ model ProjectDecision {
   @@index([projectId])
   @@index([projectId, supersededAt])
   @@index([workspaceId])
+}
+
+// ============================================================
+// OBSERVATORIO DE COMENTARIOS PUBLICOS
+// ============================================================
+// Testimonios que la gente publica sobre sus proyectos de software.
+//
+// AISLAMIENTO: estas dos tablas NO alimentan la validacion de la hipotesis.
+// Son testimonios sin verificar, con sesgo de autoseleccion (comenta quien
+// tuvo una experiencia extrema). Sirven para saber QUE sale mal, nunca
+// CUANTO. lib/research/dataset-builder.ts no las lee, y hay una prueba
+// automatica que lo verifica.
+
+model ObservatorioFuente {
+  id              String    @id @default(cuid())
+  nombre          String
+  plataforma      String    @default("youtube")
+  tipo            String // busqueda | canal | video
+  consulta        String // terminos de busqueda, o el id del canal/video
+  idioma          String? // es | en | null = cualquiera
+  activa          Boolean   @default(true)
+  ultimaCosechaEl DateTime?
+  notas           String?
+  createdAt       DateTime  @default(now())
+
+  comentarios ObservatorioComentario[]
+
+  @@index([activa])
+}
+
+model ObservatorioComentario {
+  id          String    @id @default(cuid())
+  fuenteId    String
+  plataforma  String    @default("youtube")
+  externalId  String    @unique // id del comentario en la plataforma: evita reanalizar
+  videoId     String?
+  videoTitulo String?
+  canal       String?
+  publicadoEl DateTime?
+  likes       Int?
+  idioma      String?
+
+  // Texto crudo. Las politicas de YouTube obligan a borrarlo o refrescarlo a
+  // los 30 dias; el analisis derivado si se conserva. Lo hace POST /purgar.
+  textoOriginal String?
+  textoExpiraEl DateTime?
+  cosechadoEl   DateTime  @default(now())
+
+  // --- Analisis (una llamada al modelo por comentario) ---
+  analizadoEl            DateTime?
+  modeloUsado            String?
+  esTestimonio           Boolean? // false = no cuenta una experiencia propia; se descarta
+  quienHabla             String? // empleado | freelance | dueno | cliente | desconocido
+  duracionDeclaradaMeses Decimal?
+  montoDeclarado         Decimal?
+  moneda                 String?
+  tamanoEquipo           Int?
+  desviacion             String? // mas | igual | menos | no_dice
+  desviacionPct          Decimal?
+  causasJson             String? // JSON: lista de la taxonomia cerrada
+  confianza              String? // alta | media | baja
+  citasJson              String? // JSON: { campo: "frase textual de donde salio" }
+  razonamiento           String?
+  errorAnalisis          String? // si fallo, por que; para reintentar despues
+
+  // --- Validacion del anotador (acuerdo entre el modelo y una persona) ---
+  revisadoPorHumano Boolean  @default(false)
+  coincideConHumano Boolean?
+  notaRevision      String?
+
+  fuente ObservatorioFuente @relation(fields: [fuenteId], references: [id], onDelete: Cascade)
+
+  @@index([fuenteId])
+  @@index([analizadoEl])
+  @@index([esTestimonio])
+  @@index([textoExpiraEl])
 }

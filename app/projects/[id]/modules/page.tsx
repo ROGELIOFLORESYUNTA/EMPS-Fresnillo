@@ -12,6 +12,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { api, apiPost, apiPut, apiDelete } from "@/lib/api-client";
 import { MODULE_TYPE_LABELS, SCALE_GUIDES, labelOf } from "@/lib/utils";
 import { Breadcrumbs } from "@/components/breadcrumbs";
+import { BarraDePasos } from "@/components/barra-de-pasos";
+import { computeBasePoints } from "@/lib/engine/effort";
 import { Plus, Trash2, Pencil, X, Save, BookOpen } from "lucide-react";
 
 // Qué es cada tipo de módulo, en lenguaje llano (se muestra bajo el select).
@@ -58,6 +60,18 @@ const FORM_DEFAULT = {
 export default function ProjectModulesPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: projectId } = use(params);
   const [modules, setModules] = useState<ModuleItem[]>([]);
+  // Horas base de las piezas capturadas (antes de claridad, riesgo y forma de
+  // hacerlo): para saber si lo capturado es mucho o poco antes de seguir.
+  const horasBase = modules.length
+    ? computeBasePoints({
+        modules: modules.map((m) => ({
+          complexity: m.complexity, clarity: m.clarity, criticality: m.criticality,
+          screensCount: m.screensCount, reportsCount: m.reportsCount, catalogsCount: m.catalogsCount,
+          integrationsCount: m.integrationsCount, sensitiveData: m.sensitiveData,
+        })),
+        dataMigration: false, externalIntegrationsCount: 0, changeProbability: 0, clientUnavailability: 0, turnoverRisk: 0, clientAvailability: 1,
+      })
+    : 0;
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -128,17 +142,18 @@ export default function ProjectModulesPage({ params }: { params: Promise<{ id: s
         { label: "Proyecto", href: `/projects/${projectId}` },
         { label: "Módulos" },
       ]} />
+      <BarraDePasos projectId={projectId} actual={2} />
 
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Módulos del proyecto</h1>
+          <h1 className="text-2xl font-bold">Piezas del sistema (módulos)</h1>
           <p className="text-muted-foreground text-sm">
             {modules.length} módulos · las piezas en que se divide el sistema. De aquí salen las horas estimadas.
           </p>
         </div>
         {!showForm && (
           <Button onClick={() => { setShowForm(true); setEditingId(null); setForm({ ...FORM_DEFAULT }); }}>
-            <Plus className="w-4 h-4 mr-2" />Agregar módulo
+            <Plus className="w-4 h-4 mr-2" />Agregar pieza
           </Button>
         )}
       </div>
@@ -167,17 +182,17 @@ export default function ProjectModulesPage({ params }: { params: Promise<{ id: s
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="grid gap-2">
-                  <Label>Complejidad (1-5)</Label>
+                  <Label>Qué tan complicada es por dentro (complejidad, 1-5)</Label>
                   <Input type="number" min={1} max={5} value={form.complexity} onChange={(e) => setForm({ ...form, complexity: +e.target.value })} />
                   <p className="text-xs text-muted-foreground">{SCALE_GUIDES.complexity}</p>
                 </div>
                 <div className="grid gap-2">
-                  <Label>Claridad del requerimiento (1-5)</Label>
+                  <Label>Qué tan claro está lo que se quiere (claridad, 1-5)</Label>
                   <Input type="number" min={1} max={5} value={form.clarity} onChange={(e) => setForm({ ...form, clarity: +e.target.value })} />
                   <p className="text-xs text-muted-foreground">{SCALE_GUIDES.clarity}</p>
                 </div>
                 <div className="grid gap-2">
-                  <Label>Criticidad (1-5)</Label>
+                  <Label>Qué tan grave es si falla (criticidad, 1-5)</Label>
                   <Input type="number" min={1} max={5} value={form.criticality} onChange={(e) => setForm({ ...form, criticality: +e.target.value })} />
                   <p className="text-xs text-muted-foreground">{SCALE_GUIDES.criticality}</p>
                 </div>
@@ -197,12 +212,12 @@ export default function ProjectModulesPage({ params }: { params: Promise<{ id: s
                   <p className="text-xs text-muted-foreground">Documentos o resúmenes que genera</p>
                 </div>
                 <div className="grid gap-2">
-                  <Label>Catálogos</Label>
+                  <Label>Listas (catálogos: colonias, tipos de trámite)</Label>
                   <Input type="number" min={0} value={form.catalogsCount} onChange={(e) => setForm({ ...form, catalogsCount: +e.target.value })} />
                   <p className="text-xs text-muted-foreground">Listas que administra (tarifas, áreas...)</p>
                 </div>
                 <div className="grid gap-2">
-                  <Label>Integraciones</Label>
+                  <Label>Conexiones con otros sistemas (integraciones)</Label>
                   <Input type="number" min={0} value={form.integrationsCount} onChange={(e) => setForm({ ...form, integrationsCount: +e.target.value })} />
                   <p className="text-xs text-muted-foreground">Conexiones con OTROS sistemas</p>
                 </div>
@@ -210,7 +225,7 @@ export default function ProjectModulesPage({ params }: { params: Promise<{ id: s
               <div className="flex items-start gap-2">
                 <input type="checkbox" id="sensitive" className="mt-1" checked={form.sensitiveData} onChange={(e) => setForm({ ...form, sensitiveData: e.target.checked })} />
                 <div>
-                  <Label htmlFor="sensitive">¿Maneja datos personales o sensibles?</Label>
+                  <Label htmlFor="sensitive">¿Maneja datos personales (CURP, RFC, domicilio)?</Label>
                   <p className="text-xs text-muted-foreground">CURP, domicilios, datos fiscales o de salud. Marcar sube las horas (protección de datos obligatoria por ley).</p>
                 </div>
               </div>
@@ -250,8 +265,8 @@ export default function ProjectModulesPage({ params }: { params: Promise<{ id: s
                   <TableHead className="text-center">Criticidad</TableHead>
                   <TableHead className="text-center">Pantallas</TableHead>
                   <TableHead className="text-center">Reportes</TableHead>
-                  <TableHead className="text-center">Integraciones</TableHead>
-                  <TableHead>Sensibles</TableHead>
+                  <TableHead className="text-center">Conexiones</TableHead>
+                  <TableHead>Datos personales</TableHead>
                   <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
@@ -289,6 +304,16 @@ export default function ProjectModulesPage({ params }: { params: Promise<{ id: s
           )}
         </CardContent>
       </Card>
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/30 p-4">
+        <p className="text-sm">
+          <strong>{modules.length} pieza(s)</strong> · aprox. {Math.round(horasBase).toLocaleString("es-MX")} horas de trabajo base, antes de ajustar por claridad, riesgo y forma de hacerlo.
+        </p>
+        {modules.length > 0 ? (
+          <Button asChild><Link href={`/projects/${projectId}/team`}>Continuar: el equipo</Link></Button>
+        ) : (
+          <p className="text-xs text-muted-foreground">Agrega al menos una pieza para continuar.</p>
+        )}
+      </div>
     </div>
   );
 }

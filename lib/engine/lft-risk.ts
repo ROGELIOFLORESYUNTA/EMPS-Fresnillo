@@ -85,10 +85,12 @@ export function computeLFTRisk(input: LFTRiskInput): LFTRiskResult {
     const indemnizacionConstitucional = dailySalary * INDEMNIZACION_DIAS_BASE;
     const indemnizacionAntiguedad = dailySalary * INDEMNIZACION_DIAS_POR_ANIO * yearsOfTenure;
     const primaAntiguedad = dailySalary * PRIMA_ANTIGUEDAD_DIAS_POR_ANIO * yearsOfTenure;
-    // Aguinaldo proporcional: 15 días × meses_trabajados / 12
-    const aguinaldoProporcional = dailySalary * 15 * (input.realMonthsOfProject / 12);
-    // Vacaciones proporcionales: 12 días × año × prima 25%
-    const vacacionesProporcionales = dailySalary * 12 * yearsOfTenure * 1.25;
+    // Aguinaldo y prima vacacional proporcionales YA se provisionan mes con mes
+    // en el costo del equipo (cost.ts, factor de integracion). Cobrarlos otra
+    // vez aqui era duplicar. Y los dias de vacaciones no son costo extra (LFT
+    // Art. 76): se pagan como salario normal. Quedan en 0 y solo informativos.
+    const aguinaldoProporcional = 0;
+    const vacacionesProporcionales = 0;
 
     const total =
       indemnizacionConstitucional +

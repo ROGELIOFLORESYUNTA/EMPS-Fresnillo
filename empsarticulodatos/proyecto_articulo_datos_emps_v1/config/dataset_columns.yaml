@@ -1,0 +1,13 @@
+# Configuración opcional.
+# Si la detección automática no reconoce columnas, escribir aquí los nombres exactos.
+josse:
+  actual_effort: null
+  expert_estimate: null
+  title: null
+  description: null
+  issue_type: null
+  project: null
+seera:
+  effort: null
+  numeric_predictors: []
+  categorical_predictors: []

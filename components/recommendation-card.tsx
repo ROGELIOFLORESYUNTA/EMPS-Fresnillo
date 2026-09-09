@@ -45,7 +45,8 @@ export function RecommendationCard({
           ¿Cuál opción te conviene?
           <InfoTip title="¿Cómo se elige?">
             El sistema compara las opciones ya calculadas de este proyecto con reglas fijas (no adivina): descarta las de
-            riesgo crítico y pondera precio, riesgo y tiempo según quién eres. Abajo están las razones con las cifras
+            riesgo crítico y las formas de hacerlo que no sirven para este proyecto (por sus integraciones, datos
+            personales, criticidad o claridad), y pondera precio, riesgo y tiempo según quién eres. Abajo están las razones con las cifras
             reales. La decisión final siempre es tuya.
           </InfoTip>
         </CardTitle>
@@ -71,6 +72,17 @@ export function RecommendationCard({
               <p key={i} className="text-xs text-amber-950 flex gap-1.5">
                 <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0 text-amber-600" />
                 <span>{w}</span>
+              </p>
+            ))}
+          </div>
+        )}
+
+        {r.excluidos.length > 0 && (
+          <div className="rounded-md border bg-muted/40 p-3 space-y-1">
+            <p className="text-xs font-medium">Descartadas para este proyecto, aunque salgan más baratas:</p>
+            {r.excluidos.map((x) => (
+              <p key={x.mode} className="text-xs text-muted-foreground">
+                <strong>{modeLabels[x.mode] ?? x.mode}</strong> ({formatMXN(x.total)}): {x.razones[0]}
               </p>
             ))}
           </div>

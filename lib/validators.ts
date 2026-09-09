@@ -10,6 +10,7 @@ export const projectCreateSchema = z.object({
   systemType: z.string().min(2),
   responsible: z.string().optional(),
   estimatedBudget: z.number().nullable().optional(),
+  expectedUsers: z.number().int().min(1).max(100000).nullable().optional(),
   targetDate: z.string().datetime().optional().nullable(),
   priority: z.enum(["baja", "media", "alta", "critica"]).default("media"),
   notes: z.string().optional(),
@@ -58,6 +59,10 @@ export const teamProfileCreateSchema = z.object({
   monthsAssigned: z.number().min(0).default(1),
   contractType: z.enum(["asimilados", "honorarios", "nomina", "resico_pf", "freelance"]).default("nomina"),
   productivityFactor: z.number().min(0).max(2).default(1.0),
+  // Pericia con la IA para programar (1 nunca la ha usado ... 5 arma flujos con agentes).
+  aiSkill: z.number().int().min(1).max(5).default(3),
+  // Si ya trae su propio plan de IA: USD al mes; null = el nivel del proyecto.
+  aiToolUsdMonthly: z.number().min(0).max(100000).nullable().optional(),
   turnoverRisk: z.number().int().min(1).max(5).default(2),
   supervisionRequired: z.number().int().min(1).max(5).default(2),
   notes: z.string().optional(),
@@ -67,7 +72,8 @@ export const estimateRequestSchema = z.object({
   mode: z.enum(["traditional", "ai_assisted", "bytecoding_prompts", "low_code", "hybrid"]),
   scenarios: z.array(z.enum(["optimistic", "probable", "conservative"])).optional(),
   targetMargin: z.number().min(0).max(0.99).default(0.20),
-  weeklyTeamCapacityHours: z.number().min(1).default(80),
+  // Si no viene, el motor la calcula del equipo (disponibilidad x 40 h por persona).
+  weeklyTeamCapacityHours: z.number().min(1).optional(),
   costMode: z.enum(["detailed", "estimated"]).default("detailed"),
   cashFlowAssumptions: z
     .object({
@@ -79,6 +85,56 @@ export const estimateRequestSchema = z.object({
     })
     .optional(),
   capitalDeclaredByProvider: z.number().min(0).optional(),
+  // Nivel de herramientas de IA por persona: básico, típico o máximo.
+  aiToolLevel: z.enum(["basico", "tipico", "maximo"]).default("tipico"),
+});
+
+// Integración chatbot ROSBECLOUD (POST /api/chatbot-quote): payload que el
+// backend del chatbot manda para cotizar. Server-to-server con X-API-Key.
+export const chatbotQuoteSchema = z.object({
+  projectName: z.string().trim().min(2).max(200),
+  description: z.string().trim().max(4000).optional(),
+  mode: z.string().trim().min(2).default("hybrid"),
+  contact: z
+    .object({
+      name: z.string().trim().max(160).optional(),
+      email: z.string().trim().max(200).optional(),
+      company: z.string().trim().max(200).optional(),
+    })
+    .optional(),
+  modules: z
+    .array(
+      z.object({
+        name: z.string().trim().min(2).max(200),
+        complexity: z.number().int().min(1).max(5).default(3),
+        clarity: z.number().int().min(1).max(5).default(3),
+        criticality: z.number().int().min(1).max(5).default(3),
+        screensCount: z.number().int().min(0).max(200).default(1),
+        reportsCount: z.number().int().min(0).max(200).default(0),
+        integrationsCount: z.number().int().min(0).max(50).default(0),
+        sensitiveData: z.boolean().default(false),
+      }),
+    )
+    .min(1)
+    .max(30),
+  team: z
+    .array(
+      z.object({
+        role: z.string().trim().min(2).max(80),
+        monthlySalary: z.number().min(0).max(1_000_000),
+      }),
+    )
+    .max(10)
+    .optional(),
+});
+
+export const projectDecisionCreateSchema = z.object({
+  mode: z.enum(["traditional", "ai_assisted", "bytecoding_prompts", "low_code", "hybrid"]),
+  scenario: z.enum(["optimistic", "probable", "conservative"]),
+  decidedByName: z.string().trim().max(120).optional(),
+  note: z.string().trim().max(2000).optional(),
+  recommendedMode: z.string().optional(),
+  recommendedScenario: z.string().optional(),
 });
 
 // Integración chatbot ROSBECLOUD (POST /api/chatbot-quote): payload que el

@@ -1,0 +1,6 @@
+.venv/
+.tools/
+data/raw/
+data/processed/
+data/articulo_usuario_texto.txt
+__pycache__/
