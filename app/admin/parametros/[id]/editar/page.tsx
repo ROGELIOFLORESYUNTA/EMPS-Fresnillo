@@ -115,10 +115,10 @@ export default function EditarParametroPage({ params }: { params: Promise<{ id: 
 
       <div>
         <Badge variant="outline" className="mb-2">{param.year} · {param.country}{param.state ? ` · ${param.state}` : ""}</Badge>
-        <h1 className="text-2xl font-bold font-mono flex items-center gap-2">
-          {param.key}
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold font-mono">{param.key}</h1>
           <ParameterManualSheet parameterKey={param.key} />
-        </h1>
+        </div>
         <p className="text-sm text-muted-foreground mt-1">
           Haz clic en el ⓘ para ver el manual completo: cómo se obtuvo el valor actual, qué afecta y qué verificar antes de cambiarlo.
         </p>

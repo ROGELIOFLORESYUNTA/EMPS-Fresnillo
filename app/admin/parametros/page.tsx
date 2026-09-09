@@ -106,10 +106,10 @@ export default async function AdminParametrosPage() {
                   return (
                     <TableRow key={p.id} className={override ? "bg-blue-50/40" : ""}>
                       <TableCell>
-                        <p className="text-sm font-medium inline-flex items-center">
+                        <span className="text-sm font-medium inline-flex items-center">
                           {nombreLegible(p.key)}
                           <ParameterManualSheet parameterKey={p.key} />
-                        </p>
+                        </span>
                         <p className="font-mono text-[10px] text-muted-foreground">{p.key}</p>
                         {p.notes && <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{p.notes}</p>}
                         {override && (

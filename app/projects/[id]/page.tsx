@@ -1272,7 +1272,7 @@ function SummaryCard({
           <span>{label}</span>
           {info && <InfoTip title={info.title}>{info.body}</InfoTip>}
         </p>
-        <p className="text-xl xl:text-2xl font-bold leading-tight break-words">{value}</p>
+        <p className="text-[clamp(1rem,1.6vw,1.5rem)] font-bold leading-tight tabular-nums">{value}</p>
         {hint && <p className="text-xs text-muted-foreground mt-1">{hint}</p>}
       </CardContent>
     </Card>
