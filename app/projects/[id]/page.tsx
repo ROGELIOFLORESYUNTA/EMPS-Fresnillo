@@ -147,6 +147,7 @@ export default async function ProjectDetailPage({
       riskLevel: e.riskLevel,
       margin: Number(e.margin),
     })),
+    team: project.team.map((t) => ({ role: t.role, availabilityPercent: t.availabilityPercent, aiSkill: t.aiSkill })),
     workingCapitalRequired: Number(workingCapitalRequired),
   });
   const brecha = recommendation?.brecha ?? null;
@@ -280,6 +281,27 @@ export default async function ProjectDetailPage({
     pasosExplicacion = [];
   }
 
+  // Herramientas de IA, pericia y costos fijos de cada estimación: quedan en su snapshot.
+  interface SnapshotEstimacion {
+    herramientas?: { asientos: number; usdPorAsiento: number; sobreconsumo: number; tipoCambio: number; mensualMXN: number; descripcion: string; usuariosFinales: number; usuariosFinalesSupuestos: boolean; usdPorUsuarioFinal: number; mensualUsuariosFinalesMXN: number };
+    pericia?: { promedio: number; conDato: boolean; factor: number; aplica: boolean };
+    otrosCostosMensuales?: { herramientas: number; administracion: number };
+  }
+  const leerSnapshot = (e: { inputsSnapshot: string } | null | undefined): SnapshotEstimacion | null => {
+    if (!e) return null;
+    try {
+      return JSON.parse(e.inputsSnapshot) as SnapshotEstimacion;
+    } catch {
+      return null;
+    }
+  };
+  const snapSel = leerSnapshot(selectedEstimate);
+  const herramientasSel = snapSel?.herramientas ?? null;
+  const periciaSel = snapSel?.pericia ?? null;
+  const licenciasSel = selectedMode === "low_code" && herramientasSel && herramientasSel.mensualUsuariosFinalesMXN > 0
+    ? { usuarios: herramientasSel.usuariosFinales, usdPorUsuario: herramientasSel.usdPorUsuarioFinal, mensualMXN: herramientasSel.mensualUsuariosFinalesMXN, supuestos: herramientasSel.usuariosFinalesSupuestos }
+    : null;
+
   // Tres tarjetas en lugar de 15 renglones: la recomendada, la elegida y la más segura.
   const buscar = (mode?: string | null, scenario?: string | null) =>
     mode && scenario ? latestEstimates.find((e) => e.mode === mode && e.scenario === scenario) ?? null : null;
@@ -291,7 +313,7 @@ export default async function ProjectDetailPage({
     semanas: e?.weeksTotal != null ? Number(e.weeksTotal) : null,
     riskLevel: e?.riskLevel ?? null,
     veredicto: e ? VEREDICTO_ETIQUETA[aptitud[e.mode]?.veredicto ?? "apto"] : null,
-    porque,
+    porque: e ? `${porque} Herramientas de IA: ${formatMXN(leerSnapshot(e)?.herramientas?.mensualMXN ?? 0)} al mes, ya en el precio.` : porque,
     href: e ? `/projects/${id}?mode=${e.mode}&scenario=${e.scenario}` : `/projects/${id}`,
     activa: !!e && e.mode === selectedMode && e.scenario === selectedScenario,
   });
@@ -673,11 +695,35 @@ export default async function ProjectDetailPage({
               title: "¿De dónde sale este precio?",
               body: (
                 <>
-                  <strong>Costo del equipo</strong> durante los meses reales del modo elegido (sueldo + IMSS + INFONAVIT + ISN/UAZ + prestaciones LFT). Si el proyecto pasa de 6 meses con personal en nómina, suma indemnización LFT por terminación de contrato.
+                  <strong>Costo del proyecto</strong> durante los meses reales de la forma de hacerlo elegida: el equipo con sus cargas (sueldo + IMSS + INFONAVIT + ISN/UAZ + prestaciones LFT), las herramientas de IA de esa forma de hacerlo, otras herramientas y administración. Si el proyecto pasa de 6 meses con personal en nómina, suma indemnización LFT por terminación de contrato.
                   <br /><br />
                   Sobre ese costo se aplica el margen objetivo y el IVA 16%. Cambia el modo arriba: el precio sube o baja porque cada modo tarda distinto.
                   <br /><br />
                   Fuente: motor de cálculo, parámetros 2026 (DOF, CONASAMI, IMSS, SEFIN Zacatecas).
+                </>
+              ),
+            }}
+          />
+          <SummaryCard
+            label="Herramientas de IA, al mes"
+            value={herramientasSel ? formatMXN(herramientasSel.mensualMXN) : "Sin dato"}
+            hint={
+              !herramientasSel
+                ? "Esta estimación se guardó antes de que se cobraran las herramientas. Vuelve a calcular."
+                : herramientasSel.mensualMXN > 0
+                  ? `${herramientasSel.asientos} asiento(s) × ${herramientasSel.usdPorAsiento} USD${herramientasSel.sobreconsumo > 0 ? ` + ${Math.round(herramientasSel.sobreconsumo * 100)}% de sobreconsumo` : ""}, a ${herramientasSel.tipoCambio} por dólar. Ya está dentro del precio.${licenciasSel ? ` Después de entregar: ${licenciasSel.usuarios} usuario(s) × ${licenciasSel.usdPorUsuario} USD = ${formatMXN(licenciasSel.mensualMXN)} al mes en licencias, aparte.` : ""}`
+                  : "Esta forma de hacerlo no usa herramientas de IA."
+            }
+            info={{
+              title: "¿Qué herramientas y por qué se cobran?",
+              body: (
+                <>
+                  Cada forma de hacerlo lleva una canasta típica de herramientas por persona técnica (precios de lista consultados el 9 de septiembre de 2026, ver Fuentes)
+                  {herramientasSel?.descripcion ? <>: {herramientasSel.descripcion}</> : null}. Se cobran sin IVA porque es acreditable.
+                  <br /><br />
+                  {periciaSel && periciaSel.aplica
+                    ? <>Pericia del equipo con la IA: <strong>{periciaSel.promedio} de 5</strong>{periciaSel.conDato ? "" : " (no capturada; se asume 3)"}. Se acredita el {Math.round(periciaSel.factor * 100)}% del ahorro nominal de esta forma de hacerlo: un modelo potente en manos de quien no sabe darle instrucciones no ahorra tiempo.</>
+                    : <>La pericia del equipo con la IA no cambia esta forma de hacerlo.</>}
                 </>
               ),
             }}
@@ -749,6 +795,7 @@ export default async function ProjectDetailPage({
           mantenimiento={mantenimiento}
           rangosCambio={rangosCambio}
           esProveedor={visitorRole === "proveedor"}
+          licenciasUsuarioFinal={licenciasSel}
         />
       )}
 

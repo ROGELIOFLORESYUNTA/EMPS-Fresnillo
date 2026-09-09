@@ -145,7 +145,24 @@ export default async function MetodologiaPage() {
       </Card>
 
       <Card>
-        <CardHeader><CardTitle className="text-base">7. Referencias</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">7. Herramientas de IA y pericia del equipo (septiembre de 2026)</CardTitle></CardHeader>
+        <CardContent className="text-sm space-y-2">
+          <p>
+            Las formas de hacerlo con IA no solo tardan menos: cuestan herramientas y rinden según quién las use. El motor cobra, por cada persona técnica del equipo,
+            la canasta típica de la forma de hacerlo (0 USD a mano, 30 con ayuda de IA, 100 híbrido, 250 casi todo con IA, 40 en plataforma de armado, más 20 por usuario final
+            mientras se use el sistema), por (1 + sobreconsumo) y por el tipo de cambio del DOF. Sin IVA porque es acreditable. Ese monto entra al costo, al precio y al flujo con el mismo número.
+          </p>
+          <p>
+            La ganancia nominal de cada forma de hacerlo (1 − eficiencia en horas; velocidad − 1 en calendario) se acredita según la pericia promedio del equipo con la IA, de 1 a 5:
+            35 % con nivel 1, 65 % con 2, 85 % con 3, 100 % con 4 y 115 % con 5. La evidencia publicada va de −19 % (METR 2025, desarrolladores experimentados con pocas horas en la herramienta)
+            a +56 % (Peng et al. 2023, tarea aislada), pasando por +21 % (Google 2024); lo que más mueve el resultado es la pericia del usuario, no el modelo. Un equipo con pericia menor a 2 no recibe la recomendación de hacer casi todo con IA.
+          </p>
+          <p className="text-muted-foreground">Fórmulas: eficiencia efectiva = 1 − (1 − eficiencia nominal) × f; velocidad efectiva = 1 + (velocidad nominal − 1) × f; herramientas al mes = asientos × USD × (1 + sobreconsumo) × tipo de cambio. Valores y fuentes en Fuentes (AI_TOOL_COSTS, AI_SKILL_FACTORS, TIPO_CAMBIO_USD_MXN).</p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle className="text-base">8. Referencias</CardTitle></CardHeader>
         <CardContent>
           <ul className="text-sm space-y-1 list-disc list-inside ml-2">
             <li>IFPUG (2010). Function Point Counting Practices Manual v4.3.</li>

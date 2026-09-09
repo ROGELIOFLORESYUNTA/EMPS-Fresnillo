@@ -26,6 +26,9 @@ const bodySchema = z.object({
   fechaLimite: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
   disponibilidadCliente: z.enum(["alta", "media", "baja"]).nullable().optional(),
   lado: z.enum(["ayuntamiento", "proveedor"]).nullable().optional(),
+  /** Pericia con la IA de quien lo va a hacer: 1 nunca, 3 a veces, 4 todos los días. */
+  experienciaIA: z.number().int().min(1).max(5).nullable().optional(),
+  personasQueLoUsan: z.number().int().min(1).max(100000).nullable().optional(),
   segundosEnLlenar: z.number().int().min(0).max(86400).optional(),
 });
 
@@ -73,6 +76,7 @@ export async function POST(req: Request) {
       estimatedBudget: data.presupuesto ?? null,
       targetDate: data.fechaLimite ? new Date(`${data.fechaLimite}T12:00:00`) : null,
       clientAvailabilityLevel: data.disponibilidadCliente ?? null,
+      expectedUsers: data.personasQueLoUsan ?? null,
       notes: `${NOTA_COTIZACION_RAPIDA} Cada parte se tomó de tamaño mediano y con una pantalla; el equipo es un desarrollador con experiencia a sueldo de nómina (${SUELDO_TIPICO_MXN.toLocaleString("es-MX")} pesos al mes); la utilidad es ${UTILIDAD_TIPICA * 100} %. Afina módulos y equipo para que la cifra sea tuya.`,
       workspaceId: workspace.id,
       isTemplate: false,
@@ -91,7 +95,7 @@ export async function POST(req: Request) {
         })),
       },
       team: {
-        create: [{ name: "Desarrollador con experiencia (equipo típico)", role: "dev_senior", monthlySalary: SUELDO_TIPICO_MXN, monthsAssigned: 1 }],
+        create: [{ name: "Desarrollador con experiencia (equipo típico)", role: "dev_senior", monthlySalary: SUELDO_TIPICO_MXN, monthsAssigned: 1, aiSkill: data.experienciaIA ?? 3 }],
       },
     },
   });
@@ -100,7 +104,16 @@ export async function POST(req: Request) {
 
   const totales: Record<string, number | null> = {};
   for (const mode of MODOS) {
-    const result = await runEstimate({ projectId: project.id, mode, targetMargin: UTILIDAD_TIPICA, workspaceId: workspace.id });
+    const result = await runEstimate({
+      projectId: project.id,
+      mode,
+      targetMargin: UTILIDAD_TIPICA,
+      workspaceId: workspace.id,
+      // Forma de pago típica (30 % anticipo, 30 % al cerrar) para que el flujo
+      // y el dinero que adelanta el proveedor no salgan en cero. Sin otras
+      // herramientas ni administración: solo las herramientas de IA calculadas.
+      cashFlowAssumptions: { anticipoPct: 0.3, finalPaymentPct: 0.3, durationMonths: 3, monthlyToolsCost: 0, monthlyAdminCost: 0 },
+    });
     const probable = result.estimates.find((e) => e.scenario === "probable") ?? result.estimates[0];
     totales[mode] = probable?.total ?? null;
   }
@@ -113,6 +126,8 @@ export async function POST(req: Request) {
     conFecha: !!data.fechaLimite,
     disponibilidadCliente: data.disponibilidadCliente ?? null,
     lado: data.lado ?? null,
+    experienciaIA: data.experienciaIA ?? null,
+    personasQueLoUsan: data.personasQueLoUsan ?? null,
     segundosEnLlenar: data.segundosEnLlenar ?? null,
     totales,
   });

@@ -16,6 +16,7 @@ import {
   type RecommendationRole,
 } from "./engine/recommendation";
 import type { ModuleInput } from "./engine/types";
+import { periciaDelEquipo, type PersonaHerramienta } from "./engine/herramientas";
 
 export interface EstimacionPlana {
   mode: string;
@@ -31,6 +32,8 @@ export interface EstimacionPlana {
 export interface RecomendacionDelProyecto {
   recomendacion: RecommendationResult | null;
   aptitud: Record<string, AptitudModo>;
+  /** Pericia promedio del equipo con la IA (null si no se pasó el equipo). */
+  pericia: { promedio: number; conDato: boolean } | null;
 }
 
 export function recomendacionDelProyecto(input: {
@@ -38,10 +41,13 @@ export function recomendacionDelProyecto(input: {
   project: RecommendationInput["project"];
   modules: ModuleInput[];
   estimates: EstimacionPlana[];
+  /** Equipo capturado: su pericia con la IA decide si bytecoding se recomienda. */
+  team?: PersonaHerramienta[];
   workingCapitalRequired?: number;
   now?: Date;
 }): RecomendacionDelProyecto {
-  const aptitud = aptitudDeModos(input.modules);
+  const pericia = input.team ? periciaDelEquipo(input.team) : null;
+  const aptitud = aptitudDeModos(input.modules, undefined, { periciaIA: pericia?.promedio ?? null });
   const recomendacion = recommendBestOption({
     role: input.role,
     project: input.project,
@@ -59,5 +65,5 @@ export function recomendacionDelProyecto(input: {
     workingCapitalRequired: input.workingCapitalRequired,
     now: input.now,
   });
-  return { recomendacion, aptitud };
+  return { recomendacion, aptitud, pericia: pericia ? { promedio: pericia.promedio, conDato: pericia.conDato } : null };
 }

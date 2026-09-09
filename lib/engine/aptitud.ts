@@ -43,6 +43,12 @@ export const UMBRALES_APTITUD = {
   asistidoClaridadReservas: 2.5,
   /** Claridad promedio por debajo de la cual el híbrido va con reservas. */
   hibridoClaridadReservas: 2.0,
+  /** Pericia del equipo con la IA (1-5) por debajo de la cual bytecoding no se recomienda. */
+  bytecodingPericiaMin: 2,
+  /** Pericia por debajo de la cual bytecoding va con reservas. */
+  bytecodingPericiaReservas: 3,
+  /** Pericia por debajo de la cual el asistido por IA y el híbrido van con reservas. */
+  asistidoPericiaReservas: 2,
 } as const;
 
 export type UmbralesAptitud = typeof UMBRALES_APTITUD;
@@ -62,12 +68,19 @@ function resumen(modules: ModuleInput[]) {
   };
 }
 
+export interface EquipoParaAptitud {
+  /** Pericia promedio del equipo con la IA, 1 a 5; null si no se capturó. */
+  periciaIA?: number | null;
+}
+
 export function aptitudDeModos(
   modules: ModuleInput[],
   umbrales: UmbralesAptitud = UMBRALES_APTITUD,
+  equipo?: EquipoParaAptitud,
 ): Record<string, AptitudModo> {
   const r = resumen(modules);
   const out: Record<string, AptitudModo> = {};
+  const pericia = equipo?.periciaIA != null && Number.isFinite(equipo.periciaIA) ? equipo.periciaIA : null;
 
   // --- Low-code: rápido y barato para registros sencillos; frágil con
   //     integraciones, datos personales y módulos críticos.
@@ -114,6 +127,13 @@ export function aptitudDeModos(
       if (veredicto === "apto") veredicto = "con_reservas";
       razones.push("Hay piezas críticas con datos personales: el código generado necesita revisión de seguridad por una persona.");
     }
+    if (pericia != null && pericia < umbrales.bytecodingPericiaMin) {
+      veredicto = "no_recomendable";
+      razones.push(`El equipo casi no ha trabajado con IA (pericia ${pericia.toFixed(1)} de 5): hacer casi todo con IA sin saber dar instrucciones sale más lento, no más rápido.`);
+    } else if (pericia != null && pericia < umbrales.bytecodingPericiaReservas) {
+      if (veredicto === "apto") veredicto = "con_reservas";
+      razones.push(`La pericia del equipo con la IA es ${pericia.toFixed(1)} de 5: se acredita solo parte del ahorro; conviene capacitar antes de cotizar así.`);
+    }
     if (razones.length === 0) razones.push("Los requisitos están claros; el código generado se puede revisar y endurecer sin sorpresas.");
     out.bytecoding_prompts = { mode: "bytecoding_prompts", veredicto, razones };
   }
@@ -125,9 +145,12 @@ export function aptitudDeModos(
     if (r.claridad < umbrales.asistidoClaridadReservas) {
       veredicto = "con_reservas";
       razones.push(`Con claridad ${r.claridad.toFixed(1)} de 5, la ayuda de la IA rinde menos: primero hay que entender qué se quiere.`);
-    } else {
-      razones.push("Una persona programa con ayuda de la IA y revisa todo; sirve para casi cualquier proyecto.");
     }
+    if (pericia != null && pericia < umbrales.asistidoPericiaReservas) {
+      veredicto = "con_reservas";
+      razones.push(`El equipo casi no ha usado IA (pericia ${pericia.toFixed(1)} de 5): las primeras semanas no ahorran tiempo.`);
+    }
+    if (razones.length === 0) razones.push("Una persona programa con ayuda de la IA y revisa todo; sirve para casi cualquier proyecto.");
     out.ai_assisted = { mode: "ai_assisted", veredicto, razones };
   }
 
@@ -138,9 +161,12 @@ export function aptitudDeModos(
     if (r.claridad < umbrales.hibridoClaridadReservas) {
       veredicto = "con_reservas";
       razones.push(`Con claridad ${r.claridad.toFixed(1)} de 5, cualquier forma de hacerlo va a necesitar retrabajo.`);
-    } else {
-      razones.push("Lo crítico a mano y lo repetitivo con IA; es la forma más equilibrada para un sistema municipal.");
     }
+    if (pericia != null && pericia < umbrales.asistidoPericiaReservas) {
+      veredicto = "con_reservas";
+      razones.push(`El equipo casi no ha usado IA (pericia ${pericia.toFixed(1)} de 5): la parte con IA va a rendir menos de lo nominal.`);
+    }
+    if (razones.length === 0) razones.push("Lo crítico a mano y lo repetitivo con IA; es la forma más equilibrada para un sistema municipal.");
     out.hybrid = { mode: "hybrid", veredicto, razones };
   }
 

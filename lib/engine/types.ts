@@ -68,6 +68,8 @@ export interface ModeVelocity {
   prototype_speedup: number;
   hardening_overhead: number;
   prototype_quality_factor?: number;
+  /** Horas-persona respecto a hacerlo a mano (1.0 = igual, 0.65 = ahorra 35 %). */
+  effort_efficiency?: number;
   notes?: string;
 }
 

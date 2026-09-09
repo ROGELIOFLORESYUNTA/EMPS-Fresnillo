@@ -49,6 +49,29 @@ export interface EntradasExplicacion {
   costoMensualEquipo: number;
   personas: number;
   liquidacionLFT: number;
+  /** Pericia del equipo con la IA y qué parte de la ganancia nominal del modo se acredita. */
+  pericia?: {
+    promedio: number;
+    conDato: boolean;
+    factor: number;
+    aplica: boolean;
+    eficienciaNominal: number;
+    velocidadNominal: number;
+  };
+  /** Herramientas de IA (o plataforma de armado) del modo, al mes, en pesos sin IVA. */
+  herramientas?: {
+    asientos: number;
+    usdPorAsiento: number;
+    sobreconsumo: number;
+    tipoCambio: number;
+    mensualMXN: number;
+    descripcion: string;
+  };
+  /** Otras herramientas (servidores, dominios) y administración capturadas, al mes. */
+  otrosCostos?: {
+    herramientasMensual: number;
+    administracionMensual: number;
+  };
   costoTotal: number;
   margen: number;
   subtotal: number;
@@ -114,6 +137,8 @@ export function construirExplicacion(e: EntradasExplicacion): PasoDeCalculo[] {
     operacion: `${r2(e.esfuerzoTecnico)} × ${r4(e.repartoFases)} (el reparto de esta forma de hacerlo${e.repartoFases > 1 ? " agrega horas de endurecimiento" : " deja fuera parte de la gestión"})`,
   });
 
+  const periciaAplica = !!e.pericia && e.pericia.aplica;
+  const pct = (x: number) => `${Math.round(x * 100)}%`;
   pasos.push({
     clave: "modo",
     etiqueta: `Horas con la forma de hacerlo elegida (${e.nombreModo})`,
@@ -121,8 +146,16 @@ export function construirExplicacion(e: EntradasExplicacion): PasoDeCalculo[] {
     unidad: "horas",
     operacion:
       e.eficienciaModo === 1
-        ? "Esta forma de hacerlo no ahorra horas de trabajo."
-        : `${r2(e.horasTrasReparto)} × ${e.eficienciaModo} (esta forma ahorra ${Math.round((1 - e.eficienciaModo) * 100)}% del trabajo)`,
+        ? periciaAplica
+          ? `${r2(e.horasTrasReparto)} × 1: con la pericia actual del equipo (${r2(e.pericia!.promedio)} de 5) no se acredita ahorro.`
+          : "Esta forma de hacerlo no ahorra horas de trabajo."
+        : periciaAplica
+          ? `${r2(e.horasTrasReparto)} × ${e.eficienciaModo} (ahorro nominal ${pct(1 - e.pericia!.eficienciaNominal)}; con pericia ${r2(e.pericia!.promedio)} de 5 se acredita ${pct(e.pericia!.factor)}: ahorro efectivo ${pct(1 - e.eficienciaModo)})`
+          : `${r2(e.horasTrasReparto)} × ${e.eficienciaModo} (esta forma ahorra ${Math.round((1 - e.eficienciaModo) * 100)}% del trabajo)`,
+    nota:
+      periciaAplica && !e.pericia!.conDato
+        ? "No se capturó qué tanto usa la IA el equipo; se asume 3 de 5 (la usa en algunos proyectos). Captúralo en Equipo."
+        : undefined,
   });
 
   if (e.factorEscenario !== 1) {
@@ -140,7 +173,9 @@ export function construirExplicacion(e: EntradasExplicacion): PasoDeCalculo[] {
     etiqueta: "Semanas que va a tardar con este equipo",
     valor: r2(e.semanas),
     unidad: "semanas",
-    operacion: `${r2(e.horasEscenario)} horas ÷ (${r2(e.capacidadSemanal)} horas a la semana × velocidad ${e.velocidadModo})`,
+    operacion: `${r2(e.horasEscenario)} horas ÷ (${r2(e.capacidadSemanal)} horas a la semana × velocidad ${e.velocidadModo})${
+      periciaAplica && e.pericia!.factor !== 1 ? ` (velocidad nominal ${e.pericia!.velocidadNominal}, ajustada por la pericia del equipo con la IA)` : ""
+    }`,
     nota: e.capacidadCalculadaDelEquipo
       ? `Las ${r2(e.capacidadSemanal)} horas salen del equipo capturado: ${e.personas} persona(s) por su disponibilidad × 40 horas.`
       : `Las ${r2(e.capacidadSemanal)} horas a la semana las escribió el usuario, no salen del equipo capturado.`,
@@ -162,6 +197,33 @@ export function construirExplicacion(e: EntradasExplicacion): PasoDeCalculo[] {
     operacion: `${e.personas} persona(s): sueldo + prestaciones de ley + IMSS + INFONAVIT + impuesto sobre nómina, según el tipo de contrato de cada una.`,
   });
 
+  const herramientasMes = e.herramientas?.mensualMXN ?? 0;
+  if (e.herramientas && herramientasMes > 0) {
+    pasos.push({
+      clave: "herramientas",
+      etiqueta: "Herramientas de IA del equipo, al mes",
+      valor: r2(herramientasMes),
+      unidad: "pesos",
+      operacion: `${e.herramientas.asientos} asiento(s) × ${e.herramientas.usdPorAsiento} USD × ${r2(1 + e.herramientas.sobreconsumo)} de sobreconsumo × ${e.herramientas.tipoCambio} pesos por dólar`,
+      nota: `Sin IVA: es acreditable si la plataforma está inscrita en el SAT.${e.herramientas.descripcion ? ` Canasta: ${e.herramientas.descripcion}` : ""}`,
+    });
+  }
+
+  const otrosMes = (e.otrosCostos?.herramientasMensual ?? 0) + (e.otrosCostos?.administracionMensual ?? 0);
+  if (e.otrosCostos && otrosMes > 0) {
+    pasos.push({
+      clave: "otros_costos",
+      etiqueta: "Otras herramientas y administración, al mes",
+      valor: r2(otrosMes),
+      unidad: "pesos",
+      operacion: `servidores y otras herramientas ${r2(e.otrosCostos.herramientasMensual)} + administración ${r2(e.otrosCostos.administracionMensual)}`,
+    });
+  }
+
+  const sumandosMes: string[] = [r2(e.costoMensualEquipo).toString()];
+  if (herramientasMes > 0) sumandosMes.push(r2(herramientasMes).toString());
+  if (otrosMes > 0) sumandosMes.push(r2(otrosMes).toString());
+  const mensual = sumandosMes.length > 1 ? `(${sumandosMes.join(" + ")})` : sumandosMes[0];
   pasos.push({
     clave: "costo_directo",
     etiqueta: "Costo del proyecto",
@@ -169,8 +231,8 @@ export function construirExplicacion(e: EntradasExplicacion): PasoDeCalculo[] {
     unidad: "pesos",
     operacion:
       e.liquidacionLFT > 0
-        ? `${r2(e.costoMensualEquipo)} × ${r2(e.meses)} meses + ${r2(e.liquidacionLFT)} de liquidación (el proyecto pasa de 6 meses)`
-        : `${r2(e.costoMensualEquipo)} × ${r2(e.meses)} meses`,
+        ? `${mensual} × ${r2(e.meses)} meses + ${r2(e.liquidacionLFT)} de liquidación (el proyecto pasa de 6 meses)`
+        : `${mensual} × ${r2(e.meses)} meses`,
   });
 
   pasos.push({

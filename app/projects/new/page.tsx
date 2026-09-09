@@ -48,6 +48,7 @@ export default function NewProjectPage() {
     responsible: "",
     priority: "media",
     notes: "",
+    expectedUsers: "",
   });
 
   useEffect(() => {
@@ -68,7 +69,8 @@ export default function NewProjectPage() {
     setSubmitting(true);
     setError(null);
     try {
-      const payload = needsIdentity ? { ...form, identity } : form;
+      const base = { ...form, expectedUsers: form.expectedUsers ? Number(form.expectedUsers) : null };
+      const payload = needsIdentity ? { ...base, identity } : base;
       const result = await apiPost<{ project: { id: string } }>("/api/projects", payload);
       if (needsIdentity) {
         // El encabezado muestra el nombre en cuanto queda guardado.
@@ -218,6 +220,11 @@ export default function NewProjectPage() {
               <div className="grid gap-2">
                 <Label htmlFor="responsible">Responsable</Label>
                 <Input id="responsible" value={form.responsible} onChange={set("responsible")} placeholder="Quién da seguimiento por parte del área" />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="expectedUsers">¿Cuántas personas lo van a usar en la oficina?</Label>
+                <Input id="expectedUsers" type="number" min={1} value={form.expectedUsers} onChange={set("expectedUsers")} placeholder="ej. 25" />
+                <p className="text-xs text-muted-foreground">Opcional. Si se hace con una plataforma de armado, cada persona que lo use paga licencia mientras lo use.</p>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="priority">Prioridad</Label>

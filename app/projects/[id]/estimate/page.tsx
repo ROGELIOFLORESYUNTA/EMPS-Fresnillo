@@ -11,6 +11,13 @@ import { Badge } from "@/components/ui/badge";
 import { api, apiPost } from "@/lib/api-client";
 import { BarraDePasos } from "@/components/barra-de-pasos";
 import { DEVELOPMENT_MODES, formatMXN } from "@/lib/utils";
+
+interface HerramientasResp {
+  asientos: number;
+  pericia: { promedio: number; conDato: boolean };
+  tipoCambio: number;
+  porModo: Record<string, { mensualMXN: number; factor: number; aplica: boolean; mensualUsuariosFinalesMXN: number; usuariosFinales: number; usuariosFinalesSupuestos: boolean }>;
+}
 import { Calculator, Lightbulb, AlertCircle } from "lucide-react";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 
@@ -28,6 +35,10 @@ export default function EstimatePage({ params }: { params: Promise<{ id: string 
     api<{ project: { estimatedBudget: string | number | null; targetDate: string | null; team: { availabilityPercent: string | number }[] } }>(`/api/projects/${projectId}`)
       .then((r) => setProyecto(r.project))
       .catch(() => setProyecto(null));
+  }, [projectId]);
+  const [herramientas, setHerramientas] = useState<HerramientasResp | null>(null);
+  useEffect(() => {
+    api<HerramientasResp>(`/api/projects/${projectId}/herramientas`).then(setHerramientas).catch(() => setHerramientas(null));
   }, [projectId]);
   const horasDelEquipo = proyecto?.team?.length
     ? Math.max(1, proyecto.team.reduce((a, t) => a + (Number(t.availabilityPercent) / 100) * 40, 0))
@@ -185,13 +196,37 @@ export default function EstimatePage({ params }: { params: Promise<{ id: string 
                 <p className="text-xs text-muted-foreground">Detallado es el exacto; rápido sirve para una primera idea.</p>
               </div>
             </div>
+
+            {herramientas && (
+              <div className="rounded-md border bg-muted/30 p-3 text-xs space-y-1">
+                <p className="font-medium text-sm">Herramientas de IA que se cobran, según la forma de hacerlo</p>
+                <p className="text-muted-foreground">
+                  {herramientas.asientos} asiento(s) para las personas técnicas del equipo · pericia con la IA {herramientas.pericia.promedio} de 5
+                  {herramientas.pericia.conDato ? "" : " (no capturada; se asume 3)"} · {herramientas.tipoCambio} pesos por dólar.
+                </p>
+                <ul className="grid sm:grid-cols-2 gap-x-4 gap-y-0.5">
+                  {DEVELOPMENT_MODES.map((m) => {
+                    const h = herramientas.porModo[m.value];
+                    if (!h) return null;
+                    return (
+                      <li key={m.value}>
+                        {m.label}: <strong>{formatMXN(h.mensualMXN)}</strong> al mes
+                        {h.aplica && h.factor !== 1 ? ` · se acredita ${Math.round(h.factor * 100)} % del ahorro de la IA` : ""}
+                        {h.mensualUsuariosFinalesMXN > 0 ? ` · después de entregar, ${formatMXN(h.mensualUsuariosFinalesMXN)} al mes de licencias para ${h.usuariosFinales} usuario(s)${h.usuariosFinalesSupuestos ? " (supuestos)" : ""}` : ""}
+                      </li>
+                    );
+                  })}
+                </ul>
+                <p className="text-muted-foreground">Entran al costo y al precio con el mismo número, sin IVA porque es acreditable. La pericia se captura en Equipo; los precios y el tipo de cambio están en Fuentes.</p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
         <details className="mt-4 rounded-lg border">
           <summary className="cursor-pointer px-4 py-3 text-sm">
             <span className="font-medium">Ajustar detalles</span>
-            <span className="text-muted-foreground"> · anticipo {form.anticipoPct} %, pago final {form.finalPaymentPct} %, herramientas {formatMXN(form.monthlyToolsCost)} al mes, administración {formatMXN(form.monthlyAdminCost)} al mes, el proveedor puede adelantar {formatMXN(form.capitalDeclaredByProvider)}</span>
+            <span className="text-muted-foreground"> · anticipo {form.anticipoPct} %, pago final {form.finalPaymentPct} %, otras herramientas {formatMXN(form.monthlyToolsCost)} al mes, administración {formatMXN(form.monthlyAdminCost)} al mes, el proveedor puede adelantar {formatMXN(form.capitalDeclaredByProvider)}</span>
           </summary>
         <Card className="border-0 shadow-none">
           <CardHeader>
@@ -283,7 +318,7 @@ export default function EstimatePage({ params }: { params: Promise<{ id: string 
 
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label>Herramientas al mes (licencias, servidores)</Label>
+                <Label>Otras herramientas al mes (servidores, dominios, licencias que no son de IA)</Label>
                 <Input type="number" min={0} value={form.monthlyToolsCost} onChange={(e) => setForm({ ...form, monthlyToolsCost: +e.target.value })} />
                 <p className="text-xs text-muted-foreground">{formatMXN(form.monthlyToolsCost)}</p>
               </div>

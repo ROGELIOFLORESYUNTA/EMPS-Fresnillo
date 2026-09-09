@@ -38,6 +38,7 @@ import {
   type ModuleInput,
 } from "./engine";
 import { construirExplicacion, type PasoDeCalculo } from "./engine/explicacion";
+import { asientosDeHerramienta, periciaDelEquipo, ajustarPorPericia, costoHerramientasPorModo } from "./engine/herramientas";
 
 interface CashFlowAssumptions {
   anticipoPct: number;
@@ -85,6 +86,9 @@ interface EstimateOutput {
   cashflowResult: { workingCapitalRequired: number; months: number };
   /** Capacidad semanal usada y de dónde salió. */
   capacidad: { horasSemana: number; calculadaDelEquipo: boolean };
+  /** Herramientas de IA del modo (asientos y pesos al mes, sin IVA) y pericia del equipo con la IA. */
+  herramientas: { asientos: number; usdPorAsiento: number; sobreconsumo: number; tipoCambio: number; mensualMXN: number; usuariosFinales: number; mensualUsuariosFinalesMXN: number };
+  pericia: { promedio: number; conDato: boolean; factor: number; aplica: boolean };
 }
 
 const HORAS_SEMANA_POR_PERSONA = 40;
@@ -216,10 +220,22 @@ export async function runEstimate(req: EstimateRequest): Promise<EstimateOutput>
 
   const effortRaw = computeEffort(projectInput, req.mode, ctx.factors);
 
-  // Aplicar effort_efficiency: la IA / herramientas reducen las HORAS-PERSONA totales,
-  // no solo el calendario. Tradicional 1.0 base, ai_assisted 0.78, bytecoding 0.65, low_code 0.50, hybrid 0.72.
-  // Si el modo no tiene effort_efficiency configurado (legacy), usa 1.0.
-  const efficiency = (ctx.velocity[req.mode] as { effort_efficiency?: number })?.effort_efficiency ?? 1.0;
+  // La IA reduce las horas-persona (effort_efficiency) y acelera el calendario
+  // (velocity_factor), pero solo en la parte que la pericia del equipo con la
+  // IA permite acreditar. Con pericia 4 ("la usa a diario") es la nominal;
+  // a mano y low-code no cambian.
+  const pericia = periciaDelEquipo(project.team);
+  const modoAjustado = ajustarPorPericia(ctx.velocity[req.mode], req.mode, pericia.promedio, ctx.aiSkillFactors);
+  const efficiency = modoAjustado.effort_efficiency;
+  const velocityEfectiva = {
+    ...ctx.velocity,
+    [req.mode]: {
+      ...ctx.velocity[req.mode],
+      velocity_factor: modoAjustado.velocity_factor,
+      prototype_speedup: modoAjustado.prototype_speedup,
+      effort_efficiency: modoAjustado.effort_efficiency,
+    },
+  };
   const effort = {
     ...effortRaw,
     totalEffortHours: effortRaw.totalEffortHours * efficiency,
@@ -261,6 +277,21 @@ export async function runEstimate(req: EstimateRequest): Promise<EstimateOutput>
   }, 0);
 
   const cfa = req.cashFlowAssumptions;
+
+  // Herramientas de IA del modo (un asiento por persona técnica, pesos sin
+  // IVA) y los otros costos fijos capturados (servidores, administración).
+  // Entran al costo, al precio y al flujo de efectivo con el mismo número:
+  // son renglones distintos y ninguno se cobra dos veces.
+  const herramientas = costoHerramientasPorModo({
+    mode: req.mode,
+    asientos: asientosDeHerramienta(project.team),
+    tabla: ctx.aiToolCosts,
+    tipoCambio: ctx.tipoCambio,
+    usuariosFinales: project.expectedUsers ?? null,
+  });
+  const otrosHerramientasMensual = Math.max(0, cfa?.monthlyToolsCost ?? 0);
+  const administracionMensual = Math.max(0, cfa?.monthlyAdminCost ?? 0);
+  const costoMensualIndirecto = herramientas.mensualMXN + otrosHerramientasMensual + administracionMensual;
   const capitalDeclarado = req.capitalDeclaredByProvider ?? 100000;
   const scenariosToCompute = (req.scenarios ?? ["optimistic", "probable", "conservative"]) as Scenario[];
   const out: EstimateOutput["estimates"] = [];
@@ -284,9 +315,18 @@ export async function runEstimate(req: EstimateRequest): Promise<EstimateOutput>
     cashFlowAssumptions: cfa,
     capitalDeclaredByProvider: capitalDeclarado,
     riesgo: { ...riesgo, cambiosRegistrados: project._count.changes, claridadPromedio },
+    herramientas,
+    pericia: {
+      ...pericia,
+      factor: modoAjustado.factor,
+      aplica: modoAjustado.aplica,
+      nominal: modoAjustado.nominal,
+      efectivo: { effort_efficiency: modoAjustado.effort_efficiency, velocity_factor: modoAjustado.velocity_factor, prototype_speedup: modoAjustado.prototype_speedup },
+    },
+    otrosCostosMensuales: { herramientas: otrosHerramientasMensual, administracion: administracionMensual },
   });
 
-  const velocidadModo = ctx.velocity[req.mode].velocity_factor;
+  const velocidadModo = modoAjustado.velocity_factor;
   const nombresModo: Record<string, string> = {
     traditional: "programado a mano",
     ai_assisted: "a mano con ayuda de IA",
@@ -305,7 +345,7 @@ export async function runEstimate(req: EstimateRequest): Promise<EstimateOutput>
     const calendar = computeCalendar(
       { ...effort, totalEffortHours: sResult.totalEffortHours, phases: sResult.phases },
       req.mode,
-      ctx.velocity,
+      velocityEfectiva,
       weeklyTeamCapacityHours,
     );
     // Calendario real del proyecto en MESES con piso mínimo (un proyecto no puede durar 0 meses).
@@ -327,10 +367,13 @@ export async function runEstimate(req: EstimateRequest): Promise<EstimateOutput>
       willTerminateAtEnd: true, // asumimos terminación al cierre como caso conservador
     });
 
-    // Costo = lo que cuesta mantener al equipo los meses que dura, más la
-    // liquidación si aplica. Las horas de endurecimiento de bytecoding ya
-    // están dentro de las semanas; no se vuelven a multiplicar aquí.
-    const baseCost = monthlyTeamCost * realMonthsOfMode;
+    // Costo = (equipo con cargas + herramientas de IA + otras herramientas +
+    // administración) por los meses que dura, más la liquidación si aplica.
+    // Las horas de endurecimiento de bytecoding ya están dentro de las
+    // semanas; no se vuelven a multiplicar aquí. indirectCost es la parte que
+    // no es nómina, ya incluida en el costo total.
+    const baseCost = (monthlyTeamCost + costoMensualIndirecto) * realMonthsOfMode;
+    const indirectCost = costoMensualIndirecto * realMonthsOfMode;
     const totalCost = baseCost + lftRisk.estimatedTerminationCost;
     const pricing = computePricing({ totalCost, targetMargin: req.targetMargin }, ctx.rates.IVA);
     const isr = computeISR(pricing.subtotal, totalCost * 0.85, totalCost * 0.05, ctx.rates.ISR);
@@ -344,8 +387,8 @@ export async function runEstimate(req: EstimateRequest): Promise<EstimateOutput>
           finalPaymentPct: cfa.finalPaymentPct,
           monthlyOutflowPayroll: monthlyTeamCost,
           monthlyOutflowTaxes: monthlyTeamCost * 0.10,
-          monthlyOutflowTools: cfa.monthlyToolsCost,
-          monthlyOutflowAdmin: cfa.monthlyAdminCost,
+          monthlyOutflowTools: herramientas.mensualMXN + otrosHerramientasMensual,
+          monthlyOutflowAdmin: administracionMensual,
           durationMonths: cashflowMonthsThisMode,
         })
       : { workingCapitalRequired: 0, months: [] };
@@ -386,6 +429,23 @@ export async function runEstimate(req: EstimateRequest): Promise<EstimateOutput>
       costoMensualEquipo: monthlyTeamCost,
       personas: project.team.length,
       liquidacionLFT: lftRisk.estimatedTerminationCost,
+      pericia: {
+        promedio: pericia.promedio,
+        conDato: pericia.conDato,
+        factor: modoAjustado.factor,
+        aplica: modoAjustado.aplica,
+        eficienciaNominal: modoAjustado.nominal.effort_efficiency,
+        velocidadNominal: modoAjustado.nominal.velocity_factor,
+      },
+      herramientas: {
+        asientos: herramientas.asientos,
+        usdPorAsiento: herramientas.usdPorAsiento,
+        sobreconsumo: herramientas.sobreconsumo,
+        tipoCambio: herramientas.tipoCambio,
+        mensualMXN: herramientas.mensualMXN,
+        descripcion: herramientas.descripcion,
+      },
+      otrosCostos: { herramientasMensual: otrosHerramientasMensual, administracionMensual },
       costoTotal: totalCost,
       margen: req.targetMargin,
       subtotal: pricing.subtotal,
@@ -414,7 +474,7 @@ export async function runEstimate(req: EstimateRequest): Promise<EstimateOutput>
         weeksTotal: dec(calendar.weeksTotal.toFixed(2)),
         weeksToPrototype: dec(weeksToPrototype.toFixed(2)),
         directCost: dec(totalCost.toFixed(2)),
-        indirectCost: dec("0"),
+        indirectCost: dec(indirectCost.toFixed(2)),
         subtotal: dec(pricing.subtotal.toFixed(2)),
         vat: dec(pricing.vat.toFixed(2)),
         total: dec(pricing.total.toFixed(2)),
@@ -472,8 +532,8 @@ export async function runEstimate(req: EstimateRequest): Promise<EstimateOutput>
       finalPaymentPct: cfa.finalPaymentPct,
       monthlyOutflowPayroll: monthlyTeamCost,
       monthlyOutflowTaxes: monthlyTeamCost * 0.10,
-      monthlyOutflowTools: cfa.monthlyToolsCost,
-      monthlyOutflowAdmin: cfa.monthlyAdminCost,
+      monthlyOutflowTools: herramientas.mensualMXN + otrosHerramientasMensual,
+      monthlyOutflowAdmin: administracionMensual,
       durationMonths: realMonths,
     });
     await prisma.cashFlowLine.createMany({
@@ -510,5 +570,15 @@ export async function runEstimate(req: EstimateRequest): Promise<EstimateOutput>
     estimates: out,
     cashflowResult: { workingCapitalRequired: wcap, months: cf.length },
     capacidad: { horasSemana: weeklyTeamCapacityHours, calculadaDelEquipo: capacidadCalculadaDelEquipo },
+    herramientas: {
+      asientos: herramientas.asientos,
+      usdPorAsiento: herramientas.usdPorAsiento,
+      sobreconsumo: herramientas.sobreconsumo,
+      tipoCambio: herramientas.tipoCambio,
+      mensualMXN: herramientas.mensualMXN,
+      usuariosFinales: herramientas.usuariosFinales,
+      mensualUsuariosFinalesMXN: herramientas.mensualUsuariosFinalesMXN,
+    },
+    pericia: { promedio: pericia.promedio, conDato: pericia.conDato, factor: modoAjustado.factor, aplica: modoAjustado.aplica },
   };
 }

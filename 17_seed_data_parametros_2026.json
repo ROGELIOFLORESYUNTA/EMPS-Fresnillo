@@ -9,6 +9,15 @@
   },
   "parameters": [
     {
+      "key": "TIPO_CAMBIO_USD_MXN",
+      "value": 16.92,
+      "unit": "MXN por USD",
+      "source": "Tipo de cambio para solventar obligaciones en moneda extranjera, DOF/Banxico (FIX) del 09-sep-2026: 16.9202",
+      "source_url": "https://www.banxico.org.mx/tipcamb/llenarTiposCambioAction.do?idioma=sp",
+      "effective_from": "2026-09-09",
+      "notes": "Convierte a pesos los precios en dolares de las herramientas de IA y de las plataformas de armado (AI_TOOL_COSTS). Se actualiza en /admin/parametros cuando el dolar se mueva; no cambia ninguna cuota fiscal."
+    },
+    {
       "key": "IVA_GENERAL",
       "value": 0.16,
       "unit": "rate",
@@ -440,6 +449,48 @@
       "notes": "Manual para componentes criticos (auth, datos sensibles, negocio), asistido/bytecoding para boilerplate (CRUD, tests, docs). Reduce ~28% horas-persona, calendario ~2x mas rapido.",
       "evidencia": "HackerNews/Medium consenso: 'The best setup is hybrid: AI for speed, humans for quality'. Red Hat Developer 2026."
     }
+  },
+  "ai_tool_costs": {
+    "_semantica": "Costo mensual de las herramientas de IA (o de la plataforma de armado) por persona tecnica, en USD de lista SIN IVA, para cada forma de hacerlo. El motor lo multiplica por los asientos del equipo (un asiento por persona con puesto tecnico, sin prorratear por disponibilidad), por (1 + sobreconsumo) y por TIPO_CAMBIO_USD_MXN. Entra al costo del proyecto, al precio y al flujo de efectivo con el mismo numero. El IVA (16 %, LIVA 18-B) no se suma porque es acreditable si la plataforma esta inscrita en el SAT (Microsoft, GitHub, OpenAI, Anthropic y Google lo estan).",
+    "_consultado": "2026-09-09",
+    "_fuentes": [
+      "https://github.com/features/copilot/plans (Copilot Pro 10, Pro+ 39, Business 19, Enterprise 39 USD por usuario al mes)",
+      "https://cursor.com/pricing (Cursor Pro 20, Teams 40; Pro+ 60 y Ultra 200 segun terceros)",
+      "https://claude.com/pricing (Claude Pro 20, Max 5x 100, Max 20x 200, Team 25 a 125; Claude Code incluido)",
+      "https://www.morphllm.com/ai-coding-costs (gasto real con agentes: Claude Code 150 a 250 por desarrollador al mes; Gartner: 25 % de las organizaciones gastan 200 a 500)",
+      "https://getdx.com/blog/how-are-engineering-leaders-approaching-2026-ai-tooling-budget/ (planes max de 100 a 200 por ingeniero son lo comun)",
+      "https://www.microsoft.com/en-us/power-platform/products/power-apps/pricing (Power Apps Premium 20 USD por usuario final al mes)",
+      "https://docs.cloud.google.com/gemini/docs/codeassist/overview (Gemini Code Assist 19 a 45)",
+      "https://www.diputados.gob.mx/LeyesBiblio/pdf/LIVA.pdf (IVA a servicios digitales extranjeros, art. 18-B)"
+    ],
+    "_uso_motor": "herramientas_mes_mxn = asientos_tecnicos * usd_por_persona_mes * (1 + sobreconsumo) * TIPO_CAMBIO_USD_MXN; costo_proyecto = (nomina_con_cargas + herramientas_mes_mxn + otras_herramientas + administracion) * meses + liquidacion",
+    "por_modo": {
+      "traditional": { "usd_por_persona_mes": 0, "sobreconsumo": 0, "descripcion": "Sin herramientas de IA." },
+      "ai_assisted": { "usd_por_persona_mes": 30, "sobreconsumo": 0.10, "descripcion": "Copilot Business o Cursor Pro mas un asistente (Claude Pro o ChatGPT Plus).", "evidencia": "Copilot Business 19 + Claude Pro 20 = 39; Cursor Pro 20 + Copilot Pro 10 = 30. Sobreconsumo bajo: el uso es de autocompletado y chat." },
+      "hybrid": { "usd_por_persona_mes": 100, "sobreconsumo": 0.20, "descripcion": "Claude Max 5x, o Cursor Pro+ mas Copilot Business y Claude Pro.", "evidencia": "Claude Max 5x 100; Cursor Pro+ 60 + Copilot Business 19 + Claude Pro 20 = 99. Los planes de 100 son lo comun segun DX 2026." },
+      "bytecoding_prompts": { "usd_por_persona_mes": 250, "sobreconsumo": 0.30, "descripcion": "Claude Max 20x o Cursor Ultra mas consumo de agentes.", "evidencia": "Claude Max 20x 200 o Cursor Ultra 200 mas excedente; gasto real con agentes 150 a 250 tipico y 200 a 500 en una de cada cuatro organizaciones (Gartner citado por morphllm, 2026)." },
+      "low_code": { "usd_por_persona_mes": 40, "sobreconsumo": 0, "descripcion": "Asiento de constructor (Power Apps Premium) mas asistente de IA.", "usd_por_usuario_final_mes": 20, "usuarios_finales_supuestos": 10, "evidencia": "Power Apps Premium 20 por usuario al mes (por usuario FINAL, no por desarrollador): cada persona de la oficina que use el sistema paga licencia mientras lo use. AppSheet Core 10, Appian 75 a 100. Es un costo que sigue despues de entregar." }
+    }
+  },
+  "ai_skill_factors": {
+    "_semantica": "Que parte de la ganancia nominal de cada forma de hacerlo (1 - effort_efficiency en horas y velocity_factor - 1 en calendario) se acredita segun la pericia promedio del equipo con la IA, de 1 a 5. El nivel 4 (la usa a diario y sabe dar instrucciones) es el usuario para el que estan calibrados DEV_MODE_VELOCITY y effort_efficiency. Aplica a ai_assisted, hybrid y bytecoding_prompts; no a traditional ni a low_code (la velocidad del low-code viene de la plataforma).",
+    "_escala": { "1": "Nunca ha usado IA para programar", "2": "La ha probado", "3": "La usa en algunos proyectos", "4": "La usa a diario y sabe dar instrucciones", "5": "Arma flujos con agentes y revisa lo que generan" },
+    "_consultado": "2026-09-09",
+    "_evidencia": [
+      "METR 2025 (https://metr.org/blog/2025-07-10-early-2025-ai-experienced-os-dev-study/): 16 desarrolladores experimentados, 246 tareas: 19 % MAS LENTOS con IA en su propio codigo, con pocas horas de uso de la herramienta.",
+      "Google 2024 (https://arxiv.org/pdf/2410.12944): 96 ingenieros, tarea realista: +21 %.",
+      "Peng et al. 2023, GitHub/Microsoft/MIT (https://arxiv.org/abs/2302.06590): 95 freelancers, tarea aislada: +55.8 %, mas ganancia en los de menos experiencia.",
+      "McKinsey 2023: menos de 10 % de ahorro en tareas complejas o con framework desconocido.",
+      "DORA 2025 (https://cloud.google.com/blog/products/ai-machine-learning/announcing-the-2025-dora-report): la IA sube el throughput pero sigue correlacionando negativamente con la estabilidad.",
+      "Stack Overflow 2025 (https://survey.stackoverflow.co/2025/ai): 46 % desconfia de la exactitud; frustracion principal: casi correcto pero no.",
+      "Sintesis 2025-2026: 30 a 100 horas de uso antes de que la ganancia sea claramente positiva; arXiv 2507.18638: la calidad de las instrucciones determina el valor obtenido."
+    ],
+    "_uso_motor": "f = factor[pericia] (interpolado); eficiencia_efectiva = 1 - (1 - effort_efficiency) * f; velocidad_efectiva = 1 + (velocity_factor - 1) * f; prototipo_efectivo = 1 + (prototype_speedup - 1) * f",
+    "1": 0.35,
+    "2": 0.65,
+    "3": 0.85,
+    "4": 1.0,
+    "5": 1.15
   },
   "scenario_factors": {
     "_semantica": "Factores aplicados al esfuerzo total para generar los 3 escenarios. El factor conservador puede subir hasta 1.80 segun acumulacion de incertidumbres (ver formula en 07_motor_formulas.md seccion 3).",

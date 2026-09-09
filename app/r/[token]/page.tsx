@@ -78,6 +78,7 @@ export default async function ResultadoCompartidoPage({
       weeksToPrototype: e.weeksToPrototype !== null ? Number(e.weeksToPrototype) : null,
       riskScore: Number(e.riskScore), riskLevel: e.riskLevel, margin: Number(e.margin),
     })),
+    team: project.team.map((t) => ({ role: t.role, availabilityPercent: t.availabilityPercent, aiSkill: t.aiSkill })),
     workingCapitalRequired: capitalRequerido,
   });
 
@@ -96,6 +97,16 @@ export default async function ResultadoCompartidoPage({
     pasos = sel?.explanationJson ? (JSON.parse(sel.explanationJson) as PasoDeCalculo[]) : [];
   } catch {
     pasos = [];
+  }
+
+  let licencias: { usuarios: number; usdPorUsuario: number; mensualMXN: number; supuestos: boolean } | null = null;
+  try {
+    const snap = sel ? (JSON.parse(sel.inputsSnapshot) as { herramientas?: { usuariosFinales: number; usdPorUsuarioFinal: number; mensualUsuariosFinalesMXN: number; usuariosFinalesSupuestos: boolean } }) : null;
+    if (sel?.mode === "low_code" && snap?.herramientas && snap.herramientas.mensualUsuariosFinalesMXN > 0) {
+      licencias = { usuarios: snap.herramientas.usuariosFinales, usdPorUsuario: snap.herramientas.usdPorUsuarioFinal, mensualMXN: snap.herramientas.mensualUsuariosFinalesMXN, supuestos: snap.herramientas.usuariosFinalesSupuestos };
+    }
+  } catch {
+    licencias = null;
   }
 
   const buscar = (mode?: string | null, scenario?: string | null) =>
@@ -174,6 +185,7 @@ export default async function ResultadoCompartidoPage({
             mantenimiento={computeMaintenanceMonthly(total)}
             rangosCambio={computeChangeRangeByType(semanas && semanas > 0 ? costoDirecto / semanas : 0)}
             esProveedor={role === "proveedor"}
+            licenciasUsuarioFinal={licencias}
           />
         </>
       ) : (

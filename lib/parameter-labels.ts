@@ -70,6 +70,7 @@ export function categorizar(key: string): string {
   if (key === "INFONAVIT_PATRON") return "INFONAVIT";
   if (key === "IVA_GENERAL" || key === "ISR_PERSONA_MORAL") return "FED";
   if (key.startsWith("DEV_MODE") || key === "SCENARIO_FACTORS" || key === "DEFAULT_CARGA_PATRONAL_ESTIMADA") return "MODO";
+  if (key.startsWith("AI_") || key === "TIPO_CAMBIO_USD_MXN") return "MODO";
   return "OTROS";
 }
 
@@ -144,6 +145,9 @@ const NOMBRES_ES: Record<string, string> = {
   DEV_MODE_VELOCITY: "Velocidad de avance por modo de desarrollo",
   SCENARIO_FACTORS: "Factores de los escenarios optimista, probable y conservador",
   DEFAULT_CARGA_PATRONAL_ESTIMADA: "Carga patronal estimada cuando no se captura el equipo",
+  AI_TOOL_COSTS: "Lo que cuestan las herramientas de IA por persona, según la forma de hacerlo",
+  AI_SKILL_FACTORS: "Qué parte del ahorro de la IA se acredita según la pericia del equipo",
+  TIPO_CAMBIO_USD_MXN: "Tipo de cambio para las herramientas cotizadas en dólares",
 
   // Cambios a medio proyecto
   CHANGE_ARTIFACT_WEIGHTS: "Trabajo que implica cada cosa que hay que rehacer",

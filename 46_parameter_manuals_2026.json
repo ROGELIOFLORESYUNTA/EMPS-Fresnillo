@@ -420,6 +420,39 @@
       "sourceTrustLevel": "secundaria",
       "lastReviewedAt": "2026-05-30"
     },
+    "AI_TOOL_COSTS": {
+      "title": "Herramientas de IA por forma de hacerlo",
+      "originSource": "Páginas de precios oficiales (GitHub, Cursor, Anthropic, Microsoft, Google) y gasto real publicado (morphllm, DX, Gartner citado), consultados el 09-sep-2026",
+      "originUrl": "https://github.com/features/copilot/plans",
+      "originDocument": "Investigación de precios EMPS-Fresnillo, 9 de septiembre de 2026",
+      "whatItAffects": "Suma al costo del proyecto (y por tanto al precio y al flujo de efectivo) lo que cuestan al mes las herramientas de IA de cada persona técnica del equipo, según la forma de hacerlo: 0 USD a mano, 30 con ayuda de IA, 100 híbrido, 250 casi todo con IA, 40 en plataforma de armado (más 20 por cada usuario final después de entregar). Se multiplica por (1 + sobreconsumo) y por el tipo de cambio. Sin IVA porque es acreditable.",
+      "howToModify": "- Revisar la página de precios de cada herramienta (cambian varias veces al año).\n- Ajustar usd_por_persona_mes y sobreconsumo por modo; no mezclar con TIPO_CAMBIO_USD_MXN.\n- Si el proveedor usa otra canasta, editarla en su workspace, no en el valor global.\n- Registrar fecha de consulta en _consultado.",
+      "referencesMarkdown": "- Copilot: https://github.com/features/copilot/plans\n- Cursor: https://cursor.com/pricing\n- Claude y Claude Code: https://claude.com/pricing\n- Gasto real con agentes: https://www.morphllm.com/ai-coding-costs\n- Presupuestos de IA por ingeniero: https://getdx.com/blog/how-are-engineering-leaders-approaching-2026-ai-tooling-budget/\n- Power Apps: https://www.microsoft.com/en-us/power-platform/products/power-apps/pricing\n- IVA a servicios digitales extranjeros (LIVA 18-B): https://www.diputados.gob.mx/LeyesBiblio/pdf/LIVA.pdf",
+      "sourceTrustLevel": "secundaria",
+      "lastReviewedAt": "2026-09-09"
+    },
+    "AI_SKILL_FACTORS": {
+      "title": "Pericia del equipo con la IA",
+      "originSource": "METR 2025, Google 2024, Peng et al. 2023, McKinsey 2023, DORA 2025, Stack Overflow 2025, arXiv 2507.18638",
+      "originUrl": "https://metr.org/blog/2025-07-10-early-2025-ai-experienced-os-dev-study/",
+      "originDocument": "Síntesis de evidencia EMPS-Fresnillo, 9 de septiembre de 2026",
+      "whatItAffects": "Qué parte del ahorro nominal de cada forma de hacerlo se acredita según la pericia promedio del equipo con la IA (1 a 5): 35 % con nivel 1, 65 % con 2, 85 % con 3, 100 % con 4 y 115 % con 5. Mueve las horas, las semanas y el precio de los modos con IA (ayuda de IA, híbrido, casi todo con IA). No afecta a mano ni plataforma de armado.",
+      "howToModify": "- Cambiar solo con evidencia nueva (estudios controlados, no anécdotas).\n- Mantener el nivel 4 en 1.0: es el usuario para el que están calibrados los factores de velocidad.\n- Registrar la versión de la calibración.",
+      "referencesMarkdown": "- METR 2025 (19 % más lentos): https://metr.org/blog/2025-07-10-early-2025-ai-experienced-os-dev-study/\n- Google 2024 (+21 %): https://arxiv.org/pdf/2410.12944\n- Peng et al. 2023 (+56 %): https://arxiv.org/abs/2302.06590\n- DORA 2025: https://cloud.google.com/blog/products/ai-machine-learning/announcing-the-2025-dora-report\n- Stack Overflow 2025: https://survey.stackoverflow.co/2025/ai\n- Instrucciones y valor obtenido: https://arxiv.org/abs/2507.18638",
+      "sourceTrustLevel": "secundaria",
+      "lastReviewedAt": "2026-09-09"
+    },
+    "TIPO_CAMBIO_USD_MXN": {
+      "title": "Tipo de cambio USD a MXN",
+      "originSource": "Banxico, tipo de cambio FIX para solventar obligaciones (DOF)",
+      "originUrl": "https://www.banxico.org.mx/tipcamb/llenarTiposCambioAction.do?idioma=sp",
+      "originDocument": "DOF, indicadores del 09-sep-2026: 16.9202",
+      "whatItAffects": "Convierte a pesos los precios en dólares de las herramientas de IA y de las plataformas de armado. Si el dólar sube, sube esa línea del costo; no toca ninguna cuota fiscal.",
+      "howToModify": "- Consultar el FIX del día en Banxico o el DOF.\n- Actualizar el valor y la fecha de vigencia.\n- Recalcular los proyectos abiertos si la diferencia es mayor a 5 %.",
+      "referencesMarkdown": "- Banxico FIX: https://www.banxico.org.mx/tipcamb/llenarTiposCambioAction.do?idioma=sp\n- DOF indicadores: https://dof.gob.mx/indicadores.php",
+      "sourceTrustLevel": "oficial",
+      "lastReviewedAt": "2026-09-09"
+    },
     "SCENARIO_FACTORS": {
       "title": "Escenarios estimación",
       "originSource": "Gestión de riesgos PMBOK + calibración EMPS",

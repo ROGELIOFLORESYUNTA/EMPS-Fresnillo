@@ -134,6 +134,25 @@ async function seedParameters() {
     },
   });
 
+  // Herramientas de IA por forma de hacerlo y pericia del equipo con la IA (septiembre 2026).
+  for (const [key, data, notes] of [
+    ["AI_TOOL_COSTS", seedData.ai_tool_costs, "Costo mensual de herramientas de IA por persona tecnica y por forma de hacerlo, USD sin IVA, con sobreconsumo tipico. Precios consultados el 09-sep-2026; fuentes en el JSON."],
+    ["AI_SKILL_FACTORS", seedData.ai_skill_factors, "Parte de la ganancia nominal de cada modo que se acredita segun la pericia promedio del equipo con la IA (1 a 5). Evidencia en el JSON."],
+  ] as Array<[string, unknown, string]>) {
+    await prisma.parameter.upsert({
+      where: { year_country_state_key_effectiveFrom: { year, country, state, key, effectiveFrom: new Date("2026-09-09") } },
+      update: { value: JSON.stringify(data) },
+      create: {
+        year, country, state, key,
+        value: JSON.stringify(data),
+        unit: "json",
+        source: "Investigacion en internet del 09-sep-2026: paginas de precios oficiales y estudios publicados (ver fuentes dentro del valor)",
+        effectiveFrom: new Date("2026-09-09"),
+        notes,
+      },
+    });
+  }
+
   const scenariosKey = "SCENARIO_FACTORS";
   await prisma.parameter.upsert({
     where: {

@@ -50,6 +50,7 @@ model Project {
   estimatedBudget         Decimal?
   clientAvailabilityLevel String? // alta | media | baja: que tan disponible esta el cliente para dudas (entra al riesgo)
   shareToken              String?   @unique // enlace de solo lectura /r/[token]; null = no compartido
+  expectedUsers           Int? // cuantas personas van a usar el sistema (licencias por usuario final en low-code)
   targetDate              DateTime?
   priority                String    @default("media") // baja|media|alta|critica
   status                  String    @default("borrador") // borrador|captura|estimado|aprobado|en_ejecucion|cerrado|archivado
@@ -148,6 +149,7 @@ model TeamProfile {
   productivityFactor  Decimal  @default(1.0)
   turnoverRisk        Int      @default(2) // 1-5
   supervisionRequired Int      @default(2) // 1-5
+  aiSkill             Int      @default(3) // 1-5: pericia con la IA para programar (1 nunca la ha usado, 4 la usa a diario, 5 arma flujos con agentes)
   notes               String?
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
@@ -211,7 +213,7 @@ model Estimate {
 
   // Costos
   directCost   Decimal @default(0)
-  indirectCost Decimal @default(0)
+  indirectCost Decimal @default(0) // parte del costo que son herramientas de IA, otras herramientas y administracion (ya incluida en directCost)
   subtotal     Decimal @default(0)
   vat          Decimal @default(0)
   total        Decimal @default(0)

@@ -41,6 +41,8 @@ export default function CotizarPage() {
   const [fechaLimite, setFechaLimite] = useState("");
   const [disponibilidad, setDisponibilidad] = useState<string>("media");
   const [lado, setLado] = useState<"ayuntamiento" | "proveedor" | null>(null);
+  const [experienciaIA, setExperienciaIA] = useState<number>(3);
+  const [personas, setPersonas] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -75,6 +77,8 @@ export default function CotizarPage() {
         fechaLimite: fechaLimite || null,
         disponibilidadCliente: disponibilidad,
         lado,
+        experienciaIA,
+        personasQueLoUsan: personas ? Number(personas) : null,
         segundosEnLlenar: Math.round((Date.now() - inicio.current) / 1000),
       });
       router.push(`/projects/${result.project.id}`);
@@ -172,6 +176,27 @@ export default function CotizarPage() {
               <p className="text-xs text-muted-foreground">Entre menos disponible esté, más horas de espera y de ir y venir se suman.</p>
             </div>
             <div className="sm:col-span-2 space-y-2">
+              <Label>¿Quien lo va a hacer ya programa con IA?</Label>
+              <div className="grid sm:grid-cols-3 gap-2">
+                {[
+                  { v: 1, t: "Nunca", d: "Las herramientas de IA no le ahorran tiempo todavía." },
+                  { v: 3, t: "A veces", d: "La usa en algunos proyectos; se acredita parte del ahorro." },
+                  { v: 4, t: "Todos los días", d: "Sabe dar instrucciones y revisar lo que genera." },
+                ].map((o) => (
+                  <button key={o.v} type="button" onClick={() => setExperienciaIA(o.v)} className={`rounded-md border p-3 text-left text-sm hover:bg-accent ${experienciaIA === o.v ? "border-primary ring-1 ring-primary" : ""}`}>
+                    <p className="font-medium">{o.t}</p>
+                    <p className="text-xs text-muted-foreground">{o.d}</p>
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">Cambia cuánto ahorra la IA y si conviene hacerlo casi todo con IA. Las herramientas de IA se cobran aparte, según la forma de hacerlo.</p>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="personas">¿Cuántas personas lo van a usar? (opcional)</Label>
+              <Input id="personas" type="number" min={1} value={personas} onChange={(e) => setPersonas(e.target.value)} placeholder="25" />
+              <p className="text-xs text-muted-foreground">Si se hace con una plataforma de armado, cada persona paga licencia mientras lo use.</p>
+            </div>
+            <div className="sm:col-span-2 space-y-2">
               <Label>¿De qué lado estás? (opcional; cambia qué opción se te recomienda)</Label>
               <div className="grid sm:grid-cols-2 gap-2">
                 <button type="button" onClick={() => setLado(lado === "ayuntamiento" ? null : "ayuntamiento")} className={`rounded-md border p-3 text-left text-sm hover:bg-accent ${lado === "ayuntamiento" ? "border-primary ring-1 ring-primary" : ""}`}>
@@ -197,7 +222,7 @@ export default function CotizarPage() {
         </div>
         <p className="text-xs text-muted-foreground">
           Lo que se asume mientras no lo cambies: cada parte es de tamaño mediano y con una pantalla; el equipo es un
-          desarrollador con experiencia a sueldo de nómina; la utilidad del proveedor es 20 %. Todo se puede ajustar en el proyecto.
+          desarrollador con experiencia a sueldo de nómina, con la pericia con la IA que contestes y sus herramientas cobradas según la forma de hacerlo; la utilidad del proveedor es 20 %. Todo se puede ajustar en el proyecto.
         </p>
       </form>
     </div>

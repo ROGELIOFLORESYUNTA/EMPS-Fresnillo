@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { api, apiPost, apiPut, apiDelete } from "@/lib/api-client";
 import { formatMXN, CONTRACT_LABELS, CONTRACT_HELP, ROLE_LABELS, LEVEL_LABELS, labelOf } from "@/lib/utils";
 import { Breadcrumbs } from "@/components/breadcrumbs";
+import { periciaDelEquipo, PERICIA_ETIQUETAS } from "@/lib/engine/herramientas";
 import { BarraDePasos } from "@/components/barra-de-pasos";
 import { Plus, Trash2, Pencil, X, Save } from "lucide-react";
 
@@ -25,6 +26,7 @@ interface TeamItem {
   contractType: string;
   turnoverRisk: number;
   supervisionRequired: number;
+  aiSkill: number;
 }
 
 const FORM_DEFAULT = {
@@ -37,6 +39,7 @@ const FORM_DEFAULT = {
   contractType: "nomina",
   turnoverRisk: 2,
   supervisionRequired: 2,
+  aiSkill: 3,
 };
 
 export default function ProjectTeamPage({ params }: { params: Promise<{ id: string }> }) {
@@ -67,6 +70,7 @@ export default function ProjectTeamPage({ params }: { params: Promise<{ id: stri
       contractType: p.contractType,
       turnoverRisk: p.turnoverRisk,
       supervisionRequired: p.supervisionRequired,
+      aiSkill: p.aiSkill ?? 3,
     });
   }
 
@@ -191,6 +195,18 @@ export default function ProjectTeamPage({ params }: { params: Promise<{ id: stri
                 <Input type="number" min={1} max={5} value={form.turnoverRisk} onChange={(e) => setForm({ ...form, turnoverRisk: +e.target.value })} />
                 <p className="text-xs text-muted-foreground">1 = persona estable · 5 = muy probable que se vaya. Entra al factor de riesgo de la estimación: 1 no agrega nada, 5 agrega hasta 30% de horas.</p>
               </div>
+              <div className="grid gap-2">
+                <Label>¿Qué tanto usa la IA para programar? (1-5)</Label>
+                <Select value={String(form.aiSkill)} onChange={(e) => setForm({ ...form, aiSkill: +e.target.value })}>
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <option key={n} value={n}>{n} · {PERICIA_ETIQUETAS[n]}</option>
+                  ))}
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Solo cuenta en las formas de hacerlo con IA (con ayuda de IA, híbrido, casi todo con IA). Los ahorros de la IA están calibrados para el nivel 4;
+                  con menos pericia se acredita solo una parte (1: 35 %, 2: 65 %, 3: 85 %) y con 5 un poco más (115 %). Un modelo muy potente en manos de quien no sabe darle instrucciones no ahorra tiempo.
+                </p>
+              </div>
               {/* "Supervision que necesita" se dejo de pedir: el motor nunca lo leyo. Sigue en el esquema. */}
               {error && <p className="text-sm text-destructive">{error}</p>}
               <div className="flex justify-end gap-2">
@@ -220,6 +236,7 @@ export default function ProjectTeamPage({ params }: { params: Promise<{ id: stri
                   <TableHead className="text-right">Salario</TableHead>
                   <TableHead className="text-center">Disponibilidad</TableHead>
                   <TableHead className="text-center">Meses</TableHead>
+                  <TableHead className="text-center">Usa IA (1-5)</TableHead>
                   <TableHead>Contrato</TableHead>
                   <TableHead></TableHead>
                 </TableRow>
@@ -232,6 +249,7 @@ export default function ProjectTeamPage({ params }: { params: Promise<{ id: stri
                     <TableCell className="text-right">{formatMXN(Number(p.monthlySalary))}</TableCell>
                     <TableCell className="text-center">{p.availabilityPercent}%</TableCell>
                     <TableCell className="text-center">{Number(p.monthsAssigned).toFixed(1)}</TableCell>
+                    <TableCell className="text-center">{p.aiSkill ?? 3}</TableCell>
                     <TableCell><Badge variant="outline">{labelOf(CONTRACT_LABELS, p.contractType)}</Badge></TableCell>
                     <TableCell>
                       <div className="flex gap-1">
@@ -253,6 +271,7 @@ export default function ProjectTeamPage({ params }: { params: Promise<{ id: stri
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/30 p-4">
         <p className="text-sm">
           <strong>{team.length} persona(s)</strong> · {formatMXN(team.reduce((a, t) => a + Number(t.monthlySalary), 0))} al mes en sueldos; las cuotas del IMSS, INFONAVIT e impuesto sobre nómina se suman al calcular.
+          {team.length > 0 && <> · Pericia con la IA: <strong>{periciaDelEquipo(team).promedio} de 5</strong> (promedio de los puestos técnicos).</>}
         </p>
         {team.length > 0 ? (
           <Button asChild><Link href={`/projects/${projectId}/estimate`}>Continuar: calcular</Link></Button>

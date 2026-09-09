@@ -10,6 +10,7 @@ export const projectCreateSchema = z.object({
   systemType: z.string().min(2),
   responsible: z.string().optional(),
   estimatedBudget: z.number().nullable().optional(),
+  expectedUsers: z.number().int().min(1).max(100000).nullable().optional(),
   targetDate: z.string().datetime().optional().nullable(),
   priority: z.enum(["baja", "media", "alta", "critica"]).default("media"),
   notes: z.string().optional(),
@@ -58,6 +59,8 @@ export const teamProfileCreateSchema = z.object({
   monthsAssigned: z.number().min(0).default(1),
   contractType: z.enum(["asimilados", "honorarios", "nomina", "resico_pf", "freelance"]).default("nomina"),
   productivityFactor: z.number().min(0).max(2).default(1.0),
+  // Pericia con la IA para programar (1 nunca la ha usado ... 5 arma flujos con agentes).
+  aiSkill: z.number().int().min(1).max(5).default(3),
   turnoverRisk: z.number().int().min(1).max(5).default(2),
   supervisionRequired: z.number().int().min(1).max(5).default(2),
   notes: z.string().optional(),

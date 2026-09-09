@@ -17,6 +17,8 @@ export function PreguntasDelPatron(p: {
   mantenimiento: MaintenanceResult;
   rangosCambio: ChangeRangeRow[];
   esProveedor: boolean;
+  /** Plataforma de armado: licencias por usuario final que siguen después de entregar. */
+  licenciasUsuarioFinal?: { usuarios: number; usdPorUsuario: number; mensualMXN: number; supuestos: boolean } | null;
 }) {
   const meses = p.onTime.weeksNeeded / 4.33;
   return (
@@ -63,6 +65,12 @@ export function PreguntasDelPatron(p: {
         <CardContent className="text-sm space-y-1">
           <p>Unos <strong>{formatMXN(p.mantenimiento.monthlyAmount)}</strong> al mes ({formatMXN(p.mantenimiento.annualAmount)} al año), calculado como {(p.mantenimiento.pctOfTotal * 100).toFixed(0)} % del precio.</p>
           <p className="text-muted-foreground">Es una referencia para negociarlo en el contrato; no está incluido en el precio de arriba.</p>
+          {p.licenciasUsuarioFinal && (
+            <p className="text-amber-800">
+              Además, por ser una plataforma de armado: <strong>{formatMXN(p.licenciasUsuarioFinal.mensualMXN)} al mes</strong> en licencias ({p.licenciasUsuarioFinal.usuarios} usuario(s) × {p.licenciasUsuarioFinal.usdPorUsuario} USD
+              {p.licenciasUsuarioFinal.supuestos ? ", usuarios supuestos; captura cuántos son en Datos generales" : ""}) mientras el sistema se use. Tampoco está en el precio.
+            </p>
+          )}
         </CardContent>
       </Card>
 
