@@ -340,6 +340,20 @@ export default async function ProjectDetailPage({
         </div>
       )}
 
+      {/* Vino de Cotizar en un minuto: la cifra sale de valores típicos; invitar a afinar */}
+      {project.notes?.startsWith("Creado con Cotizar en un minuto") && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50/60 p-4 text-sm flex flex-wrap items-center justify-between gap-3">
+          <div className="max-w-2xl">
+            <p className="font-medium text-amber-900">Esta cifra sale de valores típicos</p>
+            <p className="text-amber-800">Cada parte se tomó de tamaño mediano y el equipo es un desarrollador. Afina los módulos y el equipo, vuelve a calcular, y el número será el tuyo.</p>
+          </div>
+          <div className="flex gap-2">
+            <Button size="sm" asChild><Link href={`/projects/${id}/modules`}>Afinar módulos</Link></Button>
+            <Button size="sm" variant="outline" asChild><Link href={`/projects/${id}/team`}>Afinar equipo</Link></Button>
+          </div>
+        </div>
+      )}
+
       {/* Encabezado */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>

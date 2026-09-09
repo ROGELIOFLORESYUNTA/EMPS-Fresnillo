@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, FolderOpen, Plus, BookOpen, FileText, AlertCircle, User2, Eye, ShieldCheck, BookOpenCheck } from "lucide-react";
+import { ArrowRight, FolderOpen, Plus, BookOpen, FileText, AlertCircle, User2, Eye, ShieldCheck, BookOpenCheck, Zap } from "lucide-react";
 import { formatMXN, STATUS_LABELS, labelOf } from "@/lib/utils";
 import { peekWorkspace } from "@/lib/workspace";
 
@@ -79,13 +79,19 @@ export default async function HomePage() {
           proveedor que va a cotizar.
         </p>
 
-        <div className="grid md:grid-cols-3 gap-4">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <ActionCard
+            href="/cotizar"
+            icon={<Zap className="w-6 h-6" />}
+            title="Cotizar en un minuto"
+            description="Di qué sistema quieres y qué partes debe tener; te dice cuánto cuesta, cuánto tarda y con qué forma de hacerlo."
+            primary
+          />
           <ActionCard
             href="/projects/new"
             icon={<Plus className="w-6 h-6" />}
-            title="Crear proyecto"
-            description="Empezar un proyecto nuevo desde cero"
-            primary
+            title="Crear proyecto completo"
+            description="Capturar módulos, equipo y condiciones con detalle, paso por paso."
           />
           {ejemplo ? (
             <ActionCard
