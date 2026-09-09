@@ -14,7 +14,8 @@ import { InfoTip } from "@/components/info-tip";
 import { RecommendationCard } from "@/components/recommendation-card";
 import { DecisionSection, type DecisionTimelineItem } from "@/components/decision-section";
 import { ElegirOpcionButton } from "@/components/elegir-opcion-button";
-import { recommendBestOption, type RecommendationRole } from "@/lib/engine/recommendation";
+import type { RecommendationRole } from "@/lib/engine/recommendation";
+import { recomendacionDelProyecto } from "@/lib/recomendacion-proyecto";
 import { getCurrentWorkspaceId, peekWorkspace } from "@/lib/workspace";
 
 export default async function ProjectDetailPage({
@@ -115,18 +116,10 @@ export default async function ProjectDetailPage({
     conservative: "conservador",
   };
 
-  // Análisis comparativo entre modos para detectar el riesgo de cotizar barato y ejecutar caro.
-  // (ej. cotizar barato asumiendo bytecoding pero ejecutar en tradicional -> quiebra)
-  const probableEstimatesByMode = latestEstimates.filter((e) => e.scenario === "probable");
-  const probableTotals = probableEstimatesByMode.map((e) => Number(e.total));
-  const minProbable = probableTotals.length > 0 ? Math.min(...probableTotals) : 0;
-  const maxProbable = probableTotals.length > 0 ? Math.max(...probableTotals) : 0;
-  const rangeMultiplier = minProbable > 0 ? maxProbable / minProbable : 1;
-  const cheapestMode = probableEstimatesByMode.find((e) => Number(e.total) === minProbable);
-  const mostExpensiveMode = probableEstimatesByMode.find((e) => Number(e.total) === maxProbable);
-
   // ===== Recomendación "¿cuál opción te conviene?" según el rol del visitante =====
-  const recommendation = recommendBestOption({
+  // Una sola recomendación para todo el sistema (pantalla y reportes): mismas
+  // estimaciones, misma aptitud por modo para ESTE proyecto, misma brecha.
+  const { recomendacion: recommendation } = recomendacionDelProyecto({
     role: visitorRole,
     project: {
       priority: project.priority,
@@ -134,7 +127,17 @@ export default async function ProjectDetailPage({
       estimatedBudget: project.estimatedBudget !== null ? Number(project.estimatedBudget) : null,
       systemType: project.systemType,
     },
-    options: latestEstimates.map((e) => ({
+    modules: project.modules.map((m) => ({
+      complexity: m.complexity,
+      clarity: m.clarity,
+      criticality: m.criticality,
+      screensCount: m.screensCount,
+      reportsCount: m.reportsCount,
+      catalogsCount: m.catalogsCount,
+      integrationsCount: m.integrationsCount,
+      sensitiveData: m.sensitiveData,
+    })),
+    estimates: latestEstimates.map((e) => ({
       mode: e.mode,
       scenario: e.scenario,
       total: Number(e.total),
@@ -146,6 +149,7 @@ export default async function ProjectDetailPage({
     })),
     workingCapitalRequired: Number(workingCapitalRequired),
   });
+  const brecha = recommendation?.brecha ?? null;
 
   // ===== Decisión activa + cronología de lo que pasó después =====
   const allDecisions = await prisma.projectDecision.findMany({
@@ -591,48 +595,30 @@ export default async function ProjectDetailPage({
               ),
             }}
           />
-          {cheapestMode && mostExpensiveMode && cheapestMode.mode !== mostExpensiveMode.mode ? (
-            rangeMultiplier > 1.5 ? (
-              <Card className="border-orange-300 bg-orange-50/40">
-                <CardContent className="py-4">
-                  <p className="text-xs uppercase tracking-wide text-orange-800 mb-1 font-semibold flex items-center gap-1">
-                    <span>Riesgo de cotización</span>
-                    <InfoTip title="¿Por qué hay riesgo?">
-                      <p>Compara los precios del MISMO proyecto en dos modos de desarrollo distintos. El número de arriba es el factor: el modo más caro vale tantas veces el más barato.</p>
-                      <p>Si es alto (&gt;1.5×), una mala elección de modo cambia mucho el costo. <strong>Cotizar como bytecoding y ejecutar como tradicional puede llevar al proveedor a quiebra</strong>.</p>
-                      <p><strong>Recomendación:</strong> cotiza al cliente con el modo que realmente vas a usar. Si vas a usar bytecoding, presenta evidencia de pruebas de calidad; si vas a usar tradicional, justifícalo.</p>
-                    </InfoTip>
-                  </p>
-                  <p className="text-2xl font-bold text-orange-900">{rangeMultiplier.toFixed(1)}×</p>
-                  <p className="text-xs text-orange-900 mt-1 leading-snug">
-                    <strong>{modeLabels[mostExpensiveMode.mode]}</strong>: {formatMXN(maxProbable)}<br />
-                    <strong>{modeLabels[cheapestMode.mode]}</strong>: {formatMXN(minProbable)}<br />
-                    <span className="text-orange-800">El más caro vale {rangeMultiplier.toFixed(1)} veces el más barato.</span>
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              <SummaryCard
-                label="Comparación entre modos"
-                value={`${rangeMultiplier.toFixed(1)}× brecha`}
-                hint={`${modeLabels[mostExpensiveMode.mode]} (${formatMXN(maxProbable)}) vs ${modeLabels[cheapestMode.mode]} (${formatMXN(minProbable)}). Brecha baja, la elección de modo no es crítica.`}
-                info={{
-                  title: "Comparación entre modos",
-                  body: (
-                    <p>Factor entre el precio probable del modo más caro y el más barato. Cuando es bajo (&lt;1.5×) la elección del modo no es crítica para el costo total.</p>
-                  ),
-                }}
-              />
-            )
+          {brecha ? (
+            <SummaryCard
+              label="La forma de hacerlo es lo que más pesa"
+              value={formatMXN(brecha.diferencia)}
+              hint={`De diferencia entre hacerlo ${(modeLabels[brecha.modoCaro] ?? brecha.modoCaro).toLowerCase()} (${formatMXN(brecha.maximo)}) y ${(modeLabels[brecha.modoBarato] ?? brecha.modoBarato).toLowerCase()} (${formatMXN(brecha.minimo)}), escenario ${scenarioLabels[brecha.escenario] ?? brecha.escenario}. Pide que te digan con cuál te están cotizando.`}
+              info={{
+                title: "¿Por qué tanta diferencia?",
+                body: (
+                  <>
+                    <p>Es el mismo proyecto, con el mismo equipo. Lo único que cambia es la forma de hacerlo: cuánto trabajo se hace a mano, con ayuda de la IA o con herramientas de armado.</p>
+                    <p>Por eso la decisión que más pesa no es el precio, sino con qué forma de hacerlo te están cotizando y si esa forma sirve para tu proyecto. Arriba, en &quot;¿Cuál opción te conviene?&quot;, se dice cuáles sirven para este caso y cuáles no.</p>
+                  </>
+                ),
+              }}
+            />
           ) : (
             <SummaryCard
-              label="Comparación entre modos"
-              value="Solo 1 modo"
-              hint="Aún no hay estimaciones en otros modos para comparar. Corre la estimación en otro modo para ver la brecha de costo y decidir mejor."
+              label="La forma de hacerlo es lo que más pesa"
+              value="Solo 1 forma"
+              hint="Aún no hay estimaciones en otras formas de hacerlo para comparar. Corre la estimación comparando las 5."
               info={{
                 title: "¿Por qué no hay comparación?",
                 body: (
-                  <p>Esta tarjeta compara el precio del mismo proyecto bajo dos modos de desarrollo distintos (ej. tradicional vs bytecoding). Solo hay 1 estimación probable registrada hoy, así que no se puede comparar. Genera una estimación adicional en otro modo para ver la diferencia.</p>
+                  <p>Esta tarjeta compara el precio del mismo proyecto bajo distintas formas de hacerlo. Hoy solo hay una, así que no hay nada que comparar.</p>
                 ),
               }}
             />

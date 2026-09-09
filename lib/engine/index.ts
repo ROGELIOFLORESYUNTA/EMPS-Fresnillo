@@ -13,6 +13,7 @@ export * from "./risk";
 export * from "./metrics";
 export * from "./lft-risk";
 export * from "./explicacion";
+export * from "./aptitud";
 export { loadFiscalRatesFromSeed } from "./seedAdapter";
 
 // Control de cambios v6 (Addendum 26-34)

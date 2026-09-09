@@ -7,7 +7,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { formatMXN, formatHours, formatWeeks, RISK_LEVELS, DEVELOPMENT_MODES, SYSTEM_TYPE_LABELS, SCENARIO_LABELS, ROLE_LABELS, LEVEL_LABELS, labelOf } from "@/lib/utils";
 import { ChevronLeft, AlertTriangle, CheckCircle2, Clock, ShieldAlert, Cog, GitBranch, Wrench, CalendarClock, Wallet, TrendingDown, TrendingUp } from "lucide-react";
 import { PrintButton } from "@/components/print-button";
-import { recommendBestOption } from "@/lib/engine/recommendation";
+import { recomendacionDelProyecto } from "@/lib/recomendacion-proyecto";
 import {
   computeProviderOpportunityCost,
   computeProviderViabilityRatio,
@@ -89,17 +89,29 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
   const maintenance = computeMaintenanceMonthly(totalPrice);
   const changeRanges = computeChangeRangeByType(weeklyTeamRate);
 
-  // Recomendación REAL para el reporte municipal (rol forzado: el lector es el
-  // Ayuntamiento). Antes aquí se mostraba el default hybrid como "recomendado".
-  const municipalRecommendation = recommendBestOption({
-    role: "operador_municipal",
+  // La MISMA recomendación que la pantalla del proyecto (mismo helper, misma
+  // aptitud por modo, misma brecha). El rol lo decide el tipo de reporte: el
+  // municipal se lee desde el Ayuntamiento, el de proveedor desde el proveedor.
+  const rolDelReporte = type === "municipal" ? "operador_municipal" : type === "provider" ? "proveedor" : null;
+  const { recomendacion: municipalRecommendation } = recomendacionDelProyecto({
+    role: rolDelReporte,
     project: {
       priority: project.priority,
       targetDate: project.targetDate,
       estimatedBudget: project.estimatedBudget !== null ? Number(project.estimatedBudget) : null,
       systemType: project.systemType,
     },
-    options: latest.map((e) => ({
+    modules: project.modules.map((m) => ({
+      complexity: m.complexity,
+      clarity: m.clarity,
+      criticality: m.criticality,
+      screensCount: m.screensCount,
+      reportsCount: m.reportsCount,
+      catalogsCount: m.catalogsCount,
+      integrationsCount: m.integrationsCount,
+      sensitiveData: m.sensitiveData,
+    })),
+    estimates: latest.map((e) => ({
       mode: e.mode,
       scenario: e.scenario,
       total: Number(e.total),

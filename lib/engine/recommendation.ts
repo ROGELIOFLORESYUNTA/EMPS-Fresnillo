@@ -16,7 +16,13 @@
  *    prototipo, margen; advierte por bache de caja alto.
  *  - investigador/explorando/otro/null: recomendación neutral equilibrada +
  *    invitación a declarar rol (la agrega la UI).
+ *
+ *  Septiembre 2026: la recomendación ahora depende del PROYECTO y no solo del
+ *  rol. Cada modo trae una aptitud (lib/engine/aptitud.ts): los no
+ *  recomendables se excluyen y los que van con reservas se penalizan. Se
+ *  quitó la penalización fija al más barato, que era la que decidía todo.
  */
+import type { AptitudModo } from "./aptitud";
 
 const MODE_LABELS: Record<string, string> = {
   traditional: "Tradicional",
@@ -79,6 +85,8 @@ export interface RecommendationInput {
     systemType: string;
   };
   options: RecommendationOption[];
+  /** Aptitud por modo para este proyecto (lib/engine/aptitud.ts). */
+  aptitud?: Record<string, AptitudModo>;
   workingCapitalRequired?: number;
   now?: Date;
 }
@@ -90,6 +98,10 @@ export interface RecommendationResult {
   runnerUp?: { mode: string; scenario: string; why: string };
   warnings: string[];
   roleUsed: "operador_municipal" | "proveedor" | "neutral";
+  /** Modos descartados para este proyecto, con la razón. */
+  excluidos: Array<{ mode: string; total: number; razones: string[] }>;
+  /** La brecha entre la opción más cara y la más barata, calculada UNA vez sobre el mismo escenario. */
+  brecha: { escenario: string; minimo: number; maximo: number; diferencia: number; multiplicador: number; modoBarato: string; modoCaro: string } | null;
 }
 
 const mxn = (n: number) =>
@@ -140,7 +152,20 @@ export function recommendBestOption(input: RecommendationInput): RecommendationR
 
   // ---------- Etapa 2: candidatos y filtro de riesgo crítico ----------
   const all = options.filter((o) => o.scenario === targetScenario);
+  const aptitud = input.aptitud ?? {};
+  const excluidos: RecommendationResult["excluidos"] = [];
   let candidates = all.filter((o) => o.riskLevel !== "critico");
+  // Aptitud: lo que no sirve para ESTE proyecto no compite, por barato que sea.
+  const aptos = candidates.filter((o) => aptitud[o.mode]?.veredicto !== "no_recomendable");
+  for (const o of candidates) {
+    if (aptitud[o.mode]?.veredicto === "no_recomendable") {
+      excluidos.push({ mode: o.mode, total: o.total, razones: aptitud[o.mode].razones });
+    }
+  }
+  if (aptos.length > 0) candidates = aptos;
+  else if (excluidos.length > 0) {
+    warnings.push("Ninguna forma de hacerlo sale apta para este proyecto tal como está capturado; se comparan todas, pero conviene revisar integraciones, datos personales y claridad.");
+  }
   if (candidates.length === 0) {
     candidates = all;
     warnings.push(
@@ -212,9 +237,9 @@ export function recommendBestOption(input: RecommendationInput): RecommendationR
       }
     }
 
-    // Penalización anti "cotizar barato" (solo operador; los demás reciben warning)
-    if (roleUsed === "operador_municipal" && rangeMultiplier > 1.5 && o.total === minTotal) {
-      score += 0.1;
+    // Con reservas para este proyecto: compite, pero cuesta puntos.
+    if (aptitud[o.mode]?.veredicto === "con_reservas") {
+      score += 0.15;
     }
 
     // Penalización por presupuesto (solo operador): el hermano conservador debe caber
@@ -277,6 +302,18 @@ export function recommendBestOption(input: RecommendationInput): RecommendationR
     );
   }
 
+  // 2b) Aptitud: por qué se descartó una opción más barata, o qué reserva tiene la elegida
+  const excluidoMasBarato = excluidos.filter((x) => x.total < best.total).sort((a, b) => a.total - b.total)[0];
+  if (excluidoMasBarato) {
+    reasons.push(
+      `${MODE_LABELS[excluidoMasBarato.mode] ?? excluidoMasBarato.mode} saldría más barata (${mxn(excluidoMasBarato.total)}), pero no se recomienda para este proyecto: ${excluidoMasBarato.razones[0]}`,
+    );
+  } else if (aptitud[best.mode]?.veredicto === "con_reservas") {
+    reasons.push(`Va con una reserva: ${aptitud[best.mode].razones[0]}`);
+  } else if (aptitud[best.mode]?.veredicto === "apto" && aptitud[best.mode].razones[0]) {
+    reasons.push(`Sirve para este proyecto: ${aptitud[best.mode].razones[0]}`);
+  }
+
   // 3) Riesgo
   if (best.riskLevel === "bajo" || best.riskLevel === "medio") {
     reasons.push(`Su riesgo es ${RISK_LABELS[best.riskLevel]}: los requisitos y el equipo de esta opción no prenden focos rojos.`);
@@ -319,9 +356,21 @@ export function recommendBestOption(input: RecommendationInput): RecommendationR
   }
 
   // ---------- Warnings ----------
-  if (rangeMultiplier > 1.5) {
+  const brecha: RecommendationResult["brecha"] =
+    cheapest && mostExpensive && cheapest.mode !== mostExpensive.mode
+      ? {
+          escenario: targetScenario,
+          minimo: minTotal,
+          maximo: maxTotal,
+          diferencia: maxTotal - minTotal,
+          multiplicador: rangeMultiplier,
+          modoBarato: cheapest.mode,
+          modoCaro: mostExpensive.mode,
+        }
+      : null;
+  if (brecha && brecha.multiplicador > 1.5) {
     warnings.push(
-      `Ojo: el modo más caro vale ${rangeMultiplier.toFixed(1)} veces el más barato. Si eliges el barato y a medio camino cambias de método, el costo se dispara. Cotiza con el método que de verdad vas a usar.`,
+      `Entre hacerlo ${MODE_LABELS[brecha.modoCaro]?.toLowerCase() ?? brecha.modoCaro} y ${MODE_LABELS[brecha.modoBarato]?.toLowerCase() ?? brecha.modoBarato} hay ${mxn(brecha.diferencia)} de diferencia: la forma de hacerlo es la decisión que más pesa. Pide que te digan con cuál te están cotizando.`,
     );
   }
   if (bestScored.overBudgetConservative !== null && project.estimatedBudget) {
@@ -370,5 +419,7 @@ export function recommendBestOption(input: RecommendationInput): RecommendationR
     runnerUp,
     warnings,
     roleUsed,
+    excluidos,
+    brecha,
   };
 }

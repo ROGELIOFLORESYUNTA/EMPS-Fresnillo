@@ -310,6 +310,10 @@ export async function runEstimate(req: EstimateRequest): Promise<EstimateOutput>
     );
     // Calendario real del proyecto en MESES con piso mínimo (un proyecto no puede durar 0 meses).
     const realMonthsOfMode = Math.max(MIN_PROJECT_MONTHS, calendar.weeksTotal / SEMANAS_POR_MES);
+    // Primera versión enseñable: la fórmula daba 4 horas para 8 módulos en
+    // low-code, que nadie se cree. Piso: media semana más un día por pieza.
+    const pisoPrototipo = 0.5 + 0.2 * project.modules.length;
+    const weeksToPrototype = Math.max(calendar.weeksToPrototype, pisoPrototipo);
 
     // Riesgo LFT — si el proyecto excede 6 meses con personal en nómina, hay riesgo de
     // conversión a indeterminado y liquidación al despedir.
@@ -408,7 +412,7 @@ export async function runEstimate(req: EstimateRequest): Promise<EstimateOutput>
         supportHours: dec(sResult.phases.support.toFixed(2)),
         hardeningHours: dec(sResult.phases.hardening.toFixed(2)),
         weeksTotal: dec(calendar.weeksTotal.toFixed(2)),
-        weeksToPrototype: dec(calendar.weeksToPrototype.toFixed(2)),
+        weeksToPrototype: dec(weeksToPrototype.toFixed(2)),
         directCost: dec(totalCost.toFixed(2)),
         indirectCost: dec("0"),
         subtotal: dec(pricing.subtotal.toFixed(2)),
@@ -443,7 +447,7 @@ export async function runEstimate(req: EstimateRequest): Promise<EstimateOutput>
       scenario: scen,
       totalEffortHours: sResult.totalEffortHours,
       weeksTotal: calendar.weeksTotal,
-      weeksToPrototype: calendar.weeksToPrototype,
+      weeksToPrototype,
       subtotal: pricing.subtotal,
       vat: pricing.vat,
       total: pricing.total,
