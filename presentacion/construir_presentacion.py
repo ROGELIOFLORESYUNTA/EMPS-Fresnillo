@@ -176,36 +176,33 @@ GUION.append((1, "Portada", "En pantalla: portada con tus datos. Antes de grabar
 
 # =============================================================== 2. El problema
 diapo_texto("El problema", [
-    "Un Ayuntamiento recibe cotizaciones que no puede comparar y no sabe si el proveedor que cotizó barato va a poder terminar.",
-    "Un proveedor sabe programar, pero no sabe cuánto cobrar: si cobra caro pierde el contrato; si cobra barato se queda sin dinero a la mitad.",
-    "En 120 proyectos reales de 42 organizaciones, 8 de cada 10 costaron más esfuerzo del estimado, con una desviación mediana de 58.6 % (dataset SEERA).",
-    "De 4,329 tareas estimadas por expertos, solo 4 de cada 10 cayeron dentro de más o menos 15 % del valor real (dataset JOSSE, tareas de Jira de código abierto).",
+    "El Ayuntamiento recibe cotizaciones que no puede comparar.",
+    "El proveedor no sabe cuánto cobrar: caro pierde el contrato, barato se queda a media obra.",
+    "8 de cada 10 proyectos costaron más de lo estimado (120 proyectos, SEERA).",
+    "Solo 4 de cada 10 estimaciones de expertos quedaron cerca de lo real (4,329 tareas, JOSSE).",
 ], "El problema tiene dos lados. De un lado está el Ayuntamiento: una oficina de Catastro o de Tesorería necesita un sistema, recibe varias cotizaciones y no tiene con qué compararlas. Tampoco sabe si el que cotizó más barato va a poder terminar. Del otro lado está el proveedor, que muchas veces es una persona o una empresa de tres o cuatro. Sabe programar, pero no sabe cuánto cobrar. Si cobra caro, pierde el contrato. Si cobra barato, se queda sin dinero a la mitad y no termina. Y esto no es una impresión mía. En un conjunto de ciento veinte proyectos reales, ocho de cada diez costaron más de lo que se había estimado. Y de más de cuatro mil tareas estimadas por expertos, solo cuatro de cada diez quedaron cerca del valor real. Estimar mal es lo normal, no la excepción.", "Fuente: SEERA (PROMISE 2020, Zenodo) y JOSSE (Alhamed, 2022, Zenodo). Cifras del artículo propio, septiembre de 2026.")
 
 # =============================================================== 3. Lo que cambio
-diapo_texto("Lo que cambió mientras hacía la tesis", [
-    "Uso de inteligencia artificial para programar: 62 % de los desarrolladores en 2024, 78 % en 2025 y 84 % en 2026 (Stack Overflow, 49,000 respuestas en 2026).",
-    "90 % ya usa agentes de código cada semana y 68 % todos los días (JetBrains, 15,000 profesionales, agosto de 2026).",
-    "41 % del código nuevo se reporta como generado con inteligencia artificial (GitHub Octoverse, octubre de 2025).",
-    "El mercado de agentes de código para empresas vale diez mil millones de dólares al año (Gartner, mayo de 2026).",
-    ("Un modelo de estimación que asume que las horas de programación son el centro del costo ya nació viejo.", {"size": 22, "bold": True, "color": MARINO, "after": 14}),
-], "Cuando empecé la tesis, la pregunta era cuántas horas de programación lleva un sistema. Pero en este año y medio la forma de hacer software cambió mes con mes. En 2024, seis de cada diez desarrolladores usaban inteligencia artificial. En 2025, casi ocho. En 2026, más de ocho. Y lo nuevo no es que la computadora complete una línea, sino que un agente hace la tarea completa: nueve de cada diez profesionales ya usan agentes cada semana. GitHub dice que cuarenta y uno por ciento del código nuevo se genera con inteligencia artificial. Esto ya es un mercado de diez mil millones de dólares. Para la tesis significa algo muy concreto: si mi modelo asumía que las horas de programación eran el centro del costo, ese modelo nació viejo. Había que cambiarlo.")
+diapo_texto("Hoy el software no se hace como antes", [
+    "84 % de los desarrolladores usa inteligencia artificial para programar (Stack Overflow, 2026).",
+    "90 % usa agentes de código cada semana (JetBrains, 2026).",
+    "41 % del código nuevo se genera con inteligencia artificial (GitHub, 2025).",
+    ("Estimar solo horas de programación ya no alcanza. Por eso el sistema calcula con cinco formas de hacerlo.", {"size": 22, "bold": True, "color": MARINO, "after": 14}),
+], "La pregunta de siempre en esta área es cuántas horas de programación lleva un sistema. El asunto es que la forma de hacer software está cambiando mes con mes. En 2024, seis de cada diez desarrolladores usaban inteligencia artificial. En 2025, casi ocho. En 2026, más de ocho. Y lo nuevo no es que la computadora complete una línea, sino que un agente hace la tarea completa: nueve de cada diez profesionales ya usan agentes cada semana. GitHub dice que cuarenta y uno por ciento del código nuevo se genera con inteligencia artificial. Esto ya es un mercado de diez mil millones de dólares. Para la tesis significa algo muy concreto: un modelo que asuma que las horas de programación son el centro del costo se queda corto. Por eso desde el diseño el sistema calcula con cinco formas de hacerlo, no con una sola.")
 
 # =============================================================== 4. No es igual para todos
 diapo_texto("Pero la ganancia no es igual para todos", [
-    "Desarrolladores experimentados, trabajando en su propio código con inteligencia artificial, tardaron 19 % más y creían haber sido 20 % más rápidos (METR, ensayo controlado, 2025).",
-    "En 623 millones de cambios de código, la duplicación subió 81 % y la refactorización cayó 70 % (GitClear, enero de 2026).",
-    "45 % del código generado por inteligencia artificial trae una falla de seguridad, y esa cifra lleva dos años sin mejorar (Veracode, marzo de 2026).",
-    "Los cambios hechos con inteligencia artificial se aceptan en 30 días solo 33 % de las veces, contra 84 % sin ella (LinearB, 8.1 millones de cambios, 2026).",
-    ("La ganancia depende de la forma de hacerlo y de la pericia de quien usa la herramienta. Por eso el sistema las trata por separado.", {"size": 22, "bold": True, "color": MARINO, "after": 14}),
+    "Expertos en su propio código tardaron 19 % más y creían ir 20 % más rápido (METR, 2025).",
+    "Se copia 81 % más código y se limpia 70 % menos (GitClear, 623 millones de cambios).",
+    "45 % del código generado trae una falla de seguridad (Veracode, 2026).",
+    ("La ganancia depende de la forma de hacerlo y de la pericia del equipo. El sistema las cobra por separado.", {"size": 22, "bold": True, "color": MARINO, "after": 14}),
 ], "Ahora la otra cara, porque una tesis no puede repetir el folleto de las herramientas. La inteligencia artificial no hace a todos más rápidos. El estudio más serio del año pasado midió a desarrolladores con experiencia trabajando en su propio código: tardaron diecinueve por ciento más, y ellos creían que habían sido veinte por ciento más rápidos. Otro estudio, con seiscientos millones de cambios de código, encontró que se copia mucho más y se limpia mucho menos. Casi la mitad del código generado trae una falla de seguridad. Y los cambios hechos con inteligencia artificial se aceptan mucho menos que los hechos a mano. Entonces, la ganancia depende de dos cosas: de la forma de hacerlo y de qué tan bien sabe usar la herramienta el equipo. Por eso el sistema no aplica un descuento parejo: cobra la herramienta por un lado y acredita el ahorro según la pericia por otro.")
 
 # =============================================================== 5. Los detalles
 diapo_texto("Los detalles ya no llevan ticket", [
-    "Antes, el ajuste chico (que este texto no se ve bien, que este campo debe validar) era un ticket, una espera y a veces un cobro aparte. Hoy se resuelve en la misma sesión.",
-    "En 3,400 repositorios, adoptar inteligencia artificial subió 19 % los cambios terminados y ahorró de 2 a 4 horas por persona a la semana; el efecto fue mayor en los repositorios chicos (Atlassian, mayo de 2026).",
-    "En una empresa con 802 desarrolladores, el rendimiento por persona llegó a 2.09 veces, aunque la carga de quien revisa se duplicó (arXiv, julio de 2026).",
-    "De 8,106 correcciones hechas por agentes, 65 % se aceptaron (arXiv, enero de 2026).",
+    "El ajuste chico antes era un ticket y una espera. Hoy se resuelve en la misma sesión.",
+    "Los cambios terminados suben 19 % y cada persona ahorra de 2 a 4 horas por semana (Atlassian, 3,400 repositorios).",
+    "De 8,106 correcciones hechas por agentes, 65 % se aceptaron (arXiv, 2026).",
     ("Quien sigue cobrando cada detalle como un día de trabajo se va a quedar sin clientes. El sistema ya lo refleja en el costo de cada cambio.", {"size": 20, "bold": True, "color": MARINO, "after": 14}),
 ], "Hay algo que aprendí haciendo el sistema y que los datos de este año confirman. Construir el sistema es más rápido, sí, pero lo que más cambió es el detalle. El ajuste chico. Que este texto no se ve bien, que este campo debe validar. Antes eso era un ticket, una espera y a veces un cobro aparte. Hoy se resuelve en la misma sesión. Atlassian lo midió en tres mil cuatrocientos repositorios, que son los lugares donde se guarda el código de cada sistema. Los cambios terminados subieron diecinueve por ciento y cada persona ahorra de dos a cuatro horas por semana. El efecto es mayor en los sistemas chicos, que son justo los de un proveedor municipal. Esto tiene una consecuencia dura para el que cobra: el desarrollador que sigue cobrando cada detalle como si costara un día se va a quedar sin clientes, porque llega otro y lo hace en una tarde. Y tiene una consecuencia para mi sistema: el costo de cada cambio ahora se ajusta por la forma de hacerlo, con la misma regla que usa la calculadora de cambios. Lo van a ver en una pantalla más adelante.", size=20)
 
@@ -229,7 +226,7 @@ diapo_texto("Lo que ya se demostró con datos públicos", [
     "El juicio experto ordena pero no dimensiona: solo 40 % de sus estimaciones cae dentro de más o menos 15 % (H1 respaldada).",
     "Buscar cambios por palabras clave en el texto de la tarea no separa nada (p = 0.57): H2 no se confirmó. Por eso el sistema captura los cambios de forma estructurada y no los adivina del texto.",
     "Todo se verificó con un programa independiente: 26 de 26 comprobaciones correctas.",
-], "Resumo lo que dicen los datos. Primero: con las variables que se conocen al inicio del proyecto, un modelo estadístico que se llama bosque aleatorio explicó ochenta y uno por ciento de la variación del esfuerzo en los proyectos completos. El promedio, que es lo que se usa normalmente, explicó cero. Eso respalda la tercera hipótesis. Segundo: el experto ordena pero no dimensiona; eso respalda la primera. Tercero: la segunda hipótesis no se confirmó: buscar cambios por palabras en el texto de la tarea no distingue nada. Y eso cambió el sistema: los cambios se capturan de forma estructurada, con su tipo y su fase, no se adivinan. Todo esto lo verificó un programa aparte, veintiséis de veintiséis comprobaciones.", "Artículo propio, septiembre de 2026. Verificación con scripts/05_verify_results.py.", size=20)
+], "Resumo lo que dicen los datos. Primero: con las variables que se conocen al inicio del proyecto, un modelo estadístico que se llama bosque aleatorio explicó ochenta y uno por ciento de la variación del esfuerzo en los proyectos completos. El promedio, que es lo que se usa normalmente, explicó cero. Eso respalda la tercera hipótesis. Segundo: el experto ordena pero no dimensiona; eso respalda la primera. Tercero: la segunda hipótesis no se confirmó: buscar cambios por palabras en el texto de la tarea no distingue nada. Por eso el sistema captura los cambios de forma estructurada, con su tipo y su fase, en lugar de adivinarlos del texto. Todo esto lo verificó un programa aparte, veintiséis de veintiséis comprobaciones.", "Artículo propio, septiembre de 2026. Verificación con scripts/05_verify_results.py.", size=20)
 
 # =============================================================== 10 a 25. El sistema
 diapo_imagen("EMPS Fresnillo: el sistema, en línea y sin cuenta", "01_portada.png", "Este es el sistema. Se llama EMPS Fresnillo. Está en internet, en estimacion punto hazlatarea punto com, y no pide cuenta ni contraseña. La portada ofrece dos caminos: cotizar en un minuto, o crear un proyecto completo en cinco pasos. Y tiene un ejemplo ya capturado para que cualquiera vea cómo funciona antes de escribir nada. Nota para el video: aquí puedes cambiar a la ventana del navegador y mostrarlo en vivo.", "Portada del sistema, septiembre de 2026. estimacion.hazlatarea.com", recorte=(0.1, 0, 0.9, 1))
@@ -251,7 +248,7 @@ diapo_texto("La forma de hacerlo pesa más que el precio", [
     ("Nueve veces de diferencia entre la forma más cara y la más barata. Y no todas sirven para todos: se descartan por conexiones, datos personales, criticidad, claridad y pericia del equipo.", {"size": 22, "bold": True, "color": MARINO, "after": 14}),
 ], "Este es el hallazgo que sostiene la tesis. Miren las cifras del mismo proyecto: a mano, casi tres millones de pesos y treinta y una semanas. Híbrido, novecientos mil y doce semanas. Casi todo con inteligencia artificial, seiscientos cuarenta y seis mil y ocho semanas. Plataforma de armado, trescientos once mil y cuatro semanas. Nueve veces de diferencia. Por eso digo que la forma de hacerlo pesa más que el precio. Pero la más barata no siempre sirve: una plataforma de armado no sirve para un sistema con datos personales y cuatro conexiones externas, aunque sea la más barata, y el sistema la descarta y dice por qué. Y hacer casi todo con inteligencia artificial no se le recomienda a un equipo que nunca la ha usado.", "Cifras del ejemplo público, septiembre de 2026, con los parámetros vigentes.")
 
-diapo_imagen("Las herramientas de IA se cobran por persona", "06b_niveles.png", "Aquí está lo nuevo de este mes, y sale de una investigación de precios que hice el nueve de septiembre con las páginas oficiales. Las herramientas se cobran por persona, no por equipo, porque así las venden: un asiento por cada persona técnica. Y como en la vida real cada quien trae su plan, hay tres niveles: básico, típico y máximo. Por ejemplo, para casi todo con inteligencia artificial, cien, doscientos cincuenta o cuatrocientos dólares por persona al mes. Se elige por proyecto, y además cada persona puede traer su propio plan.", "Nivel de herramientas por persona, en la pantalla Calcular. Precios de lista del 9 de septiembre de 2026.")
+diapo_imagen("Las herramientas de IA se cobran por persona", "06b_niveles.png", "Esta parte sale de una investigación de precios que hice el nueve de septiembre con las páginas oficiales de cada herramienta. Las herramientas se cobran por persona, no por equipo, porque así las venden: un asiento por cada persona técnica. Y como en la vida real cada quien trae su plan, hay tres niveles: básico, típico y máximo. Por ejemplo, para casi todo con inteligencia artificial, cien, doscientos cincuenta o cuatrocientos dólares por persona al mes. Se elige por proyecto, y además cada persona puede traer su propio plan.", "Nivel de herramientas por persona, en la pantalla Calcular. Precios de lista del 9 de septiembre de 2026.")
 
 diapo_imagen("Lo que se cobra con este equipo", "06_herramientas_ia.png", "Y esto es lo que el sistema le enseña antes de calcular: con este equipo de cuatro personas técnicas, cuánto costarían las herramientas al mes en cada forma de hacerlo, y qué parte del ahorro se acredita según la pericia del equipo. La pericia se captura por persona, del uno al cinco. Los ahorros publicados están calibrados para quien usa la herramienta a diario y sabe darle instrucciones. A quien nunca la ha usado solo se le acredita treinta y cinco por ciento, porque un modelo muy potente en manos de quien no sabe pedirle las cosas no ahorra tiempo. Eso es exactamente lo que midió el estudio de METR.", "Recuadro de herramientas en la pantalla Calcular: cuatro asientos, pericia 3.5 de 5, tipo de cambio 16.92.")
 
@@ -390,7 +387,8 @@ malos = revisar_texto()
 if malos:
     raise SystemExit("Hay caracteres que delatan texto de IA: %r" % malos)
 
-salida = os.path.join(AQUI, "tesis_emps_2026_v3.pptx")
+DESTINO = os.environ.get("SALIDA_PPTX") or AQUI
+salida = os.path.join(DESTINO, "tesis_emps_2026_v3.pptx")
 prs.save(salida)
 print("pptx:", salida, "|", len(prs.slides), "diapositivas")
 
@@ -450,7 +448,7 @@ for l in [
     "Las cifras del ejemplo son de septiembre de 2026; si se vuelve a calcular el ejemplo con parámetros nuevos, actualizar la diapositiva 15.",
 ]:
     doc.add_paragraph(l, style="List Bullet")
-doc.save(os.path.join(AQUI, "guion_video_v3.docx"))
+doc.save(os.path.join(DESTINO, "guion_video_v3.docx"))
 print("docx: guion_video_v3.docx |", f"{total_min:.0f} minutos aproximados")
 
 with io.open(os.path.join(AQUI, "referencias.md"), "w", encoding="utf-8") as f:
