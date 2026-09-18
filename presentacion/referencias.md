@@ -17,7 +17,7 @@ Consultadas el 18 de septiembre de 2026 salvo donde se indica otra fecha.
 13. Alaswad, Poovammal y Aljaddouh. Toward LLM-aware software effort estimation. Frontiers in Artificial Intelligence. 23 de marzo de 2026.
 14. El-Ramly, M. ACEM: A Cost Estimation Model for Agentic Software Engineering. arXiv 2608.02582. Agosto de 2026.
 15. Shetty y otros. Story Point Estimation Using Large Language Models. arXiv 2603.06276. Marzo de 2026.
-16. SEERA dataset. PROMISE, ACM, 2020. Zenodo. Y dataset de tareas de Jira con estimación experta (Zenodo; confirmar nombre en la fuente).
+16. Alhamed, M. (2022). JOSSE: A Software Development Effort Dataset Annotated with Expert Estimates. Zenodo, DOI 10.5281/zenodo.7022735. Y SEERA dataset, PROMISE, ACM, 2020, Zenodo, DOI 10.5281/zenodo.4066438.
 17. Strand Partners para AWS. Desbloqueando el potencial de la IA en México 2026. 13 de agosto de 2026.
 18. ATDT. Llave MX y Repositorio Nacional de Tecnología para gobiernos estatales y municipales. 7 de diciembre de 2025.
 19. CIAPEM y tapi. Diagnóstico Nacional 2026 de recaudación digital. ciapem.org. 2026.

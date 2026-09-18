@@ -5,7 +5,7 @@ el guion en Word y el archivo de referencias.
 
 Acomodo: una cosa por diapositiva. Las capturas del sistema van solas, a
 pagina completa, con un titulo corto y una linea de pie; lo que hay que decir
-va en las notas. Titulos en Georgia, cuerpo en Segoe UI, fondo blanco.
+va en las notas. Todo en Arial, barra de titulo azul marino, fondo blanco.
 
 Uso: python presentacion/construir_presentacion.py
 """
@@ -33,8 +33,8 @@ NEGRO = RGBColor(0x1A, 0x1A, 0x1A)
 GRIS = RGBColor(0x59, 0x59, 0x59)
 GRIS_LINEA = RGBColor(0xBF, 0xBF, 0xBF)
 BLANCO = RGBColor(0xFF, 0xFF, 0xFF)
-TITULOS = "Georgia"
-CUERPO = "Segoe UI"
+TITULOS = "Arial"
+CUERPO = "Arial"
 
 ANCHO = Inches(13.333)
 ALTO = Inches(7.5)
@@ -76,16 +76,15 @@ def texto(slide, left, top, width, height, partes, size=22, color=NEGRO, bold=Fa
 
 
 def encabezado(slide, t):
-    texto(slide, MARGEN, Inches(0.4), ANCHO - 2 * MARGEN, Inches(0.9), t, size=32, color=MARINO, fuente=TITULOS, anchor=MSO_ANCHOR.BOTTOM)
-    linea = slide.shapes.add_connector(1, MARGEN, Inches(1.38), ANCHO - MARGEN, Inches(1.38))
-    linea.line.color.rgb = GRIS_LINEA
-    linea.line.width = Pt(0.75)
+    barra = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, 0, 0, ANCHO, Inches(1.15))
+    barra.fill.solid(); barra.fill.fore_color.rgb = MARINO; barra.line.fill.background(); barra.shadow.inherit = False
+    texto(slide, MARGEN, Inches(0.12), ANCHO - 2 * MARGEN, Inches(0.92), t, size=28, color=BLANCO, bold=True, fuente=TITULOS, anchor=MSO_ANCHOR.MIDDLE)
 
 
 def pie(slide, n, t=None):
     if t:
-        texto(slide, MARGEN, ALTO - Inches(0.95), ANCHO - 2 * MARGEN - Inches(1.0), Inches(0.55), t, size=12, color=GRIS, anchor=MSO_ANCHOR.BOTTOM)
-    texto(slide, ANCHO - MARGEN - Inches(0.8), ALTO - Inches(0.42), Inches(0.8), Inches(0.3), str(n), size=11, color=GRIS, align=PP_ALIGN.RIGHT)
+        texto(slide, MARGEN, ALTO - Inches(0.95), ANCHO - 2 * MARGEN - Inches(1.0), Inches(0.55), t, size=12, color=NEGRO, anchor=MSO_ANCHOR.BOTTOM)
+    texto(slide, ANCHO - MARGEN - Inches(0.8), ALTO - Inches(0.42), Inches(0.8), Inches(0.3), str(n), size=12, color=NEGRO, align=PP_ALIGN.RIGHT)
 
 
 def notas(slide, t):
@@ -126,7 +125,7 @@ def diapo_texto(titulo, lineas, que_decir, fuente_pie=None, size=22, top=Inches(
         if isinstance(l, tuple):
             partes.append(l)
         else:
-            partes.append((l, {"size": size, "after": 14}))
+            partes.append(("\u2022  " + l, {"size": size, "after": 14}))
     texto(s, MARGEN + Inches(0.1), top, ANCHO - 2 * MARGEN - Inches(0.2), ALTO - top - Inches(1.1), partes, size=size)
     n = len(prs.slides)
     pie(s, n, fuente_pie)
@@ -152,26 +151,26 @@ def diapo_imagen(titulo, ruta, que_decir, pie_txt=None, recorte=None):
 
 # =============================================================== 1. Portada
 s = prs.slides.add_slide(BLANK)
-esc = s.shapes.add_shape(MSO_SHAPE.RECTANGLE, MARGEN, Inches(0.6), Inches(1.5), Inches(1.5))
-esc.fill.background(); esc.line.color.rgb = GRIS_LINEA; esc.line.width = Pt(0.75)
-texto(s, MARGEN, Inches(1.1), Inches(1.5), Inches(0.5), "Escudo UAZ", size=11, color=GRIS, align=PP_ALIGN.CENTER)
-texto(s, MARGEN + Inches(1.8), Inches(0.65), Inches(9), Inches(1.4), [
-    ("Universidad Autónoma de Zacatecas", {"size": 20, "color": MARINO, "fuente": TITULOS}),
-    ("Ingeniería en Software", {"size": 16, "color": GRIS}),
-    ("Seminario de Tesis. Agosto a diciembre de 2026", {"size": 16, "color": GRIS}),
+barra = s.shapes.add_shape(MSO_SHAPE.RECTANGLE, 0, 0, ANCHO, Inches(0.45))
+barra.fill.solid(); barra.fill.fore_color.rgb = MARINO; barra.line.fill.background(); barra.shadow.inherit = False
+esc = s.shapes.add_shape(MSO_SHAPE.RECTANGLE, int((ANCHO - Inches(1.3)) / 2), Inches(0.7), Inches(1.3), Inches(1.3))
+esc.fill.background(); esc.line.color.rgb = GRIS_LINEA; esc.line.width = Pt(0.75); esc.shadow.inherit = False
+texto(s, int((ANCHO - Inches(1.3)) / 2), Inches(1.15), Inches(1.3), Inches(0.4), "Escudo UAZ", size=10, color=GRIS, align=PP_ALIGN.CENTER)
+texto(s, MARGEN, Inches(2.1), ANCHO - 2 * MARGEN, Inches(0.9), [
+    ("Universidad Autónoma de Zacatecas", {"size": 22, "color": MARINO, "bold": True, "align": PP_ALIGN.CENTER, "after": 2}),
+    ("Ingeniería en Software. Seminario de Tesis, agosto a diciembre de 2026", {"size": 16, "color": NEGRO, "align": PP_ALIGN.CENTER}),
 ])
-texto(s, MARGEN, Inches(2.5), ANCHO - 2 * MARGEN, Inches(2.3), [
-    ("Estimación temprana de esfuerzo, tiempo y costo en proyectos de software para gobiernos municipales", {"size": 30, "color": MARINO, "fuente": TITULOS, "espacio": 1.1}),
-    ("Propuesta metodológica para el control de cambios, con referencia a Fresnillo, Zacatecas", {"size": 18, "color": GRIS, "fuente": TITULOS, "italic": True}),
+texto(s, MARGEN, Inches(3.15), ANCHO - 2 * MARGEN, Inches(2.0), [
+    ("Estimación temprana de esfuerzo, tiempo y costo en proyectos de software para gobiernos municipales", {"size": 28, "color": MARINO, "bold": True, "align": PP_ALIGN.CENTER, "espacio": 1.1, "after": 8}),
+    ("Propuesta metodológica para el control de cambios, con referencia a Fresnillo, Zacatecas", {"size": 18, "color": NEGRO, "align": PP_ALIGN.CENTER}),
 ])
-linea = s.shapes.add_connector(1, MARGEN, Inches(5.0), Inches(7), Inches(5.0)); linea.line.color.rgb = GRIS_LINEA
-texto(s, MARGEN, Inches(5.15), Inches(8.5), Inches(2.0), [
-    ("Rogelio Flores Rodríguez, matrícula 22304084", {"size": 18, "color": NEGRO, "bold": True}),
-    ("Semestre 8, grupo D, modalidad semiescolarizada", {"size": 15, "color": GRIS}),
-    ("Directora de tesis: Dra. Julieta Guadalupe Rodríguez Ruiz", {"size": 15, "color": GRIS}),
-    ("Sistema en línea: estimacion.hazlatarea.com", {"size": 15, "color": GRIS}),
+texto(s, MARGEN, Inches(5.35), ANCHO - 2 * MARGEN, Inches(1.7), [
+    ("Presenta: Rogelio Flores Rodríguez, matrícula 22304084", {"size": 18, "color": NEGRO, "bold": True, "align": PP_ALIGN.CENTER, "after": 4}),
+    ("Semestre 8, grupo D, modalidad semiescolarizada", {"size": 15, "color": NEGRO, "align": PP_ALIGN.CENTER, "after": 4}),
+    ("Directora de tesis: Dra. Julieta Guadalupe Rodríguez Ruiz", {"size": 15, "color": NEGRO, "align": PP_ALIGN.CENTER, "after": 4}),
+    ("Sistema en línea: estimacion.hazlatarea.com", {"size": 15, "color": NEGRO, "align": PP_ALIGN.CENTER}),
 ])
-s.shapes.add_picture(os.path.join(CAP, "logo_emps.png"), ANCHO - MARGEN - Inches(1.1), ALTO - Inches(1.8), width=Inches(1.1), height=Inches(1.1))
+s.shapes.add_picture(os.path.join(CAP, "logo_emps.png"), ANCHO - MARGEN - Inches(0.7), ALTO - Inches(1.15), width=Inches(0.7), height=Inches(0.7))
 notas(s, "Buenas tardes. Me llamo Rogelio Flores Rodríguez y estudio Ingeniería en Software en la Universidad Autónoma de Zacatecas. Esta es la presentación de avance de mi tesis para el Seminario de Tesis, con la dirección de la doctora Julieta Guadalupe Rodríguez Ruiz. Mi tesis es sobre cómo calcular desde el principio cuánto va a costar y cuánto va a tardar un sistema de software para un municipio. Hice un sistema que ya funciona en internet y se los voy a enseñar. Voy a hablar de tres cosas: primero, cuál es el problema y cómo cambió con la inteligencia artificial; segundo, qué probé ya con datos; y tercero, cómo lo voy a probar con ayuntamientos y con desarrolladores en lo que queda del semestre.")
 GUION.append((1, "Portada", "En pantalla: portada con tus datos. Antes de grabar, pon el escudo de la UAZ en el recuadro.", s.notes_slide.notes_text_frame.text))
 
@@ -180,8 +179,8 @@ diapo_texto("El problema", [
     "Un Ayuntamiento recibe cotizaciones que no puede comparar y no sabe si el proveedor que cotizó barato va a poder terminar.",
     "Un proveedor sabe programar, pero no sabe cuánto cobrar: si cobra caro pierde el contrato; si cobra barato se queda sin dinero a la mitad.",
     "En 120 proyectos reales de 42 organizaciones, 8 de cada 10 costaron más esfuerzo del estimado, con una desviación mediana de 58.6 % (dataset SEERA).",
-    "De 4,329 tareas estimadas por expertos, solo 4 de cada 10 cayeron dentro de más o menos 15 % del valor real (tareas de Jira, código abierto).",
-], "El problema tiene dos lados. De un lado está el Ayuntamiento: una oficina de Catastro o de Tesorería necesita un sistema, recibe varias cotizaciones y no tiene con qué compararlas. Tampoco sabe si el que cotizó más barato va a poder terminar. Del otro lado está el proveedor, que muchas veces es una persona o una empresa de tres o cuatro. Sabe programar, pero no sabe cuánto cobrar. Si cobra caro, pierde el contrato. Si cobra barato, se queda sin dinero a la mitad y no termina. Y esto no es una impresión mía. En un conjunto de ciento veinte proyectos reales, ocho de cada diez costaron más de lo que se había estimado. Y de más de cuatro mil tareas estimadas por expertos, solo cuatro de cada diez quedaron cerca del valor real. Estimar mal es lo normal, no la excepción.", "Fuentes: SEERA (PROMISE 2020, Zenodo) y tareas de Jira con estimación experta (Zenodo). Cifras del artículo propio, septiembre de 2026.")
+    "De 4,329 tareas estimadas por expertos, solo 4 de cada 10 cayeron dentro de más o menos 15 % del valor real (dataset JOSSE, tareas de Jira de código abierto).",
+], "El problema tiene dos lados. De un lado está el Ayuntamiento: una oficina de Catastro o de Tesorería necesita un sistema, recibe varias cotizaciones y no tiene con qué compararlas. Tampoco sabe si el que cotizó más barato va a poder terminar. Del otro lado está el proveedor, que muchas veces es una persona o una empresa de tres o cuatro. Sabe programar, pero no sabe cuánto cobrar. Si cobra caro, pierde el contrato. Si cobra barato, se queda sin dinero a la mitad y no termina. Y esto no es una impresión mía. En un conjunto de ciento veinte proyectos reales, ocho de cada diez costaron más de lo que se había estimado. Y de más de cuatro mil tareas estimadas por expertos, solo cuatro de cada diez quedaron cerca del valor real. Estimar mal es lo normal, no la excepción.", "Fuente: SEERA (PROMISE 2020, Zenodo) y JOSSE (Alhamed, 2022, Zenodo). Cifras del artículo propio, septiembre de 2026.")
 
 # =============================================================== 3. Lo que cambio
 diapo_texto("Lo que cambió mientras hacía la tesis", [
@@ -207,8 +206,8 @@ diapo_texto("Los detalles ya no llevan ticket", [
     "En 3,400 repositorios, adoptar inteligencia artificial subió 19 % los cambios terminados y ahorró de 2 a 4 horas por persona a la semana; el efecto fue mayor en los repositorios chicos (Atlassian, mayo de 2026).",
     "En una empresa con 802 desarrolladores, el rendimiento por persona llegó a 2.09 veces, aunque la carga de quien revisa se duplicó (arXiv, julio de 2026).",
     "De 8,106 correcciones hechas por agentes, 65 % se aceptaron (arXiv, enero de 2026).",
-    ("Quien sigue cobrando cada detalle como un día de trabajo se va a quedar sin clientes. El sistema ya lo refleja en el costo de cada cambio.", {"size": 22, "bold": True, "color": MARINO, "after": 14}),
-], "Hay algo que aprendí haciendo el sistema y que los datos de este año confirman. Construir el sistema es más rápido, sí, pero lo que más cambió es el detalle. El ajuste chico. Que este texto no se ve bien, que este campo debe validar. Antes eso era un ticket, una espera y a veces un cobro aparte. Hoy se resuelve en la misma sesión. Atlassian lo midió en tres mil cuatrocientos repositorios: los cambios terminados subieron diecinueve por ciento y cada persona ahorra de dos a cuatro horas por semana, y el efecto es mayor en los repositorios chicos, que son justo los de un proveedor municipal. Esto tiene una consecuencia dura para el que cobra: el desarrollador que sigue cobrando cada detalle como si costara un día se va a quedar sin clientes, porque llega otro y lo hace en una tarde. Y tiene una consecuencia para mi sistema: el costo de cada cambio ahora se ajusta por la forma de hacerlo, con la misma regla que usa la calculadora de cambios. Lo van a ver en una pantalla más adelante.")
+    ("Quien sigue cobrando cada detalle como un día de trabajo se va a quedar sin clientes. El sistema ya lo refleja en el costo de cada cambio.", {"size": 20, "bold": True, "color": MARINO, "after": 14}),
+], "Hay algo que aprendí haciendo el sistema y que los datos de este año confirman. Construir el sistema es más rápido, sí, pero lo que más cambió es el detalle. El ajuste chico. Que este texto no se ve bien, que este campo debe validar. Antes eso era un ticket, una espera y a veces un cobro aparte. Hoy se resuelve en la misma sesión. Atlassian lo midió en tres mil cuatrocientos repositorios, que son los lugares donde se guarda el código de cada sistema. Los cambios terminados subieron diecinueve por ciento y cada persona ahorra de dos a cuatro horas por semana. El efecto es mayor en los sistemas chicos, que son justo los de un proveedor municipal. Esto tiene una consecuencia dura para el que cobra: el desarrollador que sigue cobrando cada detalle como si costara un día se va a quedar sin clientes, porque llega otro y lo hace en una tarde. Y tiene una consecuencia para mi sistema: el costo de cada cambio ahora se ajusta por la forma de hacerlo, con la misma regla que usa la calculadora de cambios. Lo van a ver en una pantalla más adelante.", size=20)
 
 # =============================================================== 6. Pregunta e hipotesis
 diapo_texto("Pregunta e hipótesis", [
@@ -218,11 +217,11 @@ diapo_texto("Pregunta e hipótesis", [
     ("La estimación mejora cuando en una misma base de datos y en un mismo cálculo se juntan las piezas del sistema, los cambios, la forma de hacerlo, el equipo, la nómina con sus impuestos, el flujo de dinero y el mantenimiento.", {"size": 20, "after": 18}),
     ("Hipótesis del artículo, ya probadas con datos públicos", {"size": 16, "color": GRIS, "after": 2}),
     ("H1. El juicio del experto por sí solo no basta.   H2. Las tareas de cambio tienen un esfuerzo distinto.   H3. Con los datos del inicio se le gana al promedio.", {"size": 18, "after": 6}),
-], "Con ese terreno, esta es la pregunta de la tesis: si se puede calcular desde el inicio, con los datos que sí se conocen al principio, cuánto va a costar y tardar un sistema municipal, con un error que sirva para decidir. La hipótesis del sistema es que la estimación mejora cuando todo se junta en un mismo cálculo: las piezas del sistema, los cambios, la forma de hacerlo, el equipo, la nómina con sus impuestos, el flujo de dinero y el mantenimiento. Y en el artículo probé tres hipótesis más chicas con datos públicos: que el juicio del experto por sí solo no basta, que las tareas de cambio pesan distinto, y que con los datos del inicio se le puede ganar al promedio. Les adelanto que la segunda no se confirmó, y eso también es un resultado.")
+], "Con ese terreno, esta es la pregunta de la tesis. Si se puede calcular desde el inicio, con los datos que sí se conocen al principio, cuánto va a costar y tardar un sistema municipal. Y que el error sea chico como para decidir con él. La hipótesis del sistema, o sea lo que yo creo y quiero comprobar, es que la estimación mejora cuando todo se junta en un mismo cálculo. Las piezas del sistema, los cambios, la forma de hacerlo, el equipo, la nómina con sus impuestos, el flujo de dinero y el mantenimiento. Y en el artículo probé tres ideas más chicas con datos públicos. Que el juicio del experto por sí solo no basta. Que las tareas de cambio pesan distinto. Y que con los datos del inicio se le puede ganar al promedio. Les adelanto que la segunda no se confirmó, y eso también es un resultado.")
 
 # =============================================================== 7 y 8. Graficas
-diapo_imagen("Lo que estima el experto contra lo que costó de verdad", os.path.join(FIG, "josse_expert_vs_actual.png"), "Esta gráfica es de tareas reales de proyectos de código abierto. Cada punto es una tarea. En el eje de abajo está lo que el experto estimó y en el eje vertical lo que costó de verdad. La línea diagonal sería la estimación perfecta. Fíjense en dos cosas. Una: los puntos suben junto con la línea, o sea que el experto sí sabe qué tarea es grande y cuál es chica; la correlación es de cero punto setenta y nueve. Dos: los puntos están muy regados alrededor de la línea; solo cuatro de cada diez caen cerca. El experto ordena, pero no dimensiona.", "Tareas de Jira con estimación experta, n = 4,329. Correlación 0.79; solo 40 % dentro de más o menos 15 %. Figura 1 del artículo.")
-diapo_imagen("Lo mismo, con proyectos completos", os.path.join(FIG, "seera_estimate_vs_actual.png"), "Esta otra gráfica son proyectos completos, ciento veinte, de cuarenta y dos organizaciones. Aquí casi todos los puntos están arriba de la línea. Eso quiere decir que costaron más de lo estimado: ochenta y uno por ciento subestimados, con una desviación mediana de cincuenta y ocho por ciento. Es la imagen del problema del que hablé al principio.", "SEERA, n = 120 proyectos. 81 % subestimados; desviación mediana +58.6 %. Figura 2 del artículo.")
+diapo_imagen("Lo que estima el experto contra lo que costó de verdad", os.path.join(FIG, "josse_expert_vs_actual.png"), "Esta gráfica es del dataset JOSSE: tareas reales de proyectos de código abierto. Cada punto es una tarea. En el eje de abajo está lo que el experto estimó y en el eje vertical lo que costó de verdad. La línea diagonal sería la estimación perfecta. Fíjense en dos cosas. Una: los puntos suben junto con la línea, o sea que el experto sí sabe qué tarea es grande y cuál es chica; la correlación es de cero punto setenta y nueve. Dos: los puntos están muy regados alrededor de la línea; solo cuatro de cada diez caen cerca. El experto ordena, pero no dimensiona.", "JOSSE (Alhamed, 2022): tareas de Jira con estimación experta, n = 4,329. Correlación 0.79; solo 40 % dentro de más o menos 15 %. Figura 1 del artículo.")
+diapo_imagen("Lo mismo, con proyectos completos", os.path.join(FIG, "seera_estimate_vs_actual.png"), "Esta otra gráfica son proyectos completos, ciento veinte, de cuarenta y dos organizaciones. Aquí casi todos los puntos están arriba de la línea. Eso quiere decir que costaron más de lo estimado: ochenta y uno por ciento subestimados, y el proyecto de en medio se pasó cincuenta y ocho por ciento de lo estimado. Es la imagen del problema del que hablé al principio.", "SEERA, n = 120 proyectos. 81 % subestimados; desviación mediana +58.6 %. Figura 2 del artículo.")
 
 # =============================================================== 9. Lo que dicen los datos
 diapo_texto("Lo que ya se demostró con datos públicos", [
@@ -230,7 +229,7 @@ diapo_texto("Lo que ya se demostró con datos públicos", [
     "El juicio experto ordena pero no dimensiona: solo 40 % de sus estimaciones cae dentro de más o menos 15 % (H1 respaldada).",
     "Buscar cambios por palabras clave en el texto de la tarea no separa nada (p = 0.57): H2 no se confirmó. Por eso el sistema captura los cambios de forma estructurada y no los adivina del texto.",
     "Todo se verificó con un programa independiente: 26 de 26 comprobaciones correctas.",
-], "Resumo lo que dicen los datos. Primero: con las variables que se conocen al inicio del proyecto, un modelo de bosque aleatorio explicó ochenta y uno por ciento de la variación del esfuerzo en los proyectos completos, contra cero del promedio. Eso respalda la tercera hipótesis. Segundo: el experto ordena pero no dimensiona; eso respalda la primera. Tercero: la segunda hipótesis no se confirmó: buscar cambios por palabras en el texto de la tarea no distingue nada. Y eso cambió el sistema: los cambios se capturan de forma estructurada, con su tipo y su fase, no se adivinan. Todo esto lo verificó un programa aparte, veintiséis de veintiséis comprobaciones. Nota para mí: antes de grabar, confirmar en Zenodo el nombre exacto del conjunto de tareas de Jira, porque el nombre corto que usamos en el artículo no aparece en la literatura.", "Artículo propio, septiembre de 2026. Verificación con scripts/05_verify_results.py.")
+], "Resumo lo que dicen los datos. Primero: con las variables que se conocen al inicio del proyecto, un modelo estadístico que se llama bosque aleatorio explicó ochenta y uno por ciento de la variación del esfuerzo en los proyectos completos. El promedio, que es lo que se usa normalmente, explicó cero. Eso respalda la tercera hipótesis. Segundo: el experto ordena pero no dimensiona; eso respalda la primera. Tercero: la segunda hipótesis no se confirmó: buscar cambios por palabras en el texto de la tarea no distingue nada. Y eso cambió el sistema: los cambios se capturan de forma estructurada, con su tipo y su fase, no se adivinan. Todo esto lo verificó un programa aparte, veintiséis de veintiséis comprobaciones.", "Artículo propio, septiembre de 2026. Verificación con scripts/05_verify_results.py.", size=20)
 
 # =============================================================== 10 a 25. El sistema
 diapo_imagen("EMPS Fresnillo: el sistema, en línea y sin cuenta", "01_portada.png", "Este es el sistema. Se llama EMPS Fresnillo. Está en internet, en estimacion punto hazlatarea punto com, y no pide cuenta ni contraseña. La portada ofrece dos caminos: cotizar en un minuto, o crear un proyecto completo en cinco pasos. Y tiene un ejemplo ya capturado para que cualquiera vea cómo funciona antes de escribir nada. Nota para el video: aquí puedes cambiar a la ventana del navegador y mostrarlo en vivo.", "Portada del sistema, septiembre de 2026. estimacion.hazlatarea.com", recorte=(0.1, 0, 0.9, 1))
@@ -278,7 +277,7 @@ diapo_texto("Plan de validación y difusión", [
     "Ola 2, noviembre: desarrolladores y empresas pequeñas. Cotizan un proyecto real en un minuto y dicen si la cifra se acerca a lo que cobrarían.",
     "Qué se mide: credibilidad, diferencia entre lo esperado y lo calculado, forma elegida, tiempo a la primera cifra, abandono, y estimado contra real cuando un proyecto termina.",
     "Por qué hay espacio: de 242 sistemas integrados a Llave MX, solo 8 son municipales (ATDT, 2025), en un país con 2,469 municipios.",
-], "El plan de validación es un piloto en dos olas. La primera, en octubre, con ayuntamientos: Fresnillo primero, y luego municipios cercanos a través de las redes que ya existen, como CIAPEM, que este año convocó un seminario sobre inteligencia artificial para gobiernos municipales. Cada persona usa el sistema treinta minutos con un proyecto real o con el ejemplo y contesta la encuesta. La segunda ola, en noviembre, con desarrolladores y empresas pequeñas: cotizan un proyecto real y me dicen si la cifra se acerca a lo que cobrarían. Y hay un dato que explica por qué hay espacio para esto: la identidad digital del gobierno federal está integrada en doscientos cuarenta y dos sistemas, y solo ocho son municipales, en un país con dos mil cuatrocientos sesenta y nueve municipios. Los municipios chicos compran software a proveedores chicos, y ninguno de los dos tiene con qué estimar.", "Fuentes: ATDT, 7 de diciembre de 2025; CIAPEM y tapi, Diagnóstico Nacional 2026.", size=20)
+], "El plan de validación es un piloto en dos olas. La primera, en octubre, con ayuntamientos: Fresnillo primero, y luego municipios cercanos a través de las redes que ya existen, como CIAPEM, que este año convocó un seminario sobre inteligencia artificial para gobiernos municipales. Cada persona usa el sistema treinta minutos con un proyecto real o con el ejemplo y contesta la encuesta. La segunda ola, en noviembre, con desarrolladores y empresas pequeñas: cotizan un proyecto real y me dicen si la cifra se acerca a lo que cobrarían. Y hay un dato que explica por qué hay espacio para esto. La identidad digital del gobierno federal está integrada en doscientos cuarenta y dos sistemas, y solo ocho son municipales, en un país con dos mil cuatrocientos sesenta y nueve municipios. Los municipios chicos compran software a proveedores chicos, y ninguno de los dos tiene con qué estimar.", "Fuentes: ATDT, 7 de diciembre de 2025; CIAPEM y tapi, Diagnóstico Nacional 2026.", size=20)
 
 # =============================================================== 27. El modelo
 diapo_texto("El modelo se decide con datos, no antes", [
@@ -286,7 +285,7 @@ diapo_texto("El modelo se decide con datos, no antes", [
     "Con 15 casos terminados, el sistema entrena y compara una regresión, un bosque aleatorio y una red neuronal, con las variables del artículo más la forma de hacerlo, la pericia y el costo de las herramientas. Veredicto con criterios fijados de antemano.",
     "La literatura de 2026 va igual: los modelos clásicos fallan cuando quien escribe el código es un modelo (Frontiers in AI, marzo de 2026); el costo se descompone en tokens, supervisión humana e infraestructura (ACEM, agosto de 2026).",
     ("No prometo un modelo. Prometo el método para elegirlo con datos de ayuntamientos reales, que hoy no existen en ningún lado.", {"size": 20, "bold": True, "color": MARINO, "after": 10}),
-], "Sobre el modelo, quiero ser honesto: no voy a decir hoy cuál es el modelo que lo va a predecir todo, porque no tengo los datos para decirlo. Hoy el motor es determinista y auditable, y eso es una virtud: cada número se rehace a mano. Lo que sí está listo es el método para elegir el modelo cuando haya datos. Con quince casos terminados, el sistema entrena y compara tres modelos, con las variables del artículo más las que este año se volvieron indispensables: la forma de hacerlo, la pericia y el costo de las herramientas. Y da un veredicto con criterios que ya están fijados. La literatura de este año va por ahí: un artículo de marzo dice que los modelos clásicos fallan por razones de fondo cuando quien escribe es un modelo, y otro de agosto propone descomponer el costo en tokens, supervisión humana e infraestructura. Mi tesis entra ahí, con datos de ayuntamientos reales, que hoy no existen en ningún lado.", "Fuentes: Alaswad, Poovammal y Aljaddouh, Frontiers in Artificial Intelligence, 2026; El-Ramly, ACEM, arXiv 2608.02582, 2026.", size=20)
+], "Sobre el modelo, quiero ser honesto: no voy a decir hoy cuál es el modelo que lo va a predecir todo, porque no tengo los datos para decirlo. Hoy el motor no adivina: es una cuenta fija que cualquiera puede rehacer a mano, y eso es una virtud. Lo que sí está listo es el método para elegir el modelo cuando haya datos. Con quince casos terminados, el sistema entrena y compara tres modelos, con las variables del artículo más las que este año se volvieron indispensables: la forma de hacerlo, la pericia y el costo de las herramientas. Y da un veredicto con criterios que ya están fijados. La literatura de este año va por ahí. Un artículo de marzo dice que los modelos clásicos fallan por razones de fondo cuando quien escribe el código es una inteligencia artificial. Otro de agosto propone descomponer el costo en tres partes: lo que se paga a la inteligencia artificial por su uso, la supervisión humana y los servidores. Mi tesis entra ahí, con datos de ayuntamientos reales, que hoy no existen en ningún lado.", "Fuentes: Alaswad, Poovammal y Aljaddouh, Frontiers in Artificial Intelligence, 2026; El-Ramly, ACEM, arXiv 2608.02582, 2026.", size=20)
 
 # =============================================================== 28. Limites
 diapo_texto("Límites, dichos de frente", [
@@ -295,7 +294,7 @@ diapo_texto("Límites, dichos de frente", [
     "El sistema estima, no dictamina. La determinación fiscal y laboral requiere revisión profesional, y lo dice en cada pantalla.",
     "La encuesta la contesta quien quiere, así que hay sesgo. Por eso también se mide sin preguntar: tiempo, abandono, decisión.",
     "Mucha evidencia de 2026 viene de empresas interesadas. En la tesis se separa lo que viene de ensayos controlados de lo que viene de encuestas y folletos.",
-], "Los límites, dichos de frente. Uno: todavía no hay casos reales terminados. Dos: los precios y los factores cambian mes con mes, y por eso son parámetros con fecha y no números fijos. Tres: el sistema estima, no dictamina; la parte fiscal y laboral la tiene que revisar un profesional, y el sistema lo dice. Cuatro: la encuesta la contesta quien quiere, así que hay sesgo, y por eso también mido cosas sin preguntar. Y cinco: mucha de la evidencia de este año viene de empresas que venden estas herramientas; en la tesis separo lo que viene de estudios controlados de lo que viene de encuestas y folletos.")
+], "Los límites, dichos de frente. Uno: todavía no hay casos reales terminados. Dos: los precios y los factores cambian mes con mes, y por eso son parámetros con fecha y no números fijos. Tres: el sistema estima, no dictamina; la parte fiscal y laboral la tiene que revisar un profesional, y el sistema lo dice. Cuatro: la encuesta la contesta quien quiere, así que contestan más los que ya están convencidos, y por eso también mido cosas sin preguntar. Y cinco: mucha de la evidencia de este año viene de empresas que venden estas herramientas; en la tesis separo lo que viene de estudios controlados de lo que viene de encuestas y folletos.")
 
 # =============================================================== 29. Cronograma
 s = prs.slides.add_slide(BLANK)
@@ -348,7 +347,7 @@ REFERENCIAS = [
     "Alaswad, Poovammal y Aljaddouh. Toward LLM-aware software effort estimation. Frontiers in Artificial Intelligence. 23 de marzo de 2026.",
     "El-Ramly, M. ACEM: A Cost Estimation Model for Agentic Software Engineering. arXiv 2608.02582. Agosto de 2026.",
     "Shetty y otros. Story Point Estimation Using Large Language Models. arXiv 2603.06276. Marzo de 2026.",
-    "SEERA dataset. PROMISE, ACM, 2020. Zenodo. Y dataset de tareas de Jira con estimación experta (Zenodo; confirmar nombre en la fuente).",
+    "Alhamed, M. (2022). JOSSE: A Software Development Effort Dataset Annotated with Expert Estimates. Zenodo, DOI 10.5281/zenodo.7022735. Y SEERA dataset, PROMISE, ACM, 2020, Zenodo, DOI 10.5281/zenodo.4066438.",
     "Strand Partners para AWS. Desbloqueando el potencial de la IA en México 2026. 13 de agosto de 2026.",
     "ATDT. Llave MX y Repositorio Nacional de Tecnología para gobiernos estatales y municipales. 7 de diciembre de 2025.",
     "CIAPEM y tapi. Diagnóstico Nacional 2026 de recaudación digital. ciapem.org. 2026.",
@@ -391,13 +390,13 @@ malos = revisar_texto()
 if malos:
     raise SystemExit("Hay caracteres que delatan texto de IA: %r" % malos)
 
-salida = os.path.join(AQUI, "tesis_emps_2026_v2.pptx")
+salida = os.path.join(AQUI, "tesis_emps_2026_v3.pptx")
 prs.save(salida)
 print("pptx:", salida, "|", len(prs.slides), "diapositivas")
 
 # =============================================================== guion en Word
 doc = Document()
-st = doc.styles["Normal"]; st.font.name = "Segoe UI"; st.font.size = DPt(11)
+st = doc.styles["Normal"]; st.font.name = "Arial"; st.font.size = DPt(11)
 doc.add_heading("Guion del video de presentación de tesis", level=1)
 doc.add_paragraph("Rogelio Flores Rodríguez. Seminario de Tesis, Ingeniería en Software, UAZ. Septiembre de 2026.")
 
@@ -447,13 +446,12 @@ doc.add_paragraph(f"Hablando a ritmo normal, unos {total_min:.0f} minutos en tot
 doc.add_heading("Antes de grabar", level=2)
 for l in [
     "Colocar el escudo de la UAZ en el recuadro de la portada.",
-    "Confirmar en Zenodo el nombre del conjunto de tareas de Jira antes de decirlo (en el artículo se llamó JOSSE; ese nombre no aparece en la literatura).",
     "Tener abierto estimacion.hazlatarea.com en otra ventana para mostrar el sistema en vivo en las diapositivas 10 a 25.",
     "Las cifras del ejemplo son de septiembre de 2026; si se vuelve a calcular el ejemplo con parámetros nuevos, actualizar la diapositiva 15.",
 ]:
     doc.add_paragraph(l, style="List Bullet")
-doc.save(os.path.join(AQUI, "guion_video_v2.docx"))
-print("docx: guion_video_v2.docx |", f"{total_min:.0f} minutos aproximados")
+doc.save(os.path.join(AQUI, "guion_video_v3.docx"))
+print("docx: guion_video_v3.docx |", f"{total_min:.0f} minutos aproximados")
 
 with io.open(os.path.join(AQUI, "referencias.md"), "w", encoding="utf-8") as f:
     f.write("# Referencias de la presentación\n\nConsultadas el 18 de septiembre de 2026 salvo donde se indica otra fecha.\n\n")
