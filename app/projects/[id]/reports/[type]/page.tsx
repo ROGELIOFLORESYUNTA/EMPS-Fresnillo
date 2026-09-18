@@ -8,6 +8,7 @@ import { formatMXN, formatHours, formatWeeks, RISK_LEVELS, DEVELOPMENT_MODES, SY
 import { ChevronLeft, AlertTriangle, CheckCircle2, Clock, ShieldAlert, Cog, GitBranch, Wrench, CalendarClock, Wallet, TrendingDown, TrendingUp } from "lucide-react";
 import { PrintButton } from "@/components/print-button";
 import { recomendacionDelProyecto } from "@/lib/recomendacion-proyecto";
+import { loadChangeImpactParameters } from "@/lib/parameters";
 import {
   computeProviderOpportunityCost,
   computeProviderViabilityRatio,
@@ -15,6 +16,7 @@ import {
   computeOnTimeRisk,
   computeMaintenanceMonthly,
   computeChangeRangeByType,
+  factorHorasCambio,
 } from "@/lib/engine/reports-insights";
 
 const REPORT_LABELS: Record<string, { title: string; audience: string }> = {
@@ -90,10 +92,12 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
   const onTime = computeOnTimeRisk(weeksTotal, project.targetDate ?? null, now);
   const maintenance = computeMaintenanceMonthly(totalPrice);
   // Los cambios chicos tambien se abaratan con la IA: mismo factor que uso el motor para esta estimacion.
+  const parametrosCambios = await loadChangeImpactParameters(undefined, undefined, null);
   const factorHorasCambios = (() => {
     try {
-      const snap = probable ? (JSON.parse(probable.inputsSnapshot) as { pericia?: { efectivo?: { effort_efficiency?: number } } }) : null;
-      return snap?.pericia?.efectivo?.effort_efficiency ?? 1;
+      const snap = probable ? (JSON.parse(probable.inputsSnapshot) as { pericia?: { factor?: number; aplica?: boolean } }) : null;
+      const modo = probable?.mode as keyof typeof parametrosCambios.modeFactor | undefined;
+      return factorHorasCambio(modo ? parametrosCambios.modeFactor[modo] ?? 1 : 1, snap?.pericia?.aplica ? snap.pericia.factor ?? 1 : 1);
     } catch {
       return 1;
     }
@@ -350,7 +354,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
                   </TableBody>
                 </Table>
                 <p className="text-xs text-muted-foreground italic">
-                  ¿De dónde salen estos rangos? De la tarifa por hora del equipo del proveedor ({formatMXN(weeklyTeamRate / 40)}/h) multiplicada por las horas típicas de cada categoría de cambio, con impuestos y reserva para imprevistos.{factorHorasCambios < 0.999 ? ` Con ${modeLabels[probable?.mode ?? ""] ?? "esta forma de hacerlo"} y la pericia de este equipo, cada cambio lleva ${Math.round((1 - factorHorasCambios) * 100)} % menos horas que a mano; ya está descontado.` : ""}
+                  ¿De dónde salen estos rangos? De la tarifa por hora del equipo del proveedor ({formatMXN(weeklyTeamRate / 40)}/h) multiplicada por las horas típicas de cada categoría de cambio, con impuestos y reserva para imprevistos.{factorHorasCambios < 0.999 ? ` Con ${modeLabels[probable?.mode ?? ""] ?? "esta forma de hacerlo"} y la pericia de este equipo, cada cambio lleva ${Math.round((1 - factorHorasCambios) * 100)} % menos horas que a mano; es la misma regla que usa la calculadora de cambios y ya está descontada.` : ""}
                 </p>
               </CardContent>
             </Card>

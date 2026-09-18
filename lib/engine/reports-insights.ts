@@ -242,6 +242,18 @@ const HOURS_PER_WEEK_DEFAULT = 40;
  * heurísticas simples para que el reporte pueda mostrar la tabla
  * incluso cuando aún no hay cambios reales registrados.
  */
+/**
+ * Factor de horas para los rangos rapidos de cambios: la MISMA regla que la
+ * calculadora exacta (CHANGE_MODE_FACTOR por forma de hacerlo), moderada por
+ * la pericia del equipo con la IA. Con pericia nominal (f = 1) da el factor
+ * del modo tal cual; con pericia baja solo se acredita parte del ahorro.
+ */
+export function factorHorasCambio(modeFactor: number, fPericia: number = 1): number {
+  const m = Number.isFinite(modeFactor) ? Math.min(1.5, Math.max(0.2, modeFactor)) : 1;
+  const f = Number.isFinite(fPericia) ? Math.min(1.5, Math.max(0, fPericia)) : 1;
+  return Math.round((1 - (1 - m) * f) * 10000) / 10000;
+}
+
 export function computeChangeRangeByType(
   weeklyTeamRate: number,
   hoursPerWeek: number = HOURS_PER_WEEK_DEFAULT,

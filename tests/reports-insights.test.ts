@@ -9,6 +9,7 @@ import {
   computeOnTimeRisk,
   computeMaintenanceMonthly,
   computeChangeRangeByType,
+  factorHorasCambio,
 } from "@/lib/engine/reports-insights";
 
 describe("computeProviderOpportunityCost", () => {
@@ -205,5 +206,23 @@ describe("los cambios chicos tambien se abaratan con la IA", () => {
     expect(computeChangeRangeByType(40_000, 40, 0)[0].minHours).toBeCloseTo(2 * 0.2, 4);
     expect(computeChangeRangeByType(40_000, 40, 9)[0].minHours).toBeCloseTo(2 * 1.5, 4);
     expect(computeChangeRangeByType(40_000, 40, Number.NaN)[0].minHours).toBe(2);
+  });
+});
+
+describe("factorHorasCambio: la misma regla que la calculadora de cambios, moderada por la pericia", () => {
+  it("con pericia nominal da el factor del modo tal cual (casi todo con IA: 0.68)", () => {
+    expect(factorHorasCambio(0.68, 1)).toBe(0.68);
+    expect(factorHorasCambio(1, 1)).toBe(1);
+  });
+  it("con pericia 1 (35 % del ahorro) casi todo con IA queda en 0.888", () => {
+    expect(factorHorasCambio(0.68, 0.35)).toBeCloseTo(1 - 0.32 * 0.35, 4);
+  });
+  it("con pericia 5 (115 %) se acredita un poco mas del ahorro nominal", () => {
+    expect(factorHorasCambio(0.68, 1.15)).toBeCloseTo(1 - 0.32 * 1.15, 4);
+  });
+  it("valores raros no rompen nada", () => {
+    expect(factorHorasCambio(Number.NaN, 1)).toBe(1);
+    expect(factorHorasCambio(0.68, Number.NaN)).toBe(0.68);
+    expect(factorHorasCambio(0, 1)).toBeCloseTo(0.2, 4);
   });
 });

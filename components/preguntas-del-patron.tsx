@@ -96,7 +96,7 @@ export function PreguntasDelPatron(p: {
             <p className="text-muted-foreground">Pedir &quot;una modificación pequeña&quot; sin cotizarla es la causa principal de que un proyecto se abandone a la mitad. Que el procedimiento de cambios quede escrito en el contrato, con estos rangos.</p>
             {p.ajusteHorasCambios && p.ajusteHorasCambios.factor < 0.999 && (
               <p className="text-green-800">
-                Con {p.ajusteHorasCambios.modoLabel} y la pericia de este equipo, cada cambio lleva {Math.round((1 - p.ajusteHorasCambios.factor) * 100)} % menos horas que a mano: el detalle que antes esperaba un ticket hoy se resuelve en la misma sesión. Los rangos ya lo descuentan.
+                Con {p.ajusteHorasCambios.modoLabel} y la pericia de este equipo, cada cambio lleva {Math.round((1 - p.ajusteHorasCambios.factor) * 100)} % menos horas que a mano: el detalle que antes esperaba un ticket hoy se resuelve en la misma sesión. Es la misma regla que usa la calculadora de cambios del proyecto y los rangos ya la descuentan.
               </p>
             )}
             <Table>

@@ -23,7 +23,8 @@ import { ExplicacionDelNumero } from "@/components/explicacion-del-numero";
 import { TarjetasDeOpcion, PorQueImportaLaForma, type TarjetaDeOpcion } from "@/components/tarjetas-de-opcion";
 import { PreguntasDelPatron } from "@/components/preguntas-del-patron";
 import { EncuestaPiloto } from "@/components/encuesta-piloto";
-import { computeOnTimeRisk, computeMunicipalQuebrarRisk, computeProviderViabilityRatio, computeMaintenanceMonthly, computeChangeRangeByType } from "@/lib/engine/reports-insights";
+import { computeOnTimeRisk, computeMunicipalQuebrarRisk, computeProviderViabilityRatio, computeMaintenanceMonthly, computeChangeRangeByType, factorHorasCambio } from "@/lib/engine/reports-insights";
+import { loadChangeImpactParameters } from "@/lib/parameters";
 import { VEREDICTO_ETIQUETA } from "@/lib/engine/aptitud";
 import { NIVEL_ETIQUETA, type NivelHerramienta } from "@/lib/engine/herramientas";
 import type { PasoDeCalculo } from "@/lib/engine/explicacion";
@@ -299,8 +300,14 @@ export default async function ProjectDetailPage({
   const snapSel = leerSnapshot(selectedEstimate);
   const herramientasSel = snapSel?.herramientas ?? null;
   const periciaSel = snapSel?.pericia ?? null;
-  // Los cambios chicos tambien se abaratan con la IA: mismo factor que uso el motor.
-  const factorHorasCambios = periciaSel?.efectivo?.effort_efficiency ?? 1;
+  // Los cambios chicos tambien se abaratan con la IA: la MISMA regla que la
+  // calculadora de cambios (CHANGE_MODE_FACTOR por forma de hacerlo, con las
+  // ediciones del workspace), moderada por la pericia del equipo.
+  const parametrosCambios = await loadChangeImpactParameters(undefined, undefined, visitorWorkspace?.id ?? null);
+  const factorHorasCambios = factorHorasCambio(
+    parametrosCambios.modeFactor[selectedMode as keyof typeof parametrosCambios.modeFactor] ?? 1,
+    periciaSel?.aplica ? periciaSel.factor : 1,
+  );
   const rangosCambio = computeChangeRangeByType(semanasSel && semanasSel > 0 ? costoDirectoSel / semanasSel : 0, 40, factorHorasCambios);
   const licenciasSel = selectedMode === "low_code" && herramientasSel && herramientasSel.mensualUsuariosFinalesMXN > 0
     ? { usuarios: herramientasSel.usuariosFinales, usdPorUsuario: herramientasSel.usdPorUsuarioFinal, mensualMXN: herramientasSel.mensualUsuariosFinalesMXN, supuestos: herramientasSel.usuariosFinalesSupuestos }

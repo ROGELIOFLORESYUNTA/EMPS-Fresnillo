@@ -8,7 +8,8 @@ import { recomendacionDelProyecto } from "@/lib/recomendacion-proyecto";
 import type { RecommendationRole } from "@/lib/engine/recommendation";
 import { VEREDICTO_ETIQUETA } from "@/lib/engine/aptitud";
 import type { PasoDeCalculo } from "@/lib/engine/explicacion";
-import { computeOnTimeRisk, computeMunicipalQuebrarRisk, computeProviderViabilityRatio, computeMaintenanceMonthly, computeChangeRangeByType } from "@/lib/engine/reports-insights";
+import { computeOnTimeRisk, computeMunicipalQuebrarRisk, computeProviderViabilityRatio, computeMaintenanceMonthly, computeChangeRangeByType, factorHorasCambio } from "@/lib/engine/reports-insights";
+import { loadChangeImpactParameters } from "@/lib/parameters";
 import { TresRespuestas } from "@/components/tres-respuestas";
 import { ExplicacionDelNumero } from "@/components/explicacion-del-numero";
 import { TarjetasDeOpcion, PorQueImportaLaForma, type TarjetaDeOpcion } from "@/components/tarjetas-de-opcion";
@@ -102,8 +103,10 @@ export default async function ResultadoCompartidoPage({
   let factorHorasCambios = 1;
   let licencias: { usuarios: number; usdPorUsuario: number; mensualMXN: number; supuestos: boolean } | null = null;
   try {
-    const snap = sel ? (JSON.parse(sel.inputsSnapshot) as { herramientas?: { usuariosFinales: number; usdPorUsuarioFinal: number; mensualUsuariosFinalesMXN: number; usuariosFinalesSupuestos: boolean }; pericia?: { efectivo?: { effort_efficiency?: number } } }) : null;
-    factorHorasCambios = snap?.pericia?.efectivo?.effort_efficiency ?? 1;
+    const snap = sel ? (JSON.parse(sel.inputsSnapshot) as { herramientas?: { usuariosFinales: number; usdPorUsuarioFinal: number; mensualUsuariosFinalesMXN: number; usuariosFinalesSupuestos: boolean }; pericia?: { factor?: number; aplica?: boolean } }) : null;
+    const parametrosCambios = await loadChangeImpactParameters(undefined, undefined, project.workspaceId ?? null);
+    const modo = sel?.mode as keyof typeof parametrosCambios.modeFactor | undefined;
+    factorHorasCambios = factorHorasCambio(modo ? parametrosCambios.modeFactor[modo] ?? 1 : 1, snap?.pericia?.aplica ? snap.pericia.factor ?? 1 : 1);
     if (sel?.mode === "low_code" && snap?.herramientas && snap.herramientas.mensualUsuariosFinalesMXN > 0) {
       licencias = { usuarios: snap.herramientas.usuariosFinales, usdPorUsuario: snap.herramientas.usdPorUsuarioFinal, mensualMXN: snap.herramientas.mensualUsuariosFinalesMXN, supuestos: snap.herramientas.usuariosFinalesSupuestos };
     }
