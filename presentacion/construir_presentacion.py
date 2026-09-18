@@ -153,9 +153,17 @@ def diapo_imagen(titulo, ruta, que_decir, pie_txt=None, recorte=None):
 s = prs.slides.add_slide(BLANK)
 barra = s.shapes.add_shape(MSO_SHAPE.RECTANGLE, 0, 0, ANCHO, Inches(0.45))
 barra.fill.solid(); barra.fill.fore_color.rgb = MARINO; barra.line.fill.background(); barra.shadow.inherit = False
-esc = s.shapes.add_shape(MSO_SHAPE.RECTANGLE, int((ANCHO - Inches(1.3)) / 2), Inches(0.7), Inches(1.3), Inches(1.3))
-esc.fill.background(); esc.line.color.rgb = GRIS_LINEA; esc.line.width = Pt(0.75); esc.shadow.inherit = False
-texto(s, int((ANCHO - Inches(1.3)) / 2), Inches(1.15), Inches(1.3), Inches(0.4), "Escudo UAZ", size=10, color=GRIS, align=PP_ALIGN.CENTER)
+escudo = os.path.join(CAP, "escudo_uaz.png")
+if os.path.exists(escudo):
+    # El escudo va centrado y con su proporcion original, de 1.3 pulgadas de alto.
+    _w, _h = Image.open(escudo).size
+    alto_esc = Inches(1.3)
+    ancho_esc = int(alto_esc * _w / _h)
+    s.shapes.add_picture(escudo, int((ANCHO - ancho_esc) / 2), Inches(0.7), width=ancho_esc, height=alto_esc)
+else:
+    esc = s.shapes.add_shape(MSO_SHAPE.RECTANGLE, int((ANCHO - Inches(1.3)) / 2), Inches(0.7), Inches(1.3), Inches(1.3))
+    esc.fill.background(); esc.line.color.rgb = GRIS_LINEA; esc.line.width = Pt(0.75); esc.shadow.inherit = False
+    texto(s, int((ANCHO - Inches(1.3)) / 2), Inches(1.15), Inches(1.3), Inches(0.4), "Escudo UAZ", size=10, color=GRIS, align=PP_ALIGN.CENTER)
 texto(s, MARGEN, Inches(2.1), ANCHO - 2 * MARGEN, Inches(0.9), [
     ("Universidad Autónoma de Zacatecas", {"size": 22, "color": MARINO, "bold": True, "align": PP_ALIGN.CENTER, "after": 2}),
     ("Ingeniería en Software. Seminario de Tesis, agosto a diciembre de 2026", {"size": 16, "color": NEGRO, "align": PP_ALIGN.CENTER}),
@@ -172,7 +180,7 @@ texto(s, MARGEN, Inches(5.35), ANCHO - 2 * MARGEN, Inches(1.7), [
 ])
 s.shapes.add_picture(os.path.join(CAP, "logo_emps.png"), ANCHO - MARGEN - Inches(0.7), ALTO - Inches(1.15), width=Inches(0.7), height=Inches(0.7))
 notas(s, "Buenas tardes. Me llamo Rogelio Flores Rodríguez y estudio Ingeniería en Software en la Universidad Autónoma de Zacatecas. Esta es la presentación de avance de mi tesis para el Seminario de Tesis, con la dirección de la doctora Julieta Guadalupe Rodríguez Ruiz. Mi tesis es sobre cómo calcular desde el principio cuánto va a costar y cuánto va a tardar un sistema de software para un municipio. Hice un sistema que ya funciona en internet y se los voy a enseñar. Voy a hablar de tres cosas: primero, cuál es el problema y cómo cambió con la inteligencia artificial; segundo, qué probé ya con datos; y tercero, cómo lo voy a probar con ayuntamientos y con desarrolladores en lo que queda del semestre.")
-GUION.append((1, "Portada", "En pantalla: portada con tus datos. Antes de grabar, pon el escudo de la UAZ en el recuadro.", s.notes_slide.notes_text_frame.text))
+GUION.append((1, "Portada", "En pantalla: portada con el escudo de la UAZ y tus datos.", s.notes_slide.notes_text_frame.text))
 
 # =============================================================== 2. El problema
 diapo_texto("El problema", [
@@ -443,7 +451,6 @@ doc.add_paragraph(f"Hablando a ritmo normal, unos {total_min:.0f} minutos en tot
 
 doc.add_heading("Antes de grabar", level=2)
 for l in [
-    "Colocar el escudo de la UAZ en el recuadro de la portada.",
     "Tener abierto estimacion.hazlatarea.com en otra ventana para mostrar el sistema en vivo en las diapositivas 10 a 25.",
     "Las cifras del ejemplo son de septiembre de 2026; si se vuelve a calcular el ejemplo con parámetros nuevos, actualizar la diapositiva 15.",
 ]:
