@@ -196,7 +196,7 @@ diapo_texto("Hoy el software no se hace como antes", [
     "90 % usa agentes de código cada semana (JetBrains, 2026).",
     "41 % del código nuevo se genera con inteligencia artificial (GitHub, 2025).",
     ("Estimar solo horas de programación ya no alcanza. Por eso el sistema calcula con cinco formas de hacerlo.", {"size": 22, "bold": True, "color": MARINO, "after": 14}),
-], "La pregunta de siempre en esta área es cuántas horas de programación lleva un sistema. El asunto es que la forma de hacer software está cambiando mes con mes. En 2024, seis de cada diez desarrolladores usaban inteligencia artificial. En 2025, casi ocho. En 2026, más de ocho. Y lo nuevo no es que la computadora complete una línea, sino que un agente hace la tarea completa: nueve de cada diez profesionales ya usan agentes cada semana. GitHub dice que cuarenta y uno por ciento del código nuevo se genera con inteligencia artificial. Esto ya es un mercado de diez mil millones de dólares. Para la tesis significa algo muy concreto: un modelo que asuma que las horas de programación son el centro del costo se queda corto. Por eso desde el diseño el sistema calcula con cinco formas de hacerlo, no con una sola.")
+], "La pregunta de siempre en esta área es cuántas horas de programación lleva un sistema. El asunto es que la forma de hacer software está cambiando mes con mes. En 2024, seis de cada diez desarrolladores usaban inteligencia artificial. En 2025, casi ocho. En 2026, más de ocho. Y lo nuevo no es que la computadora complete una línea, sino que un agente hace la tarea completa: nueve de cada diez profesionales ya usan agentes cada semana. GitHub dice que cuarenta y uno por ciento del código nuevo se genera con inteligencia artificial. Para la tesis significa algo muy concreto: un modelo que asuma que las horas de programación son el centro del costo se queda corto. Por eso desde el diseño el sistema calcula con cinco formas de hacerlo, no con una sola.")
 
 # =============================================================== 4. No es igual para todos
 diapo_texto("Pero la ganancia no es igual para todos", [
@@ -204,7 +204,7 @@ diapo_texto("Pero la ganancia no es igual para todos", [
     "Se copia 81 % más código y se limpia 70 % menos (GitClear, 623 millones de cambios).",
     "45 % del código generado trae una falla de seguridad (Veracode, 2026).",
     ("La ganancia depende de la forma de hacerlo y de la pericia del equipo. El sistema las cobra por separado.", {"size": 22, "bold": True, "color": MARINO, "after": 14}),
-], "Ahora la otra cara, porque una tesis no puede repetir el folleto de las herramientas. La inteligencia artificial no hace a todos más rápidos. El estudio más serio del año pasado midió a desarrolladores con experiencia trabajando en su propio código: tardaron diecinueve por ciento más, y ellos creían que habían sido veinte por ciento más rápidos. Otro estudio, con seiscientos millones de cambios de código, encontró que se copia mucho más y se limpia mucho menos. Casi la mitad del código generado trae una falla de seguridad. Y los cambios hechos con inteligencia artificial se aceptan mucho menos que los hechos a mano. Entonces, la ganancia depende de dos cosas: de la forma de hacerlo y de qué tan bien sabe usar la herramienta el equipo. Por eso el sistema no aplica un descuento parejo: cobra la herramienta por un lado y acredita el ahorro según la pericia por otro.")
+], "Ahora la otra cara, porque una tesis no puede repetir el folleto de las herramientas. La inteligencia artificial no hace a todos más rápidos. El estudio más serio del año pasado midió a desarrolladores con experiencia trabajando en su propio código: tardaron diecinueve por ciento más, y ellos creían que habían sido veinte por ciento más rápidos. Otro estudio, con seiscientos millones de cambios de código, encontró que se copia mucho más y se limpia mucho menos. Casi la mitad del código generado trae una falla de seguridad. Entonces, la ganancia depende de dos cosas: de la forma de hacerlo y de qué tan bien sabe usar la herramienta el equipo. Por eso el sistema no aplica un descuento parejo: cobra la herramienta por un lado y, por otro, reconoce el ahorro según qué tanto sabe usarla el equipo.")
 
 # =============================================================== 5. Los detalles
 diapo_texto("Los detalles ya no llevan ticket", [
@@ -225,7 +225,7 @@ diapo_texto("Pregunta e hipótesis", [
 ], "Con ese terreno, esta es la pregunta de la tesis. Si se puede calcular desde el inicio, con los datos que sí se conocen al principio, cuánto va a costar y tardar un sistema municipal. Y que el error sea chico como para decidir con él. La hipótesis del sistema, o sea lo que yo creo y quiero comprobar, es que la estimación mejora cuando todo se junta en un mismo cálculo. Las piezas del sistema, los cambios, la forma de hacerlo, el equipo, la nómina con sus impuestos, el flujo de dinero y el mantenimiento. Y en el artículo probé tres ideas más chicas con datos públicos. Que el juicio del experto por sí solo no basta. Que las tareas de cambio pesan distinto. Y que con los datos del inicio se le puede ganar al promedio. Les adelanto que la segunda no se confirmó, y eso también es un resultado.")
 
 # =============================================================== 7 y 8. Graficas
-diapo_imagen("Lo que estima el experto contra lo que costó de verdad", os.path.join(FIG, "josse_expert_vs_actual.png"), "Esta gráfica es del dataset JOSSE: tareas reales de proyectos de código abierto. Cada punto es una tarea. En el eje de abajo está lo que el experto estimó y en el eje vertical lo que costó de verdad. La línea diagonal sería la estimación perfecta. Fíjense en dos cosas. Una: los puntos suben junto con la línea, o sea que el experto sí sabe qué tarea es grande y cuál es chica; la correlación es de cero punto setenta y nueve. Dos: los puntos están muy regados alrededor de la línea; solo cuatro de cada diez caen cerca. El experto ordena, pero no dimensiona.", "JOSSE (Alhamed, 2022): tareas de Jira con estimación experta, n = 4,329. Correlación 0.79; solo 40 % dentro de más o menos 15 %. Figura 1 del artículo.")
+diapo_imagen("Lo que estima el experto contra lo que costó de verdad", os.path.join(FIG, "josse_expert_vs_actual.png"), "Esta gráfica es del dataset JOSSE: tareas reales de proyectos de código abierto. Cada punto es una tarea. En el eje de abajo está lo que el experto estimó y en el eje vertical lo que costó de verdad. La línea diagonal sería la estimación perfecta. Fíjense en dos cosas. Una: los puntos suben junto con la línea, o sea que el experto sí sabe qué tarea es grande y cuál es chica. Eso en estadística se llama correlación, y aquí es alta, de cero punto setenta y nueve. Dos: los puntos están muy regados alrededor de la línea; solo cuatro de cada diez caen cerca. El experto ordena, pero no dimensiona.", "JOSSE (Alhamed, 2022): tareas de Jira con estimación experta, n = 4,329. Correlación 0.79; solo 40 % dentro de más o menos 15 %. Figura 1 del artículo.")
 diapo_imagen("Lo mismo, con proyectos completos", os.path.join(FIG, "seera_estimate_vs_actual.png"), "Esta otra gráfica son proyectos completos, ciento veinte, de cuarenta y dos organizaciones. Aquí casi todos los puntos están arriba de la línea. Eso quiere decir que costaron más de lo estimado: ochenta y uno por ciento subestimados, y el proyecto de en medio se pasó cincuenta y ocho por ciento de lo estimado. Es la imagen del problema del que hablé al principio.", "SEERA, n = 120 proyectos. 81 % subestimados; desviación mediana +58.6 %. Figura 2 del artículo.")
 
 # =============================================================== 9. Lo que dicen los datos
@@ -258,7 +258,7 @@ diapo_texto("La forma de hacerlo pesa más que el precio", [
 
 diapo_imagen("Las herramientas de IA se cobran por persona", "06b_niveles.png", "Esta parte sale de una investigación de precios que hice el nueve de septiembre con las páginas oficiales de cada herramienta. Las herramientas se cobran por persona, no por equipo, porque así las venden: un asiento por cada persona técnica. Y como en la vida real cada quien trae su plan, hay tres niveles: básico, típico y máximo. Por ejemplo, para casi todo con inteligencia artificial, cien, doscientos cincuenta o cuatrocientos dólares por persona al mes. Se elige por proyecto, y además cada persona puede traer su propio plan.", "Nivel de herramientas por persona, en la pantalla Calcular. Precios de lista del 9 de septiembre de 2026.")
 
-diapo_imagen("Lo que se cobra con este equipo", "06_herramientas_ia.png", "Y esto es lo que el sistema le enseña antes de calcular: con este equipo de cuatro personas técnicas, cuánto costarían las herramientas al mes en cada forma de hacerlo, y qué parte del ahorro se acredita según la pericia del equipo. La pericia se captura por persona, del uno al cinco. Los ahorros publicados están calibrados para quien usa la herramienta a diario y sabe darle instrucciones. A quien nunca la ha usado solo se le acredita treinta y cinco por ciento, porque un modelo muy potente en manos de quien no sabe pedirle las cosas no ahorra tiempo. Eso es exactamente lo que midió el estudio de METR.", "Recuadro de herramientas en la pantalla Calcular: cuatro asientos, pericia 3.5 de 5, tipo de cambio 16.92.")
+diapo_imagen("Lo que se cobra con este equipo", "06_herramientas_ia.png", "Y esto es lo que el sistema le enseña antes de calcular: con este equipo de cuatro personas técnicas, cuánto costarían las herramientas al mes en cada forma de hacerlo, y qué parte del ahorro se le reconoce según la pericia del equipo, o sea, qué tan bien saben usar la herramienta. Eso se captura por persona, del uno al cinco. Los ahorros publicados están calibrados para quien usa la herramienta a diario y sabe darle instrucciones. A quien nunca la ha usado solo se le reconoce treinta y cinco por ciento del ahorro, porque un modelo muy potente en manos de quien no sabe pedirle las cosas no ahorra tiempo. Eso es exactamente lo que midió el estudio de METR.", "Recuadro de herramientas en la pantalla Calcular: cuatro asientos, pericia 3.5 de 5, tipo de cambio 16.92.")
 
 diapo_imagen("Nómina, cuotas, impuestos y flujo", "10_resumen_financiero.png", "Un desarrollador puede saber programar muy bien y no saber lo que cuesta una nómina. El sistema lo pone en el número. Sobre el sueldo van las cuotas del IMSS, el INFONAVIT, el impuesto sobre nómina de Zacatecas, las prestaciones de ley, y si el proyecto pasa de seis meses, la liquidación. Y luego el flujo: el proveedor paga la nómina cada mes, pero cobra por anticipo, entregas y pago final. Hay un mes en el que ya pagó y el cliente no le ha terminado de pagar. La tercera tarjeta lo dice: te van a deber tanto en el mes tal. Ese es el mes en que los proyectos se abandonan.", "Resumen financiero del ejemplo: precio, herramientas de IA, dinero que se adelanta, la brecha entre formas de hacerlo y los cambios pendientes.")
 
@@ -274,7 +274,7 @@ diapo_imagen("Un enlace para llevar el resultado", "14_vista_compartida.png", "E
 
 diapo_imagen("La encuesta del piloto", "09_encuesta_piloto.png", "Ahora lo que sigue, que es lo que le pido al seminario que revise. Al pie de cada resultado hay cuatro preguntas que se contestan en treinta segundos: qué tan creíble te pareció la cifra, del uno al cinco; cuánto pensabas antes de verla; con qué forma de hacerlo lo harías; y qué te faltó. Es anónima. Con eso puedo comparar lo que la gente esperaba contra lo que el sistema calculó, separado por lado: Ayuntamiento y proveedor. Y sin esperar a que un proyecto termine, porque eso puede tardar meses.", "Encuesta de salida del piloto, al pie del resultado.")
 
-diapo_imagen("Lo que el sistema mide sin preguntar", "15_panel_investigador.png", "Además de la encuesta, el sistema mide cosas sin preguntar. Cuánto tarda cada persona en llegar a su primera cifra. Cuántos empiezan y no terminan. Qué forma de hacerlo eligen. Y cuando un proyecto termina, se captura lo que costó de verdad. Con quince casos terminados, el sistema calcula solo las mismas métricas del artículo y da un veredicto sobre la hipótesis. Este es el panel del investigador, donde se ve todo eso.", "Panel del investigador: tiempo a la primera cifra, por lado de la mesa y encuesta del piloto.", recorte=(0.1, 0.08, 0.9, 1))
+diapo_imagen("Lo que el sistema mide sin preguntar", "15_panel_investigador.png", "Además de la encuesta, el sistema mide cosas sin preguntar. Cuánto tarda cada persona en llegar a su primera cifra. Cuántos empiezan y no terminan. Qué forma de hacerlo eligen. Y cuando un proyecto termina, se captura lo que costó de verdad. Con quince casos terminados, el sistema calcula solo las mismas medidas del artículo y dice si la hipótesis se cumple o no. Este es el panel del investigador, donde se ve todo eso.", "Panel del investigador: tiempo a la primera cifra, por lado de la mesa y encuesta del piloto.", recorte=(0.1, 0.08, 0.9, 1))
 
 # =============================================================== 26. Validacion y difusion
 diapo_texto("Plan de validación y difusión", [
@@ -333,7 +333,7 @@ diapo_texto("Lo que pido", [
     "A los proveedores: cotizar un proyecto real y decirme si la cifra se acerca a lo que cobrarían.",
     ("Los tiempos ya cambiaron. El que cotiza como antes, o compra como antes, va a perder. Este sistema es una forma de que los dos lados de la mesa vean el mismo número, con todo lo que trae adentro, antes de firmar.", {"size": 24, "bold": True, "color": MARINO, "fuente": TITULOS, "after": 14, "espacio": 1.25}),
     ("Gracias.", {"size": 22, "color": GRIS, "after": 6}),
-], "Cierro con lo que pido. Al jurado, su opinión sobre el instrumento del piloto: las cuatro preguntas, las métricas y el umbral de quince casos. A los ayuntamientos, treinta minutos para probarlo con un proyecto real, sin cuenta y sin instalar nada. A los proveedores, cotizar un proyecto real y decirme si la cifra se acerca a lo que cobrarían. La tesis parte de una idea sencilla: los tiempos ya cambiaron, y el que cotiza como antes, o compra como antes, va a perder. Este sistema es una forma de que los dos lados de la mesa vean el mismo número, con todo lo que trae adentro, antes de firmar. Gracias.")
+], "Cierro con lo que pido. Al jurado, su opinión sobre la encuesta del piloto: las cuatro preguntas, lo que se mide sin preguntar y la regla de esperar quince casos terminados. A los ayuntamientos, treinta minutos para probarlo con un proyecto real, sin cuenta y sin instalar nada. A los proveedores, cotizar un proyecto real y decirme si la cifra se acerca a lo que cobrarían. La tesis parte de una idea sencilla: los tiempos ya cambiaron, y el que cotiza como antes, o compra como antes, va a perder. Este sistema es una forma de que los dos lados de la mesa vean el mismo número, con todo lo que trae adentro, antes de firmar. Gracias.")
 
 # =============================================================== 31 y 32. Referencias
 REFERENCIAS = [
@@ -406,17 +406,26 @@ st = doc.styles["Normal"]; st.font.name = "Arial"; st.font.size = DPt(11)
 doc.add_heading("Guion del video de presentación de tesis", level=1)
 doc.add_paragraph("Rogelio Flores Rodríguez. Seminario de Tesis, Ingeniería en Software, UAZ. Septiembre de 2026.")
 
+doc.add_heading("Cómo usar este guion", level=2)
+for l in [
+    "No hay que aprenderlo de memoria. Lee cada renglón como si lo contaras; cada renglón es una idea.",
+    "Lo que está en cursiva es lo que se ve en la pantalla en ese momento. Lo demás es lo que dices.",
+    "Si te trabas, salta al siguiente renglón. Los números importantes también están en la diapositiva.",
+    "Las mismas palabras están en las notas de cada diapositiva de PowerPoint, por si grabas con la vista del presentador.",
+]:
+    doc.add_paragraph(l, style="List Bullet")
+
 doc.add_heading("La tesis en diez renglones", level=2)
 for l in [
     "Un Ayuntamiento compra un sistema de software sin saber si el proveedor va a poder terminarlo, y un proveedor cotiza sin saber cuánto cobrar.",
     "Los datos dicen que estimar mal es lo normal: ocho de cada diez proyectos cuestan más de lo estimado.",
-    "Mientras hacía la tesis, la inteligencia artificial cambió la forma de hacer software: hoy casi todos la usan y muchos usan agentes que hacen la tarea completa.",
+    "Hoy casi todos los desarrolladores usan inteligencia artificial y muchos usan agentes que hacen la tarea completa. Eso cambia lo que cuesta un sistema.",
     "Pero la ganancia no es pareja: depende de la forma de hacerlo y de qué tan bien la usa el equipo. Y las herramientas cuestan.",
     "Hice un sistema, EMPS Fresnillo, que calcula cuánto cuesta, cuánto tarda, si alcanza y con qué forma de hacerlo, y que le habla al Ayuntamiento y al proveedor.",
-    "El sistema cobra las herramientas de inteligencia artificial por persona, acredita el ahorro según la pericia, suma la nómina con sus impuestos y muestra el flujo de dinero mes a mes.",
+    "El sistema cobra las herramientas de inteligencia artificial por persona, reconoce el ahorro según qué tan bien la usa el equipo, suma la nómina con sus impuestos y muestra el flujo de dinero mes a mes.",
     "Cada número se puede rehacer a mano, y cada parámetro tiene su fuente y su fecha.",
     "Con datos públicos ya probé que el juicio experto no basta y que con los datos del inicio se le gana al promedio.",
-    "Lo que sigue es un piloto en dos olas, ayuntamientos y luego desarrolladores, con una encuesta de cuatro preguntas y métricas que el sistema mide solo.",
+    "Lo que sigue es un piloto en dos olas, ayuntamientos y luego desarrolladores, con una encuesta de cuatro preguntas y medidas que el sistema toma solo.",
     "El modelo se va a decidir con datos, cuando haya quince casos terminados, con un método que ya está listo.",
 ]:
     doc.add_paragraph(l, style="List Number")
@@ -428,8 +437,8 @@ for t, d in [
     ("Asiento", "Una licencia de una herramienta para una persona. Las herramientas de IA se cobran por asiento, es decir, por persona, no por equipo."),
     ("Capital de trabajo o dinero que se adelanta", "Lo que el proveedor tiene que poner de su bolsa mientras el cliente le termina de pagar, porque la nómina se paga cada mes y el cliente paga por partes."),
     ("Escenario conservador", "El cálculo por si hay tropiezos: más horas, y en el caso de las herramientas, un aumento de precio prorrateado. Los otros dos escenarios son si todo sale bien y lo más seguro."),
-    ("MdMRE", "Error mediano: si en la mitad de los casos el error fue menor a 33 %, el MdMRE es 0.33. Es la medida clásica para decir qué tan lejos queda una estimación del valor real."),
-    ("PRED(15)", "Qué parte de las estimaciones cayó dentro de más o menos 15 % del valor real. Cuarenta por ciento quiere decir que cuatro de cada diez estuvieron cerca."),
+    ("Dentro de más o menos 15 %", "Que la estimación quedó cerca del valor real: ni 15 % arriba ni 15 % abajo. Cuatro de cada diez quiere decir que solo cuatro estimaciones de cada diez estuvieron así de cerca."),
+    ("Correlación", "Qué tanto suben juntas dos cosas. Aquí, si el experto dice que una tarea es grande, de verdad es grande. Va de cero a uno; 0.79 es alta."),
     ("R2", "Qué tanto explica un modelo lo que pasa, de cero a uno. Cero es como adivinar con el promedio; 0.81 quiere decir que el modelo explica el ochenta y uno por ciento de la variación."),
     ("Bosque aleatorio", "Un tipo de modelo de aprendizaje automático que combina muchos árboles de decisión. Fue el que mejor funcionó con los proyectos completos."),
 ]:
@@ -444,7 +453,10 @@ for n, t, en_pantalla, nt in GUION:
     doc.add_heading(f"{n}. {t}", level=3)
     p = doc.add_paragraph(); r = p.add_run(en_pantalla); r.italic = True
     doc.add_paragraph(f"Dura aproximadamente {minutos:.1f} minutos.")
-    doc.add_paragraph(nt)
+    # Una frase por renglon: se lee de un vistazo mientras se graba.
+    for frase in re.split(r"(?<=[.!?])\s+", nt.strip()):
+        if frase:
+            q = doc.add_paragraph(frase); q.paragraph_format.space_after = DPt(4)
 
 doc.add_heading("Duración y ajustes", level=2)
 doc.add_paragraph(f"Hablando a ritmo normal, unos {total_min:.0f} minutos en total. Si el video debe durar menos, las diapositivas 4, 5 y 9 se pueden decir en una sola frase cada una, y las de capturas del sistema (10 a 25) se pueden mostrar en vivo en el navegador en vez de una por una.")
