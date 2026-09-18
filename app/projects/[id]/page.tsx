@@ -22,6 +22,7 @@ import { CompartirEnlace } from "@/components/compartir-enlace";
 import { ExplicacionDelNumero } from "@/components/explicacion-del-numero";
 import { TarjetasDeOpcion, PorQueImportaLaForma, type TarjetaDeOpcion } from "@/components/tarjetas-de-opcion";
 import { PreguntasDelPatron } from "@/components/preguntas-del-patron";
+import { EncuestaPiloto } from "@/components/encuesta-piloto";
 import { computeOnTimeRisk, computeMunicipalQuebrarRisk, computeProviderViabilityRatio, computeMaintenanceMonthly, computeChangeRangeByType } from "@/lib/engine/reports-insights";
 import { VEREDICTO_ETIQUETA } from "@/lib/engine/aptitud";
 import { NIVEL_ETIQUETA, type NivelHerramienta } from "@/lib/engine/herramientas";
@@ -272,7 +273,6 @@ export default async function ProjectDetailPage({
   const quebrar = computeMunicipalQuebrarRisk(capitalRequerido, totalSel ?? 0);
   const viabilidad = computeProviderViabilityRatio(capitalRequerido, utilidadSel);
   const mantenimiento = computeMaintenanceMonthly(totalSel ?? 0);
-  const rangosCambio = computeChangeRangeByType(semanasSel && semanasSel > 0 ? costoDirectoSel / semanasSel : 0);
   const esLaElegida = !!activeDecision && activeDecision.mode === selectedMode && activeDecision.scenario === selectedScenario;
   const esLaRecomendada = !!recommendation && recommendation.best.mode === selectedMode && recommendation.best.scenario === selectedScenario;
   let pasosExplicacion: PasoDeCalculo[] = [];
@@ -285,7 +285,7 @@ export default async function ProjectDetailPage({
   // Herramientas de IA, pericia y costos fijos de cada estimación: quedan en su snapshot.
   interface SnapshotEstimacion {
     herramientas?: { asientos: number; usdPorAsiento: number; sobreconsumo: number; tipoCambio: number; mensualMXN: number; descripcion: string; usuariosFinales: number; usuariosFinalesSupuestos: boolean; usdPorUsuarioFinal: number; mensualUsuariosFinalesMXN: number; nivel?: NivelHerramienta; asientosAlNivel?: number; asientosConPlanPropio?: number; usdPlanesPropios?: number };
-    pericia?: { promedio: number; conDato: boolean; factor: number; aplica: boolean };
+    pericia?: { promedio: number; conDato: boolean; factor: number; aplica: boolean; efectivo?: { effort_efficiency: number } };
     otrosCostosMensuales?: { herramientas: number; administracion: number };
   }
   const leerSnapshot = (e: { inputsSnapshot: string } | null | undefined): SnapshotEstimacion | null => {
@@ -299,6 +299,9 @@ export default async function ProjectDetailPage({
   const snapSel = leerSnapshot(selectedEstimate);
   const herramientasSel = snapSel?.herramientas ?? null;
   const periciaSel = snapSel?.pericia ?? null;
+  // Los cambios chicos tambien se abaratan con la IA: mismo factor que uso el motor.
+  const factorHorasCambios = periciaSel?.efectivo?.effort_efficiency ?? 1;
+  const rangosCambio = computeChangeRangeByType(semanasSel && semanasSel > 0 ? costoDirectoSel / semanasSel : 0, 40, factorHorasCambios);
   const licenciasSel = selectedMode === "low_code" && herramientasSel && herramientasSel.mensualUsuariosFinalesMXN > 0
     ? { usuarios: herramientasSel.usuariosFinales, usdPorUsuario: herramientasSel.usdPorUsuarioFinal, mensualMXN: herramientasSel.mensualUsuariosFinalesMXN, supuestos: herramientasSel.usuariosFinalesSupuestos }
     : null;
@@ -797,7 +800,13 @@ export default async function ProjectDetailPage({
           rangosCambio={rangosCambio}
           esProveedor={visitorRole === "proveedor"}
           licenciasUsuarioFinal={licenciasSel}
+          ajusteHorasCambios={{ factor: factorHorasCambios, modoLabel: (modeLabels[selectedMode] ?? selectedMode).toLowerCase() }}
         />
+      )}
+
+      {/* Encuesta de salida del piloto: cuatro preguntas, para la investigacion */}
+      {selectedEstimate && totalSel != null && (
+        <EncuestaPiloto projectId={id} totalMostrado={totalSel} modoLabel={modeLabels[selectedEstimate.mode] ?? selectedEstimate.mode} />
       )}
 
       {/* Acciones rápidas */}

@@ -5,6 +5,7 @@ import { isAdmin } from "@/lib/admin-auth";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { tiempoPrimeraCifra } from "@/lib/tiempo-primera-cifra";
+import { DEVELOPMENT_MODES } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -28,6 +29,8 @@ export default async function AdminDatosPage() {
     activityLog,
     totalWorkspaces,
     eventosDeTiempo,
+    decisiones,
+    piloto,
   ] = await Promise.all([
     prisma.workspace.findMany({
       orderBy: { lastSeenAt: "desc" },
@@ -58,10 +61,65 @@ export default async function AdminDatosPage() {
     prisma.workspace.count(),
     prisma.workspaceActivityLog.findMany({
       where: { eventType: { in: ["project_created", "estimate_run", "option_chosen", "cotizacion_rapida"] } },
-      select: { eventType: true, payloadJson: true, createdAt: true },
+      select: { eventType: true, payloadJson: true, createdAt: true, workspaceId: true },
       orderBy: { createdAt: "asc" },
     }),
+    prisma.projectDecision.findMany({ select: { projectId: true, mode: true } }),
+    prisma.pilotoRespuesta.findMany({ orderBy: { createdAt: "desc" } }),
   ]);
+
+  // ===== Por lado de la mesa: Ayuntamiento contra proveedor =====
+  const ROL_LADO: Record<string, string> = { operador_municipal: "Ayuntamiento", proveedor: "Proveedor", investigador: "Investigador", explorando: "Explorando", otro: "Otro" };
+  const ladoDe = (rol: string | null | undefined) => (rol && ROL_LADO[rol]) || "Sin rol";
+  const rolPorWorkspace = new Map(workspaces.map((w) => [w.id, w.role]));
+  const workspacePorProyecto = new Map(projects.map((pr) => [pr.id, pr.workspaceId]));
+  const lados: Record<string, { proyectos: number; cotizaciones: number; decisiones: number; modos: Map<string, number> }> = {};
+  const lado = (rol: string | null | undefined) => {
+    const k = ladoDe(rol);
+    return (lados[k] ??= { proyectos: 0, cotizaciones: 0, decisiones: 0, modos: new Map() });
+  };
+  for (const pr of projects) lado(pr.workspaceId ? rolPorWorkspace.get(pr.workspaceId) : null).proyectos += 1;
+  for (const ev of eventosDeTiempo) if (ev.eventType === "cotizacion_rapida") lado(rolPorWorkspace.get(ev.workspaceId)).cotizaciones += 1;
+  for (const d of decisiones) {
+    const l = lado(rolPorWorkspace.get(workspacePorProyecto.get(d.projectId) ?? ""));
+    l.decisiones += 1;
+    l.modos.set(d.mode, (l.modos.get(d.mode) ?? 0) + 1);
+  }
+  const filasLado = Object.entries(lados)
+    .map(([nombre, v]) => {
+      const masElegido = [...v.modos.entries()].sort((a, b) => b[1] - a[1])[0];
+      return { nombre, ...v, masElegido: masElegido ? `${DEVELOPMENT_MODES.find((m) => m.value === masElegido[0])?.label ?? masElegido[0]} (${masElegido[1]})` : "sin decisiones" };
+    })
+    .sort((a, b) => b.proyectos - a.proyectos);
+
+  // ===== Encuesta del piloto, por lado =====
+  const mediana = (xs: number[]) => {
+    if (xs.length === 0) return null;
+    const v = [...xs].sort((a, b) => a - b);
+    const m = Math.floor(v.length / 2);
+    return v.length % 2 ? v[m] : (v[m - 1] + v[m]) / 2;
+  };
+  const pilotoPorLado: Record<string, { n: number; cred: number[]; desv: number[]; formas: Map<string, number> }> = {};
+  for (const r of piloto) {
+    const k = ladoDe(r.rol);
+    const g = (pilotoPorLado[k] ??= { n: 0, cred: [], desv: [], formas: new Map() });
+    g.n += 1;
+    g.cred.push(r.credibilidad);
+    if (r.cifraEsperada != null && r.totalMostrado != null && Number(r.totalMostrado) > 0) {
+      g.desv.push(((Number(r.cifraEsperada) - Number(r.totalMostrado)) / Number(r.totalMostrado)) * 100);
+    }
+    if (r.formaQueUsaria) g.formas.set(r.formaQueUsaria, (g.formas.get(r.formaQueUsaria) ?? 0) + 1);
+  }
+  const filasPiloto = Object.entries(pilotoPorLado).map(([nombre, g]) => {
+    const forma = [...g.formas.entries()].sort((a, b) => b[1] - a[1])[0];
+    return {
+      nombre,
+      n: g.n,
+      credibilidad: (g.cred.reduce((a, b) => a + b, 0) / g.cred.length).toFixed(1),
+      desviacion: mediana(g.desv),
+      forma: forma ? `${DEVELOPMENT_MODES.find((m) => m.value === forma[0])?.label ?? (forma[0] === "no_se" ? "No sabe" : forma[0])} (${forma[1]})` : "sin dato",
+    };
+  });
   const tiempo = tiempoPrimeraCifra(eventosDeTiempo);
   const min = (v: number | null) => (v == null ? "sin datos" : v < 1 ? `${Math.round(v * 60)} s` : v < 120 ? `${v.toFixed(1)} min` : `${(v / 60).toFixed(1)} h`);
 
@@ -160,6 +218,83 @@ export default async function AdminDatosPage() {
               <strong>Flujo completo:</strong> {tiempo.completo.proyectos} proyecto(s); mediana {min(tiempo.completo.medianaMinutosACifra)} a la cifra.
             </p>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Por lado de la mesa</CardTitle>
+          <CardDescription>Lo mismo, separado por quién lo usa: el Ayuntamiento que cuida el presupuesto y el proveedor que cuida su utilidad. Sale del rol que cada visitante declaró.</CardDescription>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Lado</TableHead>
+                <TableHead className="text-right">Proyectos</TableHead>
+                <TableHead className="text-right">Cotizaciones rápidas</TableHead>
+                <TableHead className="text-right">Decisiones</TableHead>
+                <TableHead>Forma de hacerlo más elegida</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filasLado.length === 0 ? (
+                <TableRow><TableCell colSpan={5} className="text-muted-foreground">Sin datos todavía.</TableCell></TableRow>
+              ) : filasLado.map((f) => (
+                <TableRow key={f.nombre}>
+                  <TableCell className="font-medium">{f.nombre}</TableCell>
+                  <TableCell className="text-right">{f.proyectos}</TableCell>
+                  <TableCell className="text-right">{f.cotizaciones}</TableCell>
+                  <TableCell className="text-right">{f.decisiones}</TableCell>
+                  <TableCell className="text-xs">{f.masElegido}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Encuesta del piloto</CardTitle>
+          <CardDescription>
+            Cuatro preguntas al pie del resultado: qué tan creíble les pareció la cifra (1 a 5), cuánto esperaban antes de verla, qué forma de hacerlo usarían y qué faltó.
+            La desviación es la mediana de (lo que esperaban menos lo calculado) entre lo calculado: negativa quiere decir que esperaban pagar o cobrar menos de lo que salió.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Lado</TableHead>
+                <TableHead className="text-right">Respuestas</TableHead>
+                <TableHead className="text-right">Credibilidad promedio</TableHead>
+                <TableHead className="text-right">Desviación de lo esperado</TableHead>
+                <TableHead>Forma que usarían</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filasPiloto.length === 0 ? (
+                <TableRow><TableCell colSpan={5} className="text-muted-foreground">Sin respuestas todavía. La encuesta aparece al pie de cada resultado.</TableCell></TableRow>
+              ) : filasPiloto.map((f) => (
+                <TableRow key={f.nombre}>
+                  <TableCell className="font-medium">{f.nombre}</TableCell>
+                  <TableCell className="text-right">{f.n}</TableCell>
+                  <TableCell className="text-right">{f.credibilidad} de 5</TableCell>
+                  <TableCell className="text-right">{f.desviacion == null ? "sin cifra" : `${f.desviacion > 0 ? "+" : ""}${f.desviacion.toFixed(0)} %`}</TableCell>
+                  <TableCell className="text-xs">{f.forma}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          {piloto.some((r) => r.comentario) && (
+            <div className="px-4 py-3 border-t text-xs space-y-1">
+              <p className="font-medium">Últimos comentarios</p>
+              {piloto.filter((r) => r.comentario).slice(0, 8).map((r) => (
+                <p key={r.id} className="text-muted-foreground"><span className="font-medium text-foreground">{ladoDe(r.rol)}:</span> {r.comentario}</p>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 

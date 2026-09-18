@@ -89,7 +89,16 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
   const quebrarRisk = computeMunicipalQuebrarRisk(wcap, totalPrice);
   const onTime = computeOnTimeRisk(weeksTotal, project.targetDate ?? null, now);
   const maintenance = computeMaintenanceMonthly(totalPrice);
-  const changeRanges = computeChangeRangeByType(weeklyTeamRate);
+  // Los cambios chicos tambien se abaratan con la IA: mismo factor que uso el motor para esta estimacion.
+  const factorHorasCambios = (() => {
+    try {
+      const snap = probable ? (JSON.parse(probable.inputsSnapshot) as { pericia?: { efectivo?: { effort_efficiency?: number } } }) : null;
+      return snap?.pericia?.efectivo?.effort_efficiency ?? 1;
+    } catch {
+      return 1;
+    }
+  })();
+  const changeRanges = computeChangeRangeByType(weeklyTeamRate, 40, factorHorasCambios);
 
   // La MISMA recomendación que la pantalla del proyecto (mismo helper, misma
   // aptitud por modo, misma brecha). El rol lo decide el tipo de reporte: el
@@ -341,7 +350,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
                   </TableBody>
                 </Table>
                 <p className="text-xs text-muted-foreground italic">
-                  ¿De dónde salen estos rangos? De la tarifa por hora del equipo del proveedor ({formatMXN(weeklyTeamRate / 40)}/h) multiplicada por las horas típicas de cada categoría de cambio, con impuestos y reserva para imprevistos.
+                  ¿De dónde salen estos rangos? De la tarifa por hora del equipo del proveedor ({formatMXN(weeklyTeamRate / 40)}/h) multiplicada por las horas típicas de cada categoría de cambio, con impuestos y reserva para imprevistos.{factorHorasCambios < 0.999 ? ` Con ${modeLabels[probable?.mode ?? ""] ?? "esta forma de hacerlo"} y la pericia de este equipo, cada cambio lleva ${Math.round((1 - factorHorasCambios) * 100)} % menos horas que a mano; ya está descontado.` : ""}
                 </p>
               </CardContent>
             </Card>

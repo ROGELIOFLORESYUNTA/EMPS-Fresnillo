@@ -99,9 +99,11 @@ export default async function ResultadoCompartidoPage({
     pasos = [];
   }
 
+  let factorHorasCambios = 1;
   let licencias: { usuarios: number; usdPorUsuario: number; mensualMXN: number; supuestos: boolean } | null = null;
   try {
-    const snap = sel ? (JSON.parse(sel.inputsSnapshot) as { herramientas?: { usuariosFinales: number; usdPorUsuarioFinal: number; mensualUsuariosFinalesMXN: number; usuariosFinalesSupuestos: boolean } }) : null;
+    const snap = sel ? (JSON.parse(sel.inputsSnapshot) as { herramientas?: { usuariosFinales: number; usdPorUsuarioFinal: number; mensualUsuariosFinalesMXN: number; usuariosFinalesSupuestos: boolean }; pericia?: { efectivo?: { effort_efficiency?: number } } }) : null;
+    factorHorasCambios = snap?.pericia?.efectivo?.effort_efficiency ?? 1;
     if (sel?.mode === "low_code" && snap?.herramientas && snap.herramientas.mensualUsuariosFinalesMXN > 0) {
       licencias = { usuarios: snap.herramientas.usuariosFinales, usdPorUsuario: snap.herramientas.usdPorUsuarioFinal, mensualMXN: snap.herramientas.mensualUsuariosFinalesMXN, supuestos: snap.herramientas.usuariosFinalesSupuestos };
     }
@@ -183,7 +185,8 @@ export default async function ResultadoCompartidoPage({
             quebrar={computeMunicipalQuebrarRisk(capitalRequerido, total)}
             viabilidad={computeProviderViabilityRatio(capitalRequerido, Math.max(0, Number(sel.subtotal) - costoDirecto))}
             mantenimiento={computeMaintenanceMonthly(total)}
-            rangosCambio={computeChangeRangeByType(semanas && semanas > 0 ? costoDirecto / semanas : 0)}
+            rangosCambio={computeChangeRangeByType(semanas && semanas > 0 ? costoDirecto / semanas : 0, 40, factorHorasCambios)}
+            ajusteHorasCambios={{ factor: factorHorasCambios, modoLabel: (modeLabels[sel.mode] ?? sel.mode).toLowerCase() }}
             esProveedor={role === "proveedor"}
             licenciasUsuarioFinal={licencias}
           />

@@ -999,3 +999,24 @@ model ObservatorioComentario {
   @@index([esTestimonio])
   @@index([textoExpiraEl])
 }
+
+// Encuesta de salida del piloto: cuatro preguntas al pie del resultado. Da
+// estadisticas de los dos lados (Ayuntamiento y proveedor) sin esperar a que
+// un proyecto termine. Anonima: solo el workspace por cookie y su rol.
+model PilotoRespuesta {
+  id                 String   @id @default(cuid())
+  workspaceId        String?
+  projectId          String?
+  rol                String? // rol del workspace al responder: operador_municipal | proveedor | ...
+  credibilidad       Int // 1 no la creo ... 5 la creo del todo
+  cifraEsperada      Decimal? // lo que pensaba que iba a costar o cobrar, antes de ver el resultado
+  totalMostrado      Decimal? // la cifra que tenia en pantalla al responder
+  formaQueUsaria     String? // modo que usaria o pediria; no_se
+  comentario         String?
+  segundosEnPantalla Int?
+  createdAt          DateTime @default(now())
+
+  @@index([workspaceId])
+  @@index([projectId])
+  @@index([rol])
+}

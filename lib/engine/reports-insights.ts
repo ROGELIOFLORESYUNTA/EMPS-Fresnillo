@@ -226,6 +226,9 @@ export interface ChangeRangeRow {
   etiqueta: string;
   minCost: number;
   maxCost: number;
+  /** Horas tipicas ya ajustadas por la forma de hacerlo. */
+  minHours: number;
+  maxHours: number;
   description: string;
 }
 
@@ -242,8 +245,16 @@ const HOURS_PER_WEEK_DEFAULT = 40;
 export function computeChangeRangeByType(
   weeklyTeamRate: number,
   hoursPerWeek: number = HOURS_PER_WEEK_DEFAULT,
+  /**
+   * Los cambios chicos tambien se abaratan con la IA: es la eficiencia efectiva
+   * de la forma de hacerlo (effort_efficiency ya ajustada por la pericia del
+   * equipo). 1 = a mano; 0.65 = casi todo con IA con un equipo que la domina.
+   * Se acota a 0.2..1.5 para que un dato raro no rompa los rangos.
+   */
+  factorHoras: number = 1,
 ): ChangeRangeRow[] {
   const hourlyRate = hoursPerWeek > 0 ? weeklyTeamRate / hoursPerWeek : 0;
+  const f = Math.min(1.5, Math.max(0.2, Number.isFinite(factorHoras) ? factorHoras : 1));
   const OPTIMISTIC = 0.85;
   const CONSERVATIVE = 1.25;
 
@@ -283,11 +294,15 @@ export function computeChangeRangeByType(
 
   return (Object.keys(HOURS_BY_TYPE) as ChangeType[]).map((type) => {
     const cfg = HOURS_BY_TYPE[type];
+    const minHours = cfg.min * f;
+    const maxHours = cfg.max * f;
     return {
       type,
       etiqueta: cfg.etiqueta,
-      minCost: cfg.min * hourlyRate * OPTIMISTIC,
-      maxCost: cfg.max * hourlyRate * CONSERVATIVE,
+      minCost: minHours * hourlyRate * OPTIMISTIC,
+      maxCost: maxHours * hourlyRate * CONSERVATIVE,
+      minHours,
+      maxHours,
       description: cfg.description,
     };
   });

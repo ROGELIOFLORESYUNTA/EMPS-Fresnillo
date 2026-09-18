@@ -181,3 +181,29 @@ describe("computeChangeRangeByType", () => {
     });
   });
 });
+
+describe("los cambios chicos tambien se abaratan con la IA", () => {
+  it("sin factor, los rangos son los de siempre y traen sus horas", () => {
+    const rows = computeChangeRangeByType(40_000);
+    const correccion = rows.find((r) => r.type === "correccion")!;
+    expect(correccion.minHours).toBe(2);
+    expect(correccion.maxHours).toBe(8);
+    expect(correccion.minCost).toBeCloseTo(2 * 1000 * 0.85, 2);
+  });
+
+  it("con casi todo con IA y un equipo que la domina (0.65), una correccion menor lleva 1.3 a 5.2 horas", () => {
+    const rows = computeChangeRangeByType(40_000, 40, 0.65);
+    const correccion = rows.find((r) => r.type === "correccion")!;
+    expect(correccion.minHours).toBeCloseTo(1.3, 4);
+    expect(correccion.maxHours).toBeCloseTo(5.2, 4);
+    expect(correccion.minCost).toBeCloseTo(1.3 * 1000 * 0.85, 2);
+    const base = computeChangeRangeByType(40_000).find((r) => r.type === "correccion")!;
+    expect(correccion.maxCost / base.maxCost).toBeCloseTo(0.65, 4);
+  });
+
+  it("un factor raro no rompe los rangos", () => {
+    expect(computeChangeRangeByType(40_000, 40, 0)[0].minHours).toBeCloseTo(2 * 0.2, 4);
+    expect(computeChangeRangeByType(40_000, 40, 9)[0].minHours).toBeCloseTo(2 * 1.5, 4);
+    expect(computeChangeRangeByType(40_000, 40, Number.NaN)[0].minHours).toBe(2);
+  });
+});
