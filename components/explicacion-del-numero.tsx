@@ -10,7 +10,7 @@ function valorLegible(p: PasoDeCalculo) {
     case "factor": return `× ${p.valor.toLocaleString("es-MX", { maximumFractionDigits: 4 })}`;
     case "porcentaje": return `${(p.valor * 100).toLocaleString("es-MX", { maximumFractionDigits: 1 })} %`;
     case "semanas": return `${p.valor.toLocaleString("es-MX", { maximumFractionDigits: 1 })} semanas`;
-    case "meses": return `${p.valor.toLocaleString("es-MX", { maximumFractionDigits: 2 })} meses`;
+    case "meses": return `${p.valor.toLocaleString("es-MX", { maximumFractionDigits: 3 })} meses`;
   }
 }
 

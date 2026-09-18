@@ -22,7 +22,7 @@ export function PreguntasDelPatron(p: {
 }) {
   const meses = p.onTime.weeksNeeded / 4.33;
   return (
-    <div className="grid gap-3 md:grid-cols-2">
+    <div className="grid gap-3 md:grid-cols-2 [&>*]:min-w-0">
       <Card>
         <CardHeader><CardTitle className="text-base">¿Va a terminar a tiempo?</CardTitle></CardHeader>
         <CardContent className="text-sm space-y-1">

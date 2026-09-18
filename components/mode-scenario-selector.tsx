@@ -59,7 +59,7 @@ export function ModeScenarioSelector({
         </Select>
       </div>
       <p className="text-xs text-muted-foreground basis-full">
-        Cambia el modo y el escenario para ver cómo varían las tarjetas. La tabla del comparador (abajo) siempre muestra los 5 modos × 3 escenarios.
+        Cambia la forma de hacerlo y el escenario: las cifras de arriba y la cadena de cálculo se recalculan. Abajo, plegada, está la tabla con las 5 formas de hacerlo por 3 escenarios.
       </p>
     </div>
   );

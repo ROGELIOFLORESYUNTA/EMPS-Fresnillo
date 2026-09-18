@@ -91,6 +91,9 @@ export interface EntradasExplicacion {
 const r2 = (n: number) => Math.round(n * 100) / 100;
 // Los factores van a 4 decimales: con 2, la comprobacion a mano no cuadra.
 const r4 = (n: number) => Math.round(n * 10000) / 10000;
+// Los meses van a 3 decimales: con 2, rehacer la cuenta a mano se desvia
+// hasta doscientos pesos en los proyectos cortos.
+const r3 = (n: number) => Math.round(n * 1000) / 1000;
 
 export function construirExplicacion(e: EntradasExplicacion): PasoDeCalculo[] {
   const pasos: PasoDeCalculo[] = [];
@@ -192,7 +195,7 @@ export function construirExplicacion(e: EntradasExplicacion): PasoDeCalculo[] {
   pasos.push({
     clave: "meses",
     etiqueta: "Meses",
-    valor: r2(e.meses),
+    valor: r3(e.meses),
     unidad: "meses",
     operacion: `${r2(e.semanas)} semanas ÷ 4.33`,
   });
@@ -247,8 +250,8 @@ export function construirExplicacion(e: EntradasExplicacion): PasoDeCalculo[] {
     unidad: "pesos",
     operacion:
       e.liquidacionLFT > 0
-        ? `${mensual} × ${r2(e.meses)} meses + ${r2(e.liquidacionLFT)} de liquidación (el proyecto pasa de 6 meses)`
-        : `${mensual} × ${r2(e.meses)} meses`,
+        ? `${mensual} × ${r3(e.meses)} meses + ${r2(e.liquidacionLFT)} de liquidación (el proyecto pasa de 6 meses)`
+        : `${mensual} × ${r3(e.meses)} meses`,
   });
 
   pasos.push({
@@ -273,6 +276,7 @@ export function construirExplicacion(e: EntradasExplicacion): PasoDeCalculo[] {
     valor: r2(e.total),
     unidad: "pesos",
     operacion: `${r2(e.subtotal)} + ${r2(e.iva)}`,
+    nota: "Cada renglón se muestra redondeado; si rehaces la cuenta con calculadora puede darte unos pesos de diferencia (menos de uno por cada mil).",
   });
 
   return pasos;

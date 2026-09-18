@@ -819,7 +819,7 @@ export default async function ProjectDetailPage({
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <TrendingUp className="w-4 h-4" />
-              Comparador de modos · Versión {latestVersion}
+              Las opciones · Versión {latestVersion}
             </CardTitle>
             <CardDescription>Las tres que importan primero. Abajo, plegadas, las 15 combinaciones (5 formas de hacerlo por 3 escenarios).</CardDescription>
           </CardHeader>
@@ -831,7 +831,7 @@ export default async function ProjectDetailPage({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Modo</TableHead>
+                  <TableHead>Forma de hacerlo</TableHead>
                   <TableHead>Escenario</TableHead>
                   <TableHead className="text-right">Horas</TableHead>
                   <TableHead className="text-right">Semanas</TableHead>

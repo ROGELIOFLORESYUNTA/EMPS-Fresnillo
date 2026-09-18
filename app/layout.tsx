@@ -37,7 +37,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           {adminActive && <AdminRibbon />}
           {/* Header fijo arriba */}
           <header className="sticky top-0 z-40 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 no-print">
-            <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between gap-4">
+            {/* En celular el menu no cabe en un solo renglon: envuelve a un
+                segundo renglon en vez de empujar toda la pagina a lo ancho. */}
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 min-h-16 py-2 sm:py-0 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
               <Link href="/" className="flex items-center gap-3 shrink-0">
                 <div className="w-9 h-9 rounded-md bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
                   EM
@@ -47,7 +49,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                   <p className="text-xs text-muted-foreground leading-tight">Estimador Municipal de Proyectos</p>
                 </div>
               </Link>
-              <nav className="flex items-center gap-1 text-sm">
+              <nav className="flex flex-wrap items-center justify-end gap-1 text-sm">
                 {NAV_USUARIO.map((item) => (
                   <Link
                     key={item.href}
@@ -63,7 +65,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </header>
 
           {/* Contenido principal */}
-          <main className="flex-1 w-full max-w-6xl mx-auto px-6 py-8">
+          <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 py-8">
             {children}
           </main>
 

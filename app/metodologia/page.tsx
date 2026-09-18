@@ -137,7 +137,7 @@ export default async function MetodologiaPage() {
           <ol className="list-decimal list-inside ml-2 space-y-1">
             <li>Descargar el CSV desde <Link href="/investigacion/validacion-hipotesis" className="text-blue-700 hover:underline">/validacion-hipotesis</Link> (botón "Descargar CSV").</li>
             <li>Instalar dependencias: <code className="bg-muted px-1 rounded">pip install pandas scikit-learn matplotlib jupyter</code>.</li>
-            <li>Abrir <code className="bg-muted px-1 rounded">entregable-investigacion/notebooks/validar_hipotesis.ipynb</code>.</li>
+            <li>Abrir <code className="bg-muted px-1 rounded break-all">entregable-investigacion/notebooks/validar_hipotesis.ipynb</code>.</li>
             <li>Apuntar al CSV descargado y ejecutar todas las celdas.</li>
             <li>R², MAPE y feature importance deben coincidir con los del sistema (±0.01).</li>
           </ol>

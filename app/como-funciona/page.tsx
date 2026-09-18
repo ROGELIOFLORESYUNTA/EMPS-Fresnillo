@@ -102,7 +102,7 @@ export default async function HowItWorksPage() {
               <Link href="/projects/new">Crear proyecto</Link>
             </Button>
             {demoProject && (
-              <Button variant="outline" asChild>
+              <Button variant="outline" asChild className="h-auto whitespace-normal text-left max-w-full">
                 <Link href={`/projects/${demoProject.id}`}>Ver el ejemplo: {demoProject.name}</Link>
               </Button>
             )}
