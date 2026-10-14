@@ -96,8 +96,9 @@ export function aptitudDeModos(
     }
     if (r.criticosConDatos > 0 && r.criticidadMax >= umbrales.lowCodeCriticidadDescarta) {
       veredicto = "no_recomendable";
-      razones.push(
-        `${r.criticosConDatos} pieza(s) crítica(s) manejan datos personales; con una plataforma de armado no controlas dónde quedan ni cómo se protegen.`,
+      // La razón que descarta va primero: es la que se muestra en una sola línea.
+      razones.unshift(
+        `${r.criticosConDatos === 1 ? "Una pieza crítica maneja" : `${r.criticosConDatos} piezas críticas manejan`} datos personales; con una plataforma de armado no controlas dónde quedan ni cómo se protegen.`,
       );
     } else if (r.datosPersonales || r.criticidadMax >= umbrales.lowCodeCriticidadReservas) {
       if (veredicto === "apto") veredicto = "con_reservas";
@@ -129,7 +130,8 @@ export function aptitudDeModos(
     }
     if (pericia != null && pericia < umbrales.bytecodingPericiaMin) {
       veredicto = "no_recomendable";
-      razones.push(`El equipo casi no ha trabajado con IA (pericia ${pericia.toFixed(1)} de 5): hacer casi todo con IA sin saber dar instrucciones sale más lento, no más rápido.`);
+      // La razón que descarta va primero: es la que se muestra en una sola línea.
+      razones.unshift(`El equipo casi no ha trabajado con IA (pericia ${pericia.toFixed(1)} de 5): hacer casi todo con IA sin saber dar instrucciones sale más lento, no más rápido.`);
     } else if (pericia != null && pericia < umbrales.bytecodingPericiaReservas) {
       if (veredicto === "apto") veredicto = "con_reservas";
       razones.push(`La pericia del equipo con la IA es ${pericia.toFixed(1)} de 5: se acredita solo parte del ahorro; conviene capacitar antes de cotizar así.`);

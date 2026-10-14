@@ -8,6 +8,15 @@ import { formatMXN, formatHours, formatWeeks, RISK_LEVELS, DEVELOPMENT_MODES, SY
 import { ChevronLeft, AlertTriangle, CheckCircle2, Clock, ShieldAlert, Cog, GitBranch, Wrench, CalendarClock, Wallet, TrendingDown, TrendingUp } from "lucide-react";
 import { PrintButton } from "@/components/print-button";
 import { recomendacionDelProyecto } from "@/lib/recomendacion-proyecto";
+import { loadChangeImpactParameters } from "@/lib/parameters";
+import { cargarProyectoConAcceso } from "@/lib/acceso-proyecto";
+import { isAdmin } from "@/lib/admin-auth";
+import { getLado } from "@/lib/lado-server";
+import { REPORTES, reportePermitido } from "@/lib/reportes";
+import { ReporteCotizacion } from "./reporte-cotizacion";
+import { GraficaFlujo } from "@/components/grafica-flujo";
+import { modeloDeFlujo, fraseDelBache } from "@/lib/graficas";
+import { NOMBRE_DE_FORMA } from "@/lib/formas";
 import {
   computeProviderOpportunityCost,
   computeProviderViabilityRatio,
@@ -15,17 +24,23 @@ import {
   computeOnTimeRisk,
   computeMaintenanceMonthly,
   computeChangeRangeByType,
+  factorHorasCambio,
 } from "@/lib/engine/reports-insights";
-
-const REPORT_LABELS: Record<string, { title: string; audience: string }> = {
-  municipal: { title: "Reporte para Ayuntamiento", audience: "Ayuntamiento de Fresnillo, Zacatecas" },
-  provider: { title: "Reporte de viabilidad para proveedor", audience: "Proveedor de software" },
-  research: { title: "Reporte académico (validación de investigación)", audience: "Universidad Autónoma de Zacatecas" },
-};
 
 export default async function ReportPage({ params }: { params: Promise<{ id: string; type: string }> }) {
   const { id, type } = await params;
-  if (!REPORT_LABELS[type]) notFound();
+  // Cada cara ofrece sus reportes (lib/reportes.ts): el del Ayuntamiento no
+  // existe del lado del desarrollador, ni el del proveedor del lado del
+  // Ayuntamiento, y el académico solo con sesión de investigador.
+  if (!reportePermitido(type, await getLado(), await isAdmin())) notFound();
+
+  // Dueño y lado: 404 si el proyecto es de otro workspace o del otro lado.
+  const acceso = await cargarProyectoConAcceso(id);
+  if (!acceso.project) notFound();
+
+  // La cotización para el cliente es otro documento, sin nada del costo ni del
+  // equipo: no pasa por los cálculos del proveedor de más abajo.
+  if (type === "cotizacion") return <ReporteCotizacion project={acceso.project} />;
 
   const project = await prisma.project.findUnique({
     where: { id },
@@ -58,8 +73,9 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
   const wcap = Number(project.cashflow[0]?.workingCapitalRequired ?? 0);
   // Rastro de la decision: el reporte dice que se eligio, cuando y por quien.
   const decisionActiva = await prisma.projectDecision.findFirst({ where: { projectId: id, supersededAt: null }, orderBy: { createdAt: "desc" } });
-  const modeLabels = Object.fromEntries(DEVELOPMENT_MODES.map((m) => [m.value, m.label]));
-  const meta = REPORT_LABELS[type];
+  // Nombres llanos (A mano, Con IA...), los mismos de la pantalla del proyecto.
+  const modeLabels = NOMBRE_DE_FORMA;
+  const meta = REPORTES[type];
 
   // ===== Derivaciones G.H (insights para reportes) =====
   const now = new Date();
@@ -89,7 +105,19 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
   const quebrarRisk = computeMunicipalQuebrarRisk(wcap, totalPrice);
   const onTime = computeOnTimeRisk(weeksTotal, project.targetDate ?? null, now);
   const maintenance = computeMaintenanceMonthly(totalPrice);
-  const changeRanges = computeChangeRangeByType(weeklyTeamRate);
+  const modeloFlujo = modeloDeFlujo(project.cashflow, totalPrice);
+  // Los cambios chicos tambien se abaratan con la IA: mismo factor que uso el motor para esta estimacion.
+  const parametrosCambios = await loadChangeImpactParameters(undefined, undefined, null);
+  const factorHorasCambios = (() => {
+    try {
+      const snap = probable ? (JSON.parse(probable.inputsSnapshot) as { pericia?: { factor?: number; aplica?: boolean } }) : null;
+      const modo = probable?.mode as keyof typeof parametrosCambios.modeFactor | undefined;
+      return factorHorasCambio(modo ? parametrosCambios.modeFactor[modo] ?? 1 : 1, snap?.pericia?.aplica ? snap.pericia.factor ?? 1 : 1);
+    } catch {
+      return 1;
+    }
+  })();
+  const changeRanges = computeChangeRangeByType(weeklyTeamRate, 40, factorHorasCambios);
 
   // La MISMA recomendación que la pantalla del proyecto (mismo helper, misma
   // aptitud por modo, misma brecha). El rol lo decide el tipo de reporte: el
@@ -196,9 +224,9 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
                       Opción recomendada para presupuestar: <strong>{modeLabels[municipalRecommendation.best.mode] ?? municipalRecommendation.best.mode}</strong> en escenario <strong>{labelOf(SCENARIO_LABELS, municipalRecommendation.best.scenario)}</strong> ({formatMXN(municipalRecommendation.bestOption.total)}). {municipalRecommendation.reasons[1] ?? municipalRecommendation.reasons[0]}
                     </p>
                   ) : null}
-                  <p className="text-muted-foreground">Riesgo agregado: <Badge className={RISK_LEVELS[probable.riskLevel as keyof typeof RISK_LEVELS]?.bg}>{RISK_LEVELS[probable.riskLevel as keyof typeof RISK_LEVELS]?.label ?? probable.riskLevel}</Badge>
+                  <div className="text-muted-foreground">Riesgo agregado: <Badge className={RISK_LEVELS[probable.riskLevel as keyof typeof RISK_LEVELS]?.bg}>{RISK_LEVELS[probable.riskLevel as keyof typeof RISK_LEVELS]?.label ?? probable.riskLevel}</Badge>
                     <span className="text-xs"> (combina complejidad técnica, claridad de requisitos, riesgo fiscal-laboral, flujo de efectivo y probabilidad de cambios)</span>
-                  </p>
+                  </div>
                 </>
               ) : (
                 <p className="text-muted-foreground">No hay estimaciones registradas. Generar estimación antes de imprimir el reporte.</p>
@@ -273,18 +301,18 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
             </Card>
           )}
 
-          {/* G3 - ¿Qué método va a usar? */}
+          {/* G3 - ¿Con qué forma de hacerlo va a trabajar? */}
           {probable && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
                   <Cog className="w-4 h-4 text-blue-600" />
-                  ¿Qué método va a usar el proveedor?
+                  ¿Con qué forma de hacerlo va a trabajar el proveedor?
                 </CardTitle>
               </CardHeader>
               <CardContent className="text-sm space-y-2">
-                <p>El proveedor cotizó con el modo <strong>{modeLabels[probable.mode] ?? probable.mode}</strong>.</p>
-                <p className="text-muted-foreground">{MODE_CLIENT_EXPLANATION[probable.mode] ?? "Modo no documentado en lenguaje cliente."}</p>
+                <p>El proveedor cotizó con la forma de hacerlo <strong>{modeLabels[probable.mode] ?? probable.mode}</strong>.</p>
+                <p className="text-muted-foreground">{MODE_CLIENT_EXPLANATION[probable.mode] ?? "Forma de hacerlo sin explicación en lenguaje llano."}</p>
                 {(() => {
                   try {
                     const snap = JSON.parse(probable.inputsSnapshot) as { herramientas?: { asientos: number; nivel?: string; asientosConPlanPropio?: number; mensualMXN: number; usuariosFinales: number; usdPorUsuarioFinal: number; mensualUsuariosFinalesMXN: number; usuariosFinalesSupuestos: boolean }; pericia?: { promedio: number; factor: number; aplica: boolean } };
@@ -341,7 +369,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
                   </TableBody>
                 </Table>
                 <p className="text-xs text-muted-foreground italic">
-                  ¿De dónde salen estos rangos? De la tarifa por hora del equipo del proveedor ({formatMXN(weeklyTeamRate / 40)}/h) multiplicada por las horas típicas de cada categoría de cambio, con impuestos y reserva para imprevistos.
+                  ¿De dónde salen estos rangos? De la tarifa por hora del equipo del proveedor ({formatMXN(weeklyTeamRate / 40)}/h) multiplicada por las horas típicas de cada categoría de cambio, con impuestos y reserva para imprevistos.{factorHorasCambios < 0.999 ? ` Con ${modeLabels[probable?.mode ?? ""] ?? "esta forma de hacerlo"} y la pericia de este equipo, cada cambio lleva ${Math.round((1 - factorHorasCambios) * 100)} % menos horas que a mano; es la misma regla que usa la calculadora de cambios y ya está descontada.` : ""}
                 </p>
               </CardContent>
             </Card>
@@ -564,65 +592,48 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
             </CardContent>
           </Card>
 
-          {/* H2 - ¿Cuándo cobras vs cuándo gastas? */}
-          {project.cashflow.length > 0 && (() => {
-            const cashflowSorted = [...project.cashflow].sort((a, b) => a.monthNumber - b.monthNumber);
-            const maxAbs = Math.max(
-              ...cashflowSorted.map((m) => Math.abs(Number(m.income))),
-              ...cashflowSorted.map((m) => Math.abs(Number(m.payrollOutflow) + Number(m.taxOutflow) + Number(m.toolsOutflow) + Number(m.adminOutflow))),
-              1,
-            );
-            const worstMonth = cashflowSorted.reduce((worst, m) => Number(m.accumulatedFlow) < Number(worst.accumulatedFlow) ? m : worst, cashflowSorted[0]);
-            return (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Wallet className="w-4 h-4 text-blue-600" />
-                    ¿Cuándo cobras vs cuándo gastas?
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="text-sm space-y-3">
-                  <div className="space-y-2">
-                    {cashflowSorted.map((m) => {
-                      const ingreso = Number(m.income);
-                      const egreso = Number(m.payrollOutflow) + Number(m.taxOutflow) + Number(m.toolsOutflow) + Number(m.adminOutflow);
-                      const acc = Number(m.accumulatedFlow);
-                      const isWorst = m.monthNumber === worstMonth.monthNumber && acc < 0;
-                      return (
-                        <div key={m.id} className={`text-xs border rounded-md p-2 ${isWorst ? "bg-orange-50 border-orange-300" : ""}`}>
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="font-medium">Mes {m.monthNumber}</span>
-                            <span className={acc >= 0 ? "text-green-700 font-medium" : "text-red-700 font-medium"}>
-                              Acumulado: {formatMXN(acc)}{isWorst && " (peor mes)"}
-                            </span>
-                          </div>
-                          <div className="grid grid-cols-2 gap-2 items-center">
-                            <div>
-                              <div className="text-[10px] text-muted-foreground flex items-center justify-center gap-1"><TrendingDown className="w-3 h-3" />Cobro</div>
-                              <div className="h-3 bg-muted rounded overflow-hidden">
-                                <div className="h-full bg-green-500" style={{ width: `${(ingreso / maxAbs) * 100}%` }} />
-                              </div>
-                              <div className="text-[10px] text-green-700">{formatMXN(ingreso)}</div>
-                            </div>
-                            <div>
-                              <div className="text-[10px] text-muted-foreground flex items-center justify-center gap-1"><TrendingUp className="w-3 h-3" />Gasto</div>
-                              <div className="h-3 bg-muted rounded overflow-hidden">
-                                <div className="h-full bg-red-500" style={{ width: `${(egreso / maxAbs) * 100}%` }} />
-                              </div>
-                              <div className="text-[10px] text-red-700">{formatMXN(egreso)}</div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  {worstMonth && Number(worstMonth.accumulatedFlow) < 0 && (
-                    <p>En el <strong>mes {worstMonth.monthNumber}</strong> tienes el peor saldo: <strong>{formatMXN(Number(worstMonth.accumulatedFlow))}</strong>. Es el punto donde más capital de tu bolsa estás poniendo. A partir del siguiente cobro empiezas a recuperar.</p>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })()}
+          {/* H2 - ¿Cuándo cobras vs cuándo gastas? Gráfica de flujo; la tabla queda plegada. */}
+          {modeloFlujo && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Wallet className="w-4 h-4 text-blue-600" />
+                  ¿Cuándo cobras vs cuándo gastas?
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm space-y-4">
+                <GraficaFlujo modelo={modeloFlujo} frase={fraseDelBache(modeloFlujo, "desarrollador")} id="flujo-del-reporte" />
+                {modeloFlujo.peor && (
+                  <p>Es el punto donde más capital de tu bolsa estás poniendo. A partir del siguiente cobro empiezas a recuperar.</p>
+                )}
+                <details className="rounded-md border">
+                  <summary className="cursor-pointer px-4 py-2 font-medium">Ver la tabla mes a mes</summary>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Mes</TableHead>
+                        <TableHead className="text-right">Cobros</TableHead>
+                        <TableHead className="text-right">Gastos</TableHead>
+                        <TableHead className="text-right">Saldo del mes</TableHead>
+                        <TableHead className="text-right">Saldo acumulado</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {modeloFlujo.meses.map((m) => (
+                        <TableRow key={m.mes} className={m.esPeor ? "bg-amber-50" : ""}>
+                          <TableCell>Mes {m.mes}{m.esPeor ? " (el peor)" : ""}</TableCell>
+                          <TableCell className="text-right">{formatMXN(m.cobro)}</TableCell>
+                          <TableCell className="text-right">{formatMXN(m.gasto)}</TableCell>
+                          <TableCell className="text-right">{formatMXN(m.saldoDelMes)}</TableCell>
+                          <TableCell className="text-right font-medium">{formatMXN(m.acumulado)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </details>
+              </CardContent>
+            </Card>
+          )}
 
           {/* H3 - ¿Aguantas este proyecto? */}
           <Card className={viability.level === "rojo" ? "border-red-300" : viability.level === "apretado" ? "border-amber-300" : ""}>
@@ -694,6 +705,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
 
           {project.changes.length > 0 && (
             <>
+              {project.changes.some((c) => c.assessment?.financialBreakdownJson) ? (
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base">Cambios y su impacto financiero</CardTitle>
@@ -738,6 +750,9 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
                   </Table>
                 </CardContent>
               </Card>
+              ) : (
+                <p className="text-sm text-muted-foreground">Hay cambios registrados, pero todavía no tienen su cálculo financiero. Evalúalos con la calculadora de impacto para ver aquí cuánto cuestan.</p>
+              )}
 
               {project.changes.some((c) => c.decision === "incluido" && Number(c.costImpact ?? 0) === 0) && (
                 <Card className="border-orange-300">
@@ -782,10 +797,10 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
           </Card>
 
           <Card>
-            <CardHeader><CardTitle className="text-base">Escenarios comparados (5 modos × 3 escenarios)</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-base">Escenarios comparados (5 formas de hacerlo × 3 escenarios)</CardTitle></CardHeader>
             <CardContent className="p-0">
               <Table>
-                <TableHeader><TableRow><TableHead>Modo</TableHead><TableHead>Escenario</TableHead><TableHead className="text-right">Horas</TableHead><TableHead className="text-right">Sem. total</TableHead><TableHead className="text-right">Sem. prototipo</TableHead><TableHead className="text-right">Total</TableHead></TableRow></TableHeader>
+                <TableHeader><TableRow><TableHead>Forma de hacerlo</TableHead><TableHead>Escenario</TableHead><TableHead className="text-right">Horas</TableHead><TableHead className="text-right">Sem. total</TableHead><TableHead className="text-right">Sem. prototipo</TableHead><TableHead className="text-right">Total</TableHead></TableRow></TableHeader>
                 <TableBody>
                   {latest.map((e) => {
                     const totalHours = Number(e.codingHours) + Number(e.reviewHours) + Number(e.testingHours) + Number(e.documentationHours) + Number(e.deploymentHours) + Number(e.trainingHours) + Number(e.supportHours) + Number(e.hardeningHours) + Number(e.analysisHours) + Number(e.designHours);
@@ -806,10 +821,10 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
           </Card>
 
           <Card>
-            <CardHeader><CardTitle className="text-base">Diferencias entre modos</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-base">Diferencias entre formas de hacerlo</CardTitle></CardHeader>
             <CardContent className="text-sm space-y-2">
               <p>Para evidenciar la hipótesis del addendum 25, el sistema separa por fases (no aplica un solo multiplicador). Esto permite visualizar que <strong>bytecoding suma 1.10× horas-persona</strong> pero entrega prototipo <strong>3.5× más rápido</strong> que tradicional.</p>
-              <p className="text-muted-foreground">Hipótesis ajustada: la estimación temprana mejora cuando se integran requerimientos, cambios, modo de desarrollo, equipo, obligaciones fiscales-laborales, flujo de efectivo y mantenimiento en una misma base de datos y un mismo cálculo.</p>
+              <p className="text-muted-foreground">Hipótesis ajustada: la estimación temprana mejora cuando se integran requerimientos, cambios, forma de hacerlo, equipo, obligaciones fiscales-laborales, flujo de efectivo y mantenimiento en una misma base de datos y un mismo cálculo.</p>
             </CardContent>
           </Card>
 
@@ -841,7 +856,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
                     <TableRow>
                       <TableHead>Tipo</TableHead>
                       <TableHead>Fase</TableHead>
-                      <TableHead>Modo</TableHead>
+                      <TableHead>Forma de hacerlo</TableHead>
                       <TableHead className="text-right">Puntos</TableHead>
                       <TableHead className="text-right">F.clar.</TableHead>
                       <TableHead className="text-right">F.fase</TableHead>
@@ -889,7 +904,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
       )}
 
       {/* Mini glosario imprimible: los términos de este reporte, en una línea cada uno */}
-      {(type === "municipal" || type === "proveedor") && (
+      {(type === "municipal" || type === "provider") && (
         <Card className="bg-muted/20">
           <CardHeader><CardTitle className="text-sm">Términos usados en este reporte</CardTitle></CardHeader>
           <CardContent className="text-xs text-muted-foreground grid sm:grid-cols-2 gap-x-6 gap-y-1">

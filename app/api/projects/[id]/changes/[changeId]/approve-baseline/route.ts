@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { approveBaselineSchema } from "@/lib/validators";
 import { getCurrentWorkspace, logWorkspaceActivity } from "@/lib/workspace";
+import { cargarProyectoConAcceso } from "@/lib/acceso-proyecto";
 
 export async function POST(
   req: NextRequest,
@@ -18,11 +19,14 @@ export async function POST(
 ) {
   try {
     const { id, changeId } = await params;
+    const acceso = await cargarProyectoConAcceso(id);
+    if (!acceso.project) return NextResponse.json({ error: "Proyecto no encontrado." }, { status: acceso.status });
     const body = await req.json();
     const data = approveBaselineSchema.parse(body);
 
-    const assessment = await prisma.changeImpactAssessment.findUnique({
-      where: { changeRequestId: changeId },
+    // Se busca dentro de este proyecto: un cambio de otro proyecto no se toca.
+    const assessment = await prisma.changeImpactAssessment.findFirst({
+      where: { changeRequestId: changeId, projectId: id },
     });
     if (!assessment) {
       return NextResponse.json(

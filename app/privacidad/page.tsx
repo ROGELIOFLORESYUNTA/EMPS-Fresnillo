@@ -11,7 +11,7 @@ import { Breadcrumbs } from "@/components/breadcrumbs";
 import { Lock } from "lucide-react";
 
 export const metadata = {
-  title: "Aviso de privacidad | EMPS Fresnillo",
+  title: "Aviso de privacidad",
   description: "Qué datos guarda el sistema, para qué los usa y cómo pedir que se borren.",
 };
 

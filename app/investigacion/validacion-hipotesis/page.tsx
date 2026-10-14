@@ -57,7 +57,7 @@ export default async function ValidacionHipotesisPage() {
         <CardHeader>
           <CardTitle className="text-base">Hipótesis a validar</CardTitle>
           <CardDescription>
-            Una estimación temprana mejora cuando integra esfuerzo técnico, modo de desarrollo, cambios y
+            Una estimación temprana mejora cuando integra esfuerzo técnico, forma de hacerlo, cambios y
             viabilidad fiscal-laboral antes de comprometer precio, calendario y mantenimiento.
           </CardDescription>
         </CardHeader>

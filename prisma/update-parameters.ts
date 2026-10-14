@@ -15,6 +15,7 @@
  */
 import { PrismaClient } from "@prisma/client";
 import seedData from "../17_seed_data_parametros_2026.json";
+import parameterManualsData from "../46_parameter_manuals_2026.json";
 
 const prisma = new PrismaClient();
 
@@ -92,16 +93,31 @@ async function main() {
     }
   }
 
-  // Bloques JSON del motor (mismos que el seed completo)
-  const jsonBlocks: Array<[string, unknown, string, string?]> = [
-    ["DEV_MODE_FACTORS", seedData.development_mode_factors, "Coeficientes de distribucion por fase para cada modo."],
-    ["DEV_MODE_VELOCITY", seedData.development_mode_velocity, "Velocidad calendario y aceleracion a prototipo por modo."],
-    ["SCENARIO_FACTORS", seedData.scenario_factors, "Factores optimista/probable/conservador para escenarios."],
-    ["DEFAULT_CARGA_PATRONAL_ESTIMADA", seedData.default_carga_patronal_estimada, "Factor agregado para modo 'estimado'."],
-    ["AI_TOOL_COSTS", seedData.ai_tool_costs, "Costo mensual de herramientas de IA por persona tecnica y por forma de hacerlo, USD sin IVA. Precios consultados el 09-sep-2026; fuentes en el JSON.", "2026-09-09"],
-    ["AI_SKILL_FACTORS", seedData.ai_skill_factors, "Parte de la ganancia nominal de cada modo que se acredita segun la pericia del equipo con la IA (1 a 5).", "2026-09-09"],
+  // Bloques JSON del motor (mismos que el seed completo). Los que traen `desde` y
+  // `fuente` son precios con fecha de consulta: se guardan con esa vigencia y esa fuente.
+  const FUENTE_SEPTIEMBRE =
+    "Investigacion en internet del 09-sep-2026: paginas de precios oficiales y estudios publicados (ver fuentes dentro del valor)";
+  const jsonBlocks: Array<{ key: string; data: unknown; notes: string; desde?: string; fuente?: string }> = [
+    { key: "DEV_MODE_FACTORS", data: seedData.development_mode_factors, notes: "Coeficientes de distribucion por fase para cada modo." },
+    { key: "DEV_MODE_VELOCITY", data: seedData.development_mode_velocity, notes: "Velocidad calendario y aceleracion a prototipo por modo." },
+    { key: "SCENARIO_FACTORS", data: seedData.scenario_factors, notes: "Factores optimista/probable/conservador para escenarios." },
+    { key: "DEFAULT_CARGA_PATRONAL_ESTIMADA", data: seedData.default_carga_patronal_estimada, notes: "Factor agregado para modo 'estimado'." },
+    {
+      key: "AI_TOOL_COSTS",
+      data: seedData.ai_tool_costs,
+      notes: "Costo mensual de herramientas de IA por persona tecnica y por forma de hacerlo, USD sin IVA. Precios consultados el 13-oct-2026; fuentes en el JSON.",
+      desde: "2026-10-13",
+      fuente: "Páginas de precios consultadas el 13 de octubre de 2026: Anthropic, Cursor, GitHub Copilot, OpenAI, Google Gemini",
+    },
+    {
+      key: "AI_SKILL_FACTORS",
+      data: seedData.ai_skill_factors,
+      notes: "Parte de la ganancia nominal de cada modo que se acredita segun la pericia del equipo con la IA (1 a 5).",
+      desde: "2026-09-09",
+      fuente: FUENTE_SEPTIEMBRE,
+    },
   ];
-  for (const [key, data, notes, desde] of jsonBlocks) {
+  for (const { key, data, notes, desde, fuente } of jsonBlocks) {
     if (data === undefined) continue;
     const effectiveFrom = new Date(desde ?? `${year}-01-01`);
     const where = {
@@ -113,18 +129,62 @@ async function main() {
     const antes = await prisma.parameter.findUnique({ where });
     await prisma.parameter.upsert({
       where,
-      update: { value: valueStr },
+      // Los precios con fecha tambien actualizan su fuente y su nota, para que correr el script otra vez deje todo igual.
+      update: desde ? { value: valueStr, source: fuente, notes } : { value: valueStr },
       create: {
         year, country, state, key,
         value: valueStr,
         unit: "json",
-        source: desde ? "Investigacion en internet del 09-sep-2026: paginas de precios oficiales y estudios publicados (ver fuentes dentro del valor)" : "EMPS Fresnillo internal",
+        source: desde ? (fuente ?? FUENTE_SEPTIEMBRE) : "EMPS Fresnillo internal",
         effectiveFrom,
         notes,
       },
     });
     if (!antes) { nuevos += 1; cambios.push(`NUEVO  ${key} (json)`); }
     else if (antes.value !== valueStr) cambios.push(`CAMBIO ${key} (json)`);
+
+    // Un precio con una fecha nueva no borra el anterior: lo cierra el dia antes, para
+    // que quede la historia y la base solo use la version vigente (ver loadAllForYear).
+    if (desde) {
+      const cierre = new Date(effectiveFrom.getTime() - 24 * 60 * 60 * 1000);
+      const cerradas = await prisma.parameter.updateMany({
+        where: { year, country, state, key, effectiveFrom: { lt: effectiveFrom }, effectiveUntil: null },
+        data: { effectiveUntil: cierre },
+      });
+      if (cerradas.count > 0) cambios.push(`CERRADO ${key}: ${cerradas.count} version(es) anterior(es) hasta el ${cierre.toISOString().slice(0, 10)}`);
+    }
+  }
+
+  // Manuales de los parametros que cambiaron de fecha (el texto que se ve en el cajon de informacion).
+  const manuales = parameterManualsData.manuals as Record<string, {
+    title: string;
+    originSource?: string;
+    originUrl?: string;
+    originDocument?: string;
+    whatItAffects?: string;
+    howToModify?: string;
+    referencesMarkdown?: string;
+    sourceTrustLevel?: string;
+    lastReviewedAt?: string;
+  }>;
+  for (const key of ["AI_TOOL_COSTS"]) {
+    const m = manuales[key];
+    if (!m) continue;
+    const datos = {
+      title: m.title,
+      originSource: m.originSource ?? null,
+      originUrl: m.originUrl ?? null,
+      originDocument: m.originDocument ?? null,
+      whatItAffects: m.whatItAffects ?? null,
+      howToModify: m.howToModify ?? null,
+      referencesMarkdown: m.referencesMarkdown ?? null,
+      sourceTrustLevel: m.sourceTrustLevel ?? "oficial",
+      lastReviewedAt: m.lastReviewedAt ? new Date(m.lastReviewedAt) : null,
+    };
+    const antes = await prisma.parameterManual.findUnique({ where: { parameterKey: key } });
+    await prisma.parameterManual.upsert({ where: { parameterKey: key }, create: { parameterKey: key, ...datos }, update: datos });
+    if (!antes) cambios.push(`NUEVO  manual de ${key}`);
+    else if (antes.whatItAffects !== datos.whatItAffects || antes.originSource !== datos.originSource) cambios.push(`CAMBIO manual de ${key}`);
   }
 
   const total = await prisma.parameter.count();

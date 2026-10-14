@@ -13,18 +13,22 @@
  *     baselineBeforeVersion/After, sourceParameterKeysJson, lastParameterReviewAt.
  */
 import { NextRequest, NextResponse } from "next/server";
+import { cargaNominaDelProyecto } from "@/lib/equipo-server";
 import { Decimal } from "decimal.js";
 import { prisma } from "@/lib/db";
 import { changeImpactInputSchema } from "@/lib/validators";
 import { computeChangeImpact } from "@/lib/engine";
 import { loadChangeImpactParameters } from "@/lib/parameters";
 import { getCurrentWorkspace, logWorkspaceActivity } from "@/lib/workspace";
+import { cargarProyectoConAcceso } from "@/lib/acceso-proyecto";
 
 const dec = (v: number | string) => new Decimal(v);
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string; changeId: string }> }) {
   try {
     const { id, changeId } = await params;
+    const acceso = await cargarProyectoConAcceso(id);
+    if (!acceso.project) return NextResponse.json({ error: "Proyecto no encontrado." }, { status: acceso.status });
     const body = await req.json();
     const input = changeImpactInputSchema.parse(body);
 
@@ -37,7 +41,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const engineParams = await loadChangeImpactParameters(2026, "Zacatecas");
 
     const result = computeChangeImpact(
-      { ...input, projectId: id, changeRequestId: changeId },
+      { ...input, projectId: id, changeRequestId: changeId, cargaNomina: await cargaNominaDelProyecto(id) },
       engineParams,
     );
 
@@ -123,9 +127,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 }
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string; changeId: string }> }) {
-  const { changeId } = await params;
-  const assessment = await prisma.changeImpactAssessment.findUnique({
-    where: { changeRequestId: changeId },
+  const { id, changeId } = await params;
+  const acceso = await cargarProyectoConAcceso(id);
+  if (!acceso.project) return NextResponse.json({ error: "Proyecto no encontrado." }, { status: acceso.status });
+  // Se busca dentro de este proyecto: un cambio de otro proyecto no se lee.
+  const assessment = await prisma.changeImpactAssessment.findFirst({
+    where: { changeRequestId: changeId, projectId: id },
   });
   if (!assessment) return NextResponse.json({ assessment: null });
   return NextResponse.json({

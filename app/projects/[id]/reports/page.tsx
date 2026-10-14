@@ -1,35 +1,29 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { prisma } from "@/lib/db";
+import { cargarProyectoConAcceso } from "@/lib/acceso-proyecto";
+import { getLado } from "@/lib/lado-server";
+import { reportesDelIndice } from "@/lib/reportes";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FileText, Building2, Briefcase, Printer } from "lucide-react";
+import { FileText, Building2, Briefcase, Printer, Pencil } from "lucide-react";
 import { Breadcrumbs } from "@/components/breadcrumbs";
+
+const ICONOS: Record<string, React.ReactNode> = {
+  municipal: <Building2 className="w-6 h-6" />,
+  provider: <Briefcase className="w-6 h-6" />,
+  cotizacion: <FileText className="w-6 h-6" />,
+};
 
 export default async function ReportsHubPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const project = await prisma.project.findUnique({
-    where: { id },
-    select: { id: true, name: true, status: true },
-  });
+  // Dueño y lado: 404 si el proyecto es de otro workspace o del otro lado.
+  const { project } = await cargarProyectoConAcceso(id);
   if (!project) notFound();
 
-  const reports = [
-    {
-      key: "municipal",
-      title: "Reporte para Ayuntamiento",
-      description: "Resumen ejecutivo: alcance, tiempos, costos, riesgos, qué NO está incluido, mantenimiento, alertas de cotización baja, checklist de aceptación.",
-      icon: <Building2 className="w-6 h-6" />,
-      audience: "Ayuntamiento de Fresnillo",
-    },
-    {
-      key: "provider",
-      title: "Reporte para Proveedor",
-      description: "Costo real del equipo, capital de trabajo, impuestos estimados, margen, precio mínimo sostenible, recomendación de anticipo y mantenimiento.",
-      icon: <Briefcase className="w-6 h-6" />,
-      audience: "Proveedor de software",
-    },
-  ];
+  // Cada cara ofrece sus reportes: el desarrollador el de viabilidad y la
+  // cotización para su cliente; el Ayuntamiento el suyo (lib/reportes.ts).
+  const reports = reportesDelIndice(await getLado());
 
   return (
     <div className="space-y-6">
@@ -44,28 +38,44 @@ export default async function ReportsHubPage({ params }: { params: Promise<{ id:
         <p className="text-muted-foreground">{project.name}</p>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-4">
+      <div className="grid md:grid-cols-2 gap-4">
         {reports.map((r) => (
           <Card key={r.key} className="flex flex-col">
             <CardHeader>
               <div className="w-12 h-12 rounded-lg bg-primary/10 text-primary flex items-center justify-center mb-2">
-                {r.icon}
+                {ICONOS[r.key] ?? <FileText className="w-6 h-6" />}
               </div>
               <CardTitle className="text-base">{r.title}</CardTitle>
               <CardDescription className="text-xs">Para: {r.audience}</CardDescription>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col">
-              <p className="text-sm text-muted-foreground mb-4 flex-1">{r.description}</p>
-              <div className="flex gap-2">
-                <Button asChild variant="outline" size="sm" className="flex-1">
-                  <Link href={`/projects/${id}/reports/${r.key}`}>Ver</Link>
-                </Button>
-                <Button asChild size="sm" className="flex-1">
-                  <Link href={`/projects/${id}/reports/${r.key}?print=1`}>
-                    <Printer className="w-3 h-3 mr-1" />Imprimir
-                  </Link>
-                </Button>
-              </div>
+              <p className="text-sm text-muted-foreground mb-4 flex-1">{r.descripcion}</p>
+              {r.disponible ? (
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <Button asChild variant="outline" size="sm" className="flex-1">
+                      <Link href={`/projects/${id}/reports/${r.key}`}>Ver</Link>
+                    </Button>
+                    <Button asChild size="sm" className="flex-1">
+                      <Link href={`/projects/${id}/reports/${r.key}?print=1`}>
+                        <Printer className="w-3 h-3 mr-1" />Imprimir
+                      </Link>
+                    </Button>
+                  </div>
+                  {/* La cotización se arma y se edita antes de entregarla. */}
+                  {r.key === "cotizacion" && (
+                    <Button asChild variant="outline" size="sm" className="w-full">
+                      <Link href={`/projects/${id}/cotizacion`}>
+                        <Pencil className="w-3 h-3 mr-1" />Preparar o editar la cotización
+                      </Link>
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <Badge variant="outline">En preparación</Badge>
+                </div>
+              )}
             </CardContent>
           </Card>
         ))}

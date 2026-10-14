@@ -1,6 +1,7 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { User2, UserCircle2 } from "lucide-react";
 
 interface MyAccountInfo {
@@ -12,29 +13,48 @@ interface MyAccountInfo {
 
 /**
  * Mini badge en el header.
- * - Si el visitante no se ha identificado: muestra "Anónimo · Identifícate"
- *   con color ámbar para invitar a hacer click.
- * - Si ya se identificó: muestra su nombre.
+ * - Si el visitante ya se identificó: muestra su nombre.
+ * - Si no se ha identificado: muestra "Anónimo · Identifícate" en ámbar para
+ *   invitar a hacer click, pero SOLO cuando ya tiene algún proyecto propio.
+ *   Antes de eso no hay nada que reconocer y la pastilla solo estorba.
  * Click va a /mi-cuenta (alias visible de /mi-workspace).
+ *
+ * Se vuelve a consultar en cada cambio de página: el encabezado no se
+ * recarga al navegar, y así la pastilla aparece justo después de crear el
+ * primer proyecto.
  */
 export function WorkspaceBadge() {
   const [me, setMe] = useState<MyAccountInfo | null>(null);
+  const [proyectos, setProyectos] = useState(0);
+  const pathname = usePathname();
 
-  useEffect(() => {
-    const fetchMe = () =>
+  const fetchMe = useCallback(
+    () =>
       fetch("/api/workspace/me")
         .then((r) => r.json())
-        .then((d) => setMe(d.workspace))
-        .catch(() => {});
+        .then((d) => {
+          setMe(d.workspace);
+          setProyectos(Number(d.proyectos) || 0);
+        })
+        .catch(() => {}),
+    [],
+  );
+
+  useEffect(() => {
     fetchMe();
+  }, [fetchMe, pathname]);
+
+  useEffect(() => {
     // Refresca cuando /mi-cuenta dispara este evento tras guardar
     window.addEventListener("emps:identity-changed", fetchMe);
     return () => window.removeEventListener("emps:identity-changed", fetchMe);
-  }, []);
+  }, [fetchMe]);
 
   if (!me) return null;
 
   const identified = !!me.displayName;
+  if (!identified && proyectos === 0) return null;
+
   return (
     <Link
       href="/mi-cuenta"

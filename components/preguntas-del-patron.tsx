@@ -19,10 +19,12 @@ export function PreguntasDelPatron(p: {
   esProveedor: boolean;
   /** Plataforma de armado: licencias por usuario final que siguen después de entregar. */
   licenciasUsuarioFinal?: { usuarios: number; usdPorUsuario: number; mensualMXN: number; supuestos: boolean } | null;
+  /** Con IA los cambios chicos llevan menos horas: factor ya aplicado a los rangos y forma de hacerlo. */
+  ajusteHorasCambios?: { factor: number; modoLabel: string } | null;
 }) {
   const meses = p.onTime.weeksNeeded / 4.33;
   return (
-    <div className="grid gap-3 md:grid-cols-2">
+    <div className="grid gap-3 md:grid-cols-2 [&>*]:min-w-0">
       <Card>
         <CardHeader><CardTitle className="text-base">¿Va a terminar a tiempo?</CardTitle></CardHeader>
         <CardContent className="text-sm space-y-1">
@@ -92,11 +94,17 @@ export function PreguntasDelPatron(p: {
           <CardHeader><CardTitle className="text-base">Si pides cambios, esto cuesta aparte</CardTitle></CardHeader>
           <CardContent className="text-sm space-y-2">
             <p className="text-muted-foreground">Pedir &quot;una modificación pequeña&quot; sin cotizarla es la causa principal de que un proyecto se abandone a la mitad. Que el procedimiento de cambios quede escrito en el contrato, con estos rangos.</p>
+            {p.ajusteHorasCambios && p.ajusteHorasCambios.factor < 0.999 && (
+              <p className="text-green-800">
+                Con {p.ajusteHorasCambios.modoLabel} y la pericia de este equipo, cada cambio lleva {Math.round((1 - p.ajusteHorasCambios.factor) * 100)} % menos horas que a mano: el detalle que antes esperaba un ticket hoy se resuelve en la misma sesión. Es la misma regla que usa la calculadora de cambios del proyecto y los rangos ya la descuentan.
+              </p>
+            )}
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Tipo de cambio</TableHead>
                   <TableHead>Qué es</TableHead>
+                  <TableHead className="text-right">Horas</TableHead>
                   <TableHead className="text-right">Cuesta entre</TableHead>
                 </TableRow>
               </TableHeader>
@@ -105,6 +113,7 @@ export function PreguntasDelPatron(p: {
                   <TableRow key={r.type}>
                     <TableCell className="font-medium">{r.etiqueta}</TableCell>
                     <TableCell className="text-muted-foreground">{r.description}</TableCell>
+                    <TableCell className="text-right font-mono text-xs">{r.minHours.toLocaleString("es-MX", { maximumFractionDigits: 1 })} a {r.maxHours.toLocaleString("es-MX", { maximumFractionDigits: 0 })}</TableCell>
                     <TableCell className="text-right font-mono">{r.maxCost > 0 ? `${formatMXN(r.minCost)} y ${formatMXN(r.maxCost)}` : "Sin cobro"}</TableCell>
                   </TableRow>
                 ))}

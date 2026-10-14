@@ -9,6 +9,7 @@
  * antes de aplicar decisión.
  */
 import { NextRequest, NextResponse } from "next/server";
+import { cargaNominaDelProyecto } from "@/lib/equipo-server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { changeImpactInputSchema, resourceCostSchema } from "@/lib/validators";
@@ -16,6 +17,7 @@ import { computeChangeImpact } from "@/lib/engine/change-impact";
 import { computeChangeWithMaterials } from "@/lib/engine/change-materials";
 import { loadChangeImpactParameters } from "@/lib/parameters";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { cargarProyectoConAcceso } from "@/lib/acceso-proyecto";
 
 const bodySchema = z.object({
   changeInput: changeImpactInputSchema,
@@ -37,12 +39,14 @@ export async function POST(
 
   try {
     const { id, changeId } = await params;
+    const acceso = await cargarProyectoConAcceso(id);
+    if (!acceso.project) return NextResponse.json({ error: "Proyecto no encontrado." }, { status: acceso.status });
     const body = await req.json();
     const { changeInput, resources } = bodySchema.parse(body);
 
     const engineParams = await loadChangeImpactParameters(2026, "Zacatecas");
     const changeResult = computeChangeImpact(
-      { ...changeInput, projectId: id, changeRequestId: changeId },
+      { ...changeInput, projectId: id, changeRequestId: changeId, cargaNomina: await cargaNominaDelProyecto(id) },
       engineParams,
     );
 

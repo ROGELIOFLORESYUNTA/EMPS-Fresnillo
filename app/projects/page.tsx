@@ -7,13 +7,16 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { formatMXN, RISK_LEVELS, STATUS_LABELS, SYSTEM_TYPE_LABELS, labelOf } from "@/lib/utils";
 import { Plus } from "lucide-react";
 import { peekWorkspace } from "@/lib/workspace";
+import { getLado } from "@/lib/lado-server";
+import { filtroDeLado } from "@/lib/acceso-proyecto";
 
 export default async function ProjectsPage() {
   // Lectura: no crear workspace solo por listar proyectos.
   const workspace = await peekWorkspace();
-  // Un visitante nuevo arranca EN CERO: solo sus propios proyectos.
+  const lado = await getLado();
+  // Un visitante nuevo arranca EN CERO: solo sus propios proyectos, y solo los de su lado.
   const projects = await prisma.project.findMany({
-    where: { workspaceId: workspace?.id ?? "__sin_workspace__" },
+    where: { workspaceId: workspace?.id ?? "__sin_workspace__", ...filtroDeLado(lado) },
     orderBy: { updatedAt: "desc" },
     include: {
       _count: { select: { modules: true, estimates: true, changes: true } },

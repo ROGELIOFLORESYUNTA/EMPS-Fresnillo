@@ -6,22 +6,61 @@ import { Badge } from "@/components/ui/badge";
 import { DEVELOPMENT_MODES, SYSTEM_TYPE_LABELS, labelOf } from "@/lib/utils";
 import { recomendacionDelProyecto } from "@/lib/recomendacion-proyecto";
 import type { RecommendationRole } from "@/lib/engine/recommendation";
+import { ladoDelProyecto, rolDeLado } from "@/lib/lado";
+import { getLado } from "@/lib/lado-server";
+import { COPIA } from "@/lib/lado-copy";
 import { VEREDICTO_ETIQUETA } from "@/lib/engine/aptitud";
 import type { PasoDeCalculo } from "@/lib/engine/explicacion";
-import { computeOnTimeRisk, computeMunicipalQuebrarRisk, computeProviderViabilityRatio, computeMaintenanceMonthly, computeChangeRangeByType } from "@/lib/engine/reports-insights";
+import { computeOnTimeRisk, computeMunicipalQuebrarRisk, computeProviderViabilityRatio, computeMaintenanceMonthly, computeChangeRangeByType, factorHorasCambio } from "@/lib/engine/reports-insights";
+import { loadChangeImpactParameters } from "@/lib/parameters";
 import { TresRespuestas } from "@/components/tres-respuestas";
 import { ExplicacionDelNumero } from "@/components/explicacion-del-numero";
 import { TarjetasDeOpcion, PorQueImportaLaForma, type TarjetaDeOpcion } from "@/components/tarjetas-de-opcion";
 import { PreguntasDelPatron } from "@/components/preguntas-del-patron";
+import { VistaDeCotizacion } from "./vista-cotizacion";
 
-export const metadata: Metadata = { robots: { index: false, follow: false } };
+const SIN_BUSCADORES: Metadata = { robots: { index: false, follow: false } };
+
+/**
+ * Si el enlace es de un proyecto del desarrollador, la pestaña y la vista
+ * previa al pegarlo dicen "Cotización" (y no la portada del cotizador). Con
+ * cualquier otro enlace queda lo de siempre: sin buscadores.
+ */
+export async function generateMetadata({ params }: { params: Promise<{ token: string }> }): Promise<Metadata> {
+  const { token } = await params;
+  if (!token || token.length < 8) return SIN_BUSCADORES;
+  const p = await prisma.project.findUnique({
+    where: { shareToken: token },
+    select: { lado: true, cotizacion: { select: { numero: true, proveedorNombre: true } } },
+  });
+  if (!p || ladoDelProyecto(p.lado) !== "desarrollador") return SIN_BUSCADORES;
+  const titulo = p.cotizacion ? `Cotización ${p.cotizacion.numero}` : "Cotización";
+  const descripcion = p.cotizacion ? `${p.cotizacion.proveedorNombre} te comparte una cotización.` : "Cotización de un sistema de software.";
+  const copia = COPIA.desarrollador;
+  return {
+    ...SIN_BUSCADORES,
+    title: titulo,
+    description: descripcion,
+    openGraph: {
+      type: "website",
+      locale: "es_MX",
+      siteName: copia.marca,
+      title: titulo,
+      description: descripcion,
+      images: [{ url: copia.ogImage, width: 1200, height: 630, alt: copia.ogAlt }],
+    },
+    twitter: { card: "summary_large_image", title: titulo, description: descripcion, images: [copia.ogImage] },
+  };
+}
 
 const ESCENARIO: Record<string, string> = { optimistic: "optimista", probable: "probable", conservative: "conservador" };
 
 /**
  * Vista de solo lectura del resultado, para quien recibe el enlace sin tener
- * cuenta: las cuatro respuestas, las tres opciones, de dónde sale el número y
- * las preguntas del patrón. Mismas funciones que la pantalla del proyecto.
+ * cuenta. En un proyecto del Ayuntamiento: las cuatro respuestas, las tres
+ * opciones, de dónde sale el número y las preguntas del patrón, con las mismas
+ * funciones que la pantalla del proyecto. En un proyecto del desarrollador: solo
+ * la cotización (ver vista-cotizacion.tsx).
  */
 export default async function ResultadoCompartidoPage({
   params,
@@ -33,6 +72,13 @@ export default async function ResultadoCompartidoPage({
   const { token } = await params;
   const sp = await searchParams;
   if (!token || token.length < 8) notFound();
+
+  // Un proyecto del desarrollador se comparte como cotización: el cliente solo
+  // ve esa hoja, y ni siquiera se cargan el equipo ni los costos. Los
+  // proyectos del Ayuntamiento siguen como siempre.
+  const base = await prisma.project.findUnique({ where: { shareToken: token }, select: { id: true, lado: true } });
+  if (base && ladoDelProyecto(base.lado) === "desarrollador") return <VistaDeCotizacion projectId={base.id} />;
+
   const project = await prisma.project.findUnique({
     where: { shareToken: token },
     include: {
@@ -44,11 +90,14 @@ export default async function ResultadoCompartidoPage({
   });
   if (!project) notFound();
 
-  const [workspace, decision] = await Promise.all([
-    project.workspaceId ? prisma.workspace.findUnique({ where: { id: project.workspaceId }, select: { role: true } }) : null,
-    prisma.projectDecision.findFirst({ where: { projectId: project.id, supersededAt: null }, orderBy: { createdAt: "desc" } }),
-  ]);
-  const role = (workspace?.role ?? null) as RecommendationRole;
+  const decision = await prisma.projectDecision.findFirst({
+    where: { projectId: project.id, supersededAt: null },
+    orderBy: { createdAt: "desc" },
+  });
+  // El rol para la recomendación lo implica el lado del host, igual que en la
+  // pantalla del proyecto (ya no se pregunta ni se lee del dueño).
+  const lado = await getLado();
+  const role: RecommendationRole = rolDeLado(lado);
 
   const vistos = new Set<string>();
   const latest = project.estimates.filter((e) => {
@@ -99,9 +148,13 @@ export default async function ResultadoCompartidoPage({
     pasos = [];
   }
 
+  let factorHorasCambios = 1;
   let licencias: { usuarios: number; usdPorUsuario: number; mensualMXN: number; supuestos: boolean } | null = null;
   try {
-    const snap = sel ? (JSON.parse(sel.inputsSnapshot) as { herramientas?: { usuariosFinales: number; usdPorUsuarioFinal: number; mensualUsuariosFinalesMXN: number; usuariosFinalesSupuestos: boolean } }) : null;
+    const snap = sel ? (JSON.parse(sel.inputsSnapshot) as { herramientas?: { usuariosFinales: number; usdPorUsuarioFinal: number; mensualUsuariosFinalesMXN: number; usuariosFinalesSupuestos: boolean }; pericia?: { factor?: number; aplica?: boolean } }) : null;
+    const parametrosCambios = await loadChangeImpactParameters(undefined, undefined, project.workspaceId ?? null);
+    const modo = sel?.mode as keyof typeof parametrosCambios.modeFactor | undefined;
+    factorHorasCambios = factorHorasCambio(modo ? parametrosCambios.modeFactor[modo] ?? 1 : 1, snap?.pericia?.aplica ? snap.pericia.factor ?? 1 : 1);
     if (sel?.mode === "low_code" && snap?.herramientas && snap.herramientas.mensualUsuariosFinalesMXN > 0) {
       licencias = { usuarios: snap.herramientas.usuariosFinales, usdPorUsuario: snap.herramientas.usdPorUsuarioFinal, mensualMXN: snap.herramientas.mensualUsuariosFinalesMXN, supuestos: snap.herramientas.usuariosFinalesSupuestos };
     }
@@ -132,7 +185,7 @@ export default async function ResultadoCompartidoPage({
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <div className="rounded-md border bg-muted/40 px-4 py-2 text-xs text-muted-foreground">
-        Vista compartida de solo lectura. Quien la compartió puede quitar el enlace cuando quiera. Generada por EMPS Fresnillo el {new Date().toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" })}.
+        Vista compartida de solo lectura. Quien la compartió puede quitar el enlace cuando quiera. Generada por {COPIA[lado].marca} el {new Date().toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" })}.
       </div>
 
       <div>
@@ -183,7 +236,8 @@ export default async function ResultadoCompartidoPage({
             quebrar={computeMunicipalQuebrarRisk(capitalRequerido, total)}
             viabilidad={computeProviderViabilityRatio(capitalRequerido, Math.max(0, Number(sel.subtotal) - costoDirecto))}
             mantenimiento={computeMaintenanceMonthly(total)}
-            rangosCambio={computeChangeRangeByType(semanas && semanas > 0 ? costoDirecto / semanas : 0)}
+            rangosCambio={computeChangeRangeByType(semanas && semanas > 0 ? costoDirecto / semanas : 0, 40, factorHorasCambios)}
+            ajusteHorasCambios={{ factor: factorHorasCambios, modoLabel: (modeLabels[sel.mode] ?? sel.mode).toLowerCase() }}
             esProveedor={role === "proveedor"}
             licenciasUsuarioFinal={licencias}
           />

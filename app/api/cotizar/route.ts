@@ -2,22 +2,70 @@
  * POST /api/cotizar: de la descripción a la cifra en un paso.
  *
  * Crea el proyecto con los mismos valores típicos que usa el chatbot
- * (cada parte: complejidad 3, claridad 3, criticidad 3, una pantalla; equipo:
- * un desarrollador senior en nómina; utilidad 20 %), corre las cinco formas
- * de hacerlo y deja al visitante en la pantalla del resultado. Todo lo que
- * se asumió queda escrito en las notas del proyecto para que se pueda afinar.
+ * (cada parte: complejidad 3, claridad 3, criticidad 3, una pantalla; utilidad
+ * 20 %), corre las cinco formas de hacerlo y deja al visitante en la pantalla
+ * del resultado. El equipo depende de quién lo hace: el desarrollador que
+ * cotiza su propio trabajo ("solo": contrato propio, lo que vale su tiempo, sin
+ * nómina), o alguien contratado, con experiencia o junior, en nómina. Todo lo
+ * que se asumió queda escrito en las notas del proyecto para que se pueda afinar.
  */
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { runEstimate } from "@/lib/estimate-service";
 import { getCurrentWorkspace, logWorkspaceActivity } from "@/lib/workspace";
+import { rolDeLado } from "@/lib/lado";
+import { getLado } from "@/lib/lado-server";
 
 const NOTA_COTIZACION_RAPIDA = "Creado con Cotizar en un minuto.";
 
 const MODOS = ["traditional", "ai_assisted", "hybrid", "bytecoding_prompts", "low_code"] as const;
-const SUELDO_TIPICO_MXN = 30000;
 const UTILIDAD_TIPICA = 0.2;
+
+/** Quién lo hace: "solo" es quien cotiza y programa (contrato propio); los otros dos son personas contratadas en nómina. */
+const QUIEN_LO_HACE = ["solo", "contrato_senior", "contrato_junior"] as const;
+type QuienLoHace = (typeof QUIEN_LO_HACE)[number];
+
+const SUELDO_SENIOR_MXN = 30000;
+const SUELDO_JUNIOR_MXN = 15000;
+const VALE_TU_TIEMPO_MXN = 35000;
+
+const mxn = (n: number) => n.toLocaleString("es-MX");
+
+/** El perfil del equipo y cómo se cuenta en las notas, según quién lo hace. */
+function equipoTipico(quien: QuienLoHace, aiSkill: number) {
+  switch (quien) {
+    case "solo":
+      return {
+        perfil: {
+          name: "Tú (desarrollador independiente)",
+          role: "dev_senior",
+          level: "senior",
+          contractType: "propio",
+          monthlySalary: VALE_TU_TIEMPO_MXN,
+          payBasis: "mensual",
+          availabilityPercent: 75, // además de este proyecto atiendes otros clientes
+          monthsAssigned: 1,
+          aiSkill,
+          isOwner: true,
+          turnoverRisk: 1, // quien cotiza es quien hace el trabajo: nadie se va a medio proyecto
+          supervisionRequired: 1,
+          notes: "Eres tú: cotizas y haces el trabajo. Con el contrato Propio el sistema cuenta lo que vale tu tiempo, sin cargas de nómina.",
+        },
+        nota: `el equipo eres tú, con lo que vale tu tiempo (${mxn(VALE_TU_TIEMPO_MXN)} pesos al mes, sin nómina)`,
+      };
+    case "contrato_junior":
+      return {
+        perfil: { name: "Desarrollador junior (equipo típico)", role: "dev_junior", level: "junior", monthlySalary: SUELDO_JUNIOR_MXN, monthsAssigned: 1, aiSkill },
+        nota: `el equipo es un desarrollador junior a sueldo de nómina (${mxn(SUELDO_JUNIOR_MXN)} pesos al mes)`,
+      };
+    default:
+      return {
+        perfil: { name: "Desarrollador con experiencia (equipo típico)", role: "dev_senior", monthlySalary: SUELDO_SENIOR_MXN, monthsAssigned: 1, aiSkill },
+        nota: `el equipo es un desarrollador con experiencia a sueldo de nómina (${mxn(SUELDO_SENIOR_MXN)} pesos al mes)`,
+      };
+  }
+}
 
 const bodySchema = z.object({
   queSistema: z.string().trim().min(10).max(2000),
@@ -25,9 +73,10 @@ const bodySchema = z.object({
   presupuesto: z.number().min(0).max(1_000_000_000).nullable().optional(),
   fechaLimite: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
   disponibilidadCliente: z.enum(["alta", "media", "baja"]).nullable().optional(),
-  lado: z.enum(["ayuntamiento", "proveedor"]).nullable().optional(),
   /** Pericia con la IA de quien lo va a hacer: 1 nunca, 3 a veces, 4 todos los días. */
   experienciaIA: z.number().int().min(1).max(5).nullable().optional(),
+  /** Quién lo hace. Sin dato: el desarrollador cotiza su propio trabajo; el Ayuntamiento presupuesta un desarrollador con experiencia. */
+  quienLoHace: z.enum(QUIEN_LO_HACE).nullable().optional(),
   personasQueLoUsan: z.number().int().min(1).max(100000).nullable().optional(),
   segundosEnLlenar: z.number().int().min(0).max(86400).optional(),
 });
@@ -54,22 +103,26 @@ export async function POST(req: Request) {
   }
   const data = parsed.data;
 
-  // Si el visitante dijo de qué lado está y aún no tiene rol, se guarda: la
-  // recomendación depende de ello.
-  if (data.lado && !workspace.role) {
-    const role = data.lado === "proveedor" ? "proveedor" : "operador_municipal";
-    await prisma.workspace.update({ where: { id: workspace.id }, data: { role } }).catch(() => {});
+  // Lado del host (desarrollador o ayuntamiento): queda en el proyecto.
+  const ladoDelHost = await getLado();
+
+  // Si aún no tiene rol, se guarda el que implica su lado: la recomendación
+  // depende de ello. Ya no se pregunta de qué lado está; lo decide el host.
+  if (!workspace.role) {
+    await prisma.workspace.update({ where: { id: workspace.id }, data: { role: rolDeLado(ladoDelHost) } }).catch(() => {});
   }
 
   const nombre = data.queSistema.length > 70 ? `${data.queSistema.slice(0, 67).trimEnd()}...` : data.queSistema;
-  const esProveedor = data.lado === "proveedor";
+  const esProveedor = ladoDelHost === "desarrollador";
+  const quien: QuienLoHace = data.quienLoHace ?? (esProveedor ? "solo" : "contrato_senior");
+  const equipo = equipoTipico(quien, data.experienciaIA ?? (quien === "solo" ? 4 : 3));
 
   const project = await prisma.project.create({
     data: {
       name: nombre,
       client: esProveedor ? "Cliente por definir" : "Ayuntamiento",
-      clientType: "municipal",
-      municipalArea: "Por definir",
+      clientType: esProveedor ? "externo" : "municipal",
+      municipalArea: esProveedor ? "No aplica: cliente privado" : "Por definir",
       objective: data.queSistema,
       systemType: tipoDeSistema(data.queSistema),
       priority: "media",
@@ -77,9 +130,10 @@ export async function POST(req: Request) {
       targetDate: data.fechaLimite ? new Date(`${data.fechaLimite}T12:00:00`) : null,
       clientAvailabilityLevel: data.disponibilidadCliente ?? null,
       expectedUsers: data.personasQueLoUsan ?? null,
-      notes: `${NOTA_COTIZACION_RAPIDA} Cada parte se tomó de tamaño mediano y con una pantalla; el equipo es un desarrollador con experiencia a sueldo de nómina (${SUELDO_TIPICO_MXN.toLocaleString("es-MX")} pesos al mes); la utilidad es ${UTILIDAD_TIPICA * 100} %. Afina módulos y equipo para que la cifra sea tuya.`,
+      notes: `${NOTA_COTIZACION_RAPIDA} Cada parte se tomó de tamaño mediano y con una pantalla; ${equipo.nota}; la utilidad es ${UTILIDAD_TIPICA * 100} %. Afina módulos y equipo para que la cifra sea tuya.`,
       workspaceId: workspace.id,
       isTemplate: false,
+      lado: ladoDelHost,
       modules: {
         create: data.partes.map((name) => ({
           name,
@@ -95,7 +149,7 @@ export async function POST(req: Request) {
         })),
       },
       team: {
-        create: [{ name: "Desarrollador con experiencia (equipo típico)", role: "dev_senior", monthlySalary: SUELDO_TIPICO_MXN, monthsAssigned: 1, aiSkill: data.experienciaIA ?? 3 }],
+        create: [equipo.perfil],
       },
     },
   });
@@ -125,8 +179,9 @@ export async function POST(req: Request) {
     conPresupuesto: data.presupuesto != null,
     conFecha: !!data.fechaLimite,
     disponibilidadCliente: data.disponibilidadCliente ?? null,
-    lado: data.lado ?? null,
+    lado: ladoDelHost,
     experienciaIA: data.experienciaIA ?? null,
+    quienLoHace: quien,
     personasQueLoUsan: data.personasQueLoUsan ?? null,
     segundosEnLlenar: data.segundosEnLlenar ?? null,
     totales,

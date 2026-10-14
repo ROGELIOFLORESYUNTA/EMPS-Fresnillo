@@ -56,6 +56,21 @@ describe("aptitud por modo", () => {
     expect(a.traditional.veredicto).toBe("apto");
   });
 
+  it("la razón que descarta una forma va primero (es la que se muestra en una línea)", () => {
+    // Dos conexiones solo la ponen "con reservas"; los datos personales en piezas críticas la descartan.
+    const conConexionesYDatos = [modulo({ criticality: 5, sensitiveData: true, integrationsCount: 2, clarity: 4 })];
+    const lowCode = aptitudDeModos(conConexionesYDatos).low_code;
+    expect(lowCode.veredicto).toBe("no_recomendable");
+    expect(lowCode.razones.length).toBeGreaterThan(1);
+    expect(lowCode.razones[0]).toMatch(/datos personales/);
+    expect(lowCode.razones[0]).toMatch(/^Una pieza crítica maneja datos personales/);
+
+    // Con pericia casi nula, bytecoding se descarta por eso y no por otra razón menor.
+    const bytecoding = aptitudDeModos([modulo({ clarity: 3 })], undefined, { periciaIA: 1 }).bytecoding_prompts;
+    expect(bytecoding.veredicto).toBe("no_recomendable");
+    expect(bytecoding.razones[0]).toMatch(/casi no ha trabajado con IA/);
+  });
+
   it("con requisitos vagos, bytecoding no se recomienda", () => {
     const vago = [modulo({ clarity: 2 }), modulo({ clarity: 2 })];
     expect(aptitudDeModos(vago).bytecoding_prompts.veredicto).toBe("no_recomendable");

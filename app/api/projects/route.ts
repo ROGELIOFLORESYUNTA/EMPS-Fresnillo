@@ -4,17 +4,22 @@ import { projectCreateSchema } from "@/lib/validators";
 import { getCurrentWorkspace, peekWorkspace, logWorkspaceActivity } from "@/lib/workspace";
 import { ROLES_VALIDOS } from "@/lib/roles";
 import { normalizarNombre, normalizarCorreo } from "@/lib/identity";
+import { rolDeLado } from "@/lib/lado";
+import { getLado } from "@/lib/lado-server";
+import { filtroDeLado } from "@/lib/acceso-proyecto";
 
 /**
- * GET: lista solo los proyectos del visitante actual.
+ * GET: lista solo los proyectos del visitante actual y del lado donde está
+ * (desarrollador o ayuntamiento, según el host).
  * Un visitante nuevo arranca en cero: no se le muestran plantillas ni
  * proyectos sin dueño, para que el sistema no aparente trabajo previo ajeno.
  */
 export async function GET() {
   // Lectura: peekWorkspace no crea fila al solo listar.
   const workspace = await peekWorkspace();
+  const lado = await getLado();
   const projects = await prisma.project.findMany({
-    where: { workspaceId: workspace?.id ?? "__sin_workspace__" },
+    where: { workspaceId: workspace?.id ?? "__sin_workspace__", ...filtroDeLado(lado) },
     orderBy: { updatedAt: "desc" },
     include: {
       _count: { select: { modules: true, estimates: true, changes: true } },
@@ -27,10 +32,13 @@ export async function GET() {
  * POST: asigna automáticamente el workspaceId del cookie al proyecto nuevo.
  *
  * Puede venir un bloque `identity` cuando la persona todavía no se ha
- * identificado: es lo que el formulario de alta le pide antes de dejarlo
- * continuar (nombre y desde qué lado va a usar el sistema; el correo es
- * opcional). La obligatoriedad vive en el formulario, no aquí, porque este
- * endpoint también lo usan las pruebas y las integraciones externas.
+ * identificado: es lo que el formulario de alta le ofrece (nombre y correo,
+ * los dos opcionales; un nombre vacío cuenta como no dado). El lado ya no se
+ * pregunta: lo decide el host. Este endpoint también lo usan las pruebas y las
+ * integraciones externas, por eso sigue aceptando un `role` explícito.
+ *
+ * El proyecto queda marcado con el lado del host. Si la persona todavía no
+ * tiene rol, se le pone el que implica su lado.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -45,16 +53,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const lado = await getLado();
+    let rol = workspace.role;
+
     const identity = body?.identity;
     if (identity && typeof identity === "object") {
-      const displayName =
-        typeof identity.displayName === "string" ? normalizarNombre(identity.displayName) : undefined;
+      const nombreCrudo = typeof identity.displayName === "string" ? identity.displayName.trim() : "";
+      const displayName = nombreCrudo ? normalizarNombre(nombreCrudo) : undefined;
       if (displayName === false) {
-        return NextResponse.json({ error: "Escribe tu nombre para saber de quién es este proyecto." }, { status: 400 });
+        return NextResponse.json({ error: "Ese nombre es muy corto. Escribe al menos dos letras o déjalo vacío." }, { status: 400 });
       }
       const role = typeof identity.role === "string" ? identity.role.trim() : undefined;
       if (role !== undefined && role !== "" && !ROLES_VALIDOS.has(role)) {
-        return NextResponse.json({ error: "Elige desde qué lado vas a usar el sistema." }, { status: 400 });
+        return NextResponse.json({ error: "Ese rol no es válido." }, { status: 400 });
       }
       const correo =
         typeof identity.contactEmail === "string" ? normalizarCorreo(identity.contactEmail) : undefined;
@@ -78,6 +89,12 @@ export async function POST(req: NextRequest) {
           origen: "alta_de_proyecto",
         });
       }
+      rol = cambios.role ?? rol;
+    }
+
+    // El lado implica el rol: sin rol todavía, se le pone el de su lado.
+    if (!rol) {
+      await prisma.workspace.update({ where: { id: workspace.id }, data: { role: rolDeLado(lado) } });
     }
 
     const project = await prisma.project.create({
@@ -87,6 +104,7 @@ export async function POST(req: NextRequest) {
         estimatedBudget: data.estimatedBudget ?? null,
         workspaceId: workspace.id,
         isTemplate: false,
+        lado,
       },
     });
 

@@ -1,9 +1,10 @@
 /**
  * Lista única de roles del visitante.
  *
- * Se usa en tres lugares que deben decir lo mismo: el formulario de identidad
- * al crear el primer proyecto, la pantalla "Mi cuenta" y la validación del
- * endpoint PUT /api/workspace/me.
+ * Ya no se elige en pantalla: el rol lo implica el lado del host (rolDeLado en
+ * lib/lado.ts). La lista sirve para validar el rol que llega a los endpoints
+ * (PUT /api/workspace/me, alta de proyecto) y para mostrar el rol guardado en
+ * "Mi cuenta".
  *
  * El motor de recomendación (lib/engine/recommendation.ts) solo distingue
  * operador_municipal / proveedor / neutral, pero aquí guardamos el detalle

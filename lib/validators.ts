@@ -54,10 +54,19 @@ export const teamProfileCreateSchema = z.object({
   role: z.string().min(2),
   level: z.enum(["junior", "mid", "senior", "lead"]).default("mid"),
   monthlySalary: z.number().min(0),
+  // Cómo cotiza su pago esta persona. Con "diario" el servidor guarda
+  // monthlySalary = dailyRate x 30.4 (el motor solo lee el mensual).
+  payBasis: z.enum(["mensual", "diario"]).nullable().optional(),
+  dailyRate: z.number().positive().nullable().optional(),
   hourlyCost: z.number().min(0).optional().nullable(),
   availabilityPercent: z.number().int().min(0).max(100).default(100),
   monthsAssigned: z.number().min(0).default(1),
-  contractType: z.enum(["asimilados", "honorarios", "nomina", "resico_pf", "freelance"]).default("nomina"),
+  // Semanas que participa en el proyecto; sin dato (null) participa todo el proyecto.
+  // El servidor también guarda monthsAssigned = semanas / 4.33 para el reporte del proveedor.
+  weeksAssigned: z.number().positive().nullable().optional(),
+  // La persona que cotiza y cobra su propio tiempo.
+  isOwner: z.boolean().optional(),
+  contractType: z.enum(["asimilados", "honorarios", "nomina", "resico_pf", "freelance", "propio"]).default("nomina"),
   productivityFactor: z.number().min(0).max(2).default(1.0),
   // Pericia con la IA para programar (1 nunca la ha usado ... 5 arma flujos con agentes).
   aiSkill: z.number().int().min(1).max(5).default(3),

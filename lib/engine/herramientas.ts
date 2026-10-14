@@ -63,9 +63,9 @@ export type FactoresPericia = Record<string, number>;
 export const HERRAMIENTAS_POR_OMISION: TablaHerramientas = {
   por_modo: {
     traditional: { usd_por_persona_mes: 0, sobreconsumo: 0, descripcion: "Sin herramientas de IA.", niveles: { basico: 0, tipico: 0, maximo: 0 } },
-    ai_assisted: { usd_por_persona_mes: 30, sobreconsumo: 0.10, descripcion: "Copilot Business o Cursor Pro más un asistente (Claude Pro o ChatGPT Plus).", niveles: { basico: 10, tipico: 30, maximo: 60 } },
-    hybrid: { usd_por_persona_mes: 100, sobreconsumo: 0.20, descripcion: "Claude Max 5x, o Cursor Pro+ más Copilot Business y Claude Pro.", niveles: { basico: 40, tipico: 100, maximo: 200 } },
-    bytecoding_prompts: { usd_por_persona_mes: 250, sobreconsumo: 0.30, descripcion: "Claude Max 20x o Cursor Ultra más consumo de agentes.", niveles: { basico: 100, tipico: 250, maximo: 400 } },
+    ai_assisted: { usd_por_persona_mes: 30, sobreconsumo: 0.10, descripcion: "Copilot Pro más un asistente (ChatGPT Plus o Claude Pro); en el máximo, Claude Max.", niveles: { basico: 10, tipico: 30, maximo: 100 } },
+    hybrid: { usd_por_persona_mes: 110, sobreconsumo: 0.20, descripcion: "Claude Max o Cursor Premium con Copilot Pro: lo crítico a mano y lo repetitivo con IA.", niveles: { basico: 40, tipico: 110, maximo: 200 } },
+    bytecoding_prompts: { usd_por_persona_mes: 230, sobreconsumo: 0.30, descripcion: "Claude Max (o Max 20x) con Cursor Premium y consumo de agentes; en el máximo, también ChatGPT Pro.", niveles: { basico: 100, tipico: 230, maximo: 400 } },
     low_code: {
       usd_por_persona_mes: 40,
       sobreconsumo: 0,
@@ -79,7 +79,7 @@ export const HERRAMIENTAS_POR_OMISION: TablaHerramientas = {
 
 export const PERICIA_POR_OMISION: FactoresPericia = { "1": 0.35, "2": 0.65, "3": 0.85, "4": 1.0, "5": 1.15 };
 
-/** DOF/Banxico FIX al 09-09-2026. Se actualiza en /admin/parametros. */
+/** DOF/Banxico FIX al 09-09-2026. Se actualiza en /admin/parametros. Los precios de herramientas de arriba son de las páginas de precios consultadas el 13-10-2026. */
 export const TIPO_CAMBIO_POR_OMISION = 16.92;
 
 export const PERICIA_ETIQUETAS: Record<number, string> = {

@@ -71,6 +71,13 @@ export interface ChangeImpactInput {
   testingRequired: boolean;
   /** 0..0.5 — qué tan poco disponible está el cliente para aclarar */
   clientAvailabilityRisk: number;
+  /**
+   * Carga de nómina (IMSS + INFONAVIT) sobre la mano de obra, de 0 a 1. Sin dato
+   * vale 0.245 (equipo en nómina). Un equipo propio pasa 0: cargaNominaDelEquipo(team).
+   */
+  cargaNomina?: number;
+  /** Gastos de administración sobre la mano de obra, de 0 a 1. Sin dato vale 0.10. */
+  cargaAdmin?: number;
 }
 
 export interface ChangeImpactBreakdown {

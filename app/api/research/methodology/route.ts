@@ -10,7 +10,7 @@ export async function GET() {
   return NextResponse.json({
     hypothesis: {
       original:
-        "Una estimación temprana mejora cuando integra esfuerzo técnico, modo de desarrollo, cambios y viabilidad fiscal-laboral antes de comprometer precio, calendario y mantenimiento.",
+        "Una estimación temprana mejora cuando integra esfuerzo técnico, forma de hacerlo, cambios y viabilidad fiscal-laboral antes de comprometer precio, calendario y mantenimiento.",
       operationalized:
         "Si se integran las 4 dimensiones, el MAPE (Mean Absolute Percentage Error) entre horas estimadas y horas reales debe ser menor (≤15% para ser 'preciso' según estándar IFPUG) y la varianza del error debe explicarse mayoritariamente por esas dimensiones.",
     },
@@ -32,9 +32,9 @@ export async function GET() {
           why: "Mide cuánto detalle técnico se capturó al estimar.",
         },
         {
-          group: "VI 2: modo de desarrollo declarado",
+          group: "VI 2: forma de hacerlo declarada",
           features: ["dev_mode (categórica one-hot)"],
-          why: "El modo determina factores de productividad y hardening.",
+          why: "La forma de hacerlo determina los factores de productividad y de endurecimiento.",
         },
         {
           group: "VI 3: cambios anticipados",

@@ -23,14 +23,11 @@
  *  quitó la penalización fija al más barato, que era la que decidía todo.
  */
 import type { AptitudModo } from "./aptitud";
+import { NOMBRE_DE_FORMA } from "../formas";
 
-const MODE_LABELS: Record<string, string> = {
-  traditional: "Tradicional",
-  ai_assisted: "Asistido por herramientas generativas",
-  bytecoding_prompts: "Bytecoding (prompts)",
-  low_code: "Low-code",
-  hybrid: "Híbrido",
-};
+// Los textos de la recomendación hablan con los nombres llanos de las formas
+// de hacerlo (A mano, Con IA...); el nombre técnico queda en lib/formas.ts.
+const MODE_LABELS: Record<string, string> = NOMBRE_DE_FORMA;
 
 const RISK_LABELS: Record<string, string> = {
   bajo: "bajo",
@@ -167,7 +164,7 @@ export function recommendBestOption(input: RecommendationInput): RecommendationR
     );
   }
   if (all.length === 1) {
-    warnings.push("Solo hay estimaciones en un modo de desarrollo. Corre la estimación comparando los 5 modos para elegir de verdad.");
+    warnings.push("Solo hay estimaciones de una forma de hacerlo. Corre la estimación comparando las 5 formas para elegir de verdad.");
   }
 
   const totals = candidates.map((o) => o.total);

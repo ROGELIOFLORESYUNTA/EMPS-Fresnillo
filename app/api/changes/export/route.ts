@@ -7,6 +7,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { serializeChangesToCsv, serializeChangesToJson, type ChangeExportRow } from "@/lib/engine/change-export";
+import { puedeAbrirProyecto } from "@/lib/acceso-proyecto";
+import { isAdmin } from "@/lib/admin-auth";
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
@@ -18,8 +20,19 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "format debe ser 'json' o 'csv'" }, { status: 400 });
   }
 
+  // Quién puede exportar: el dueño de un proyecto (sus cambios) o el
+  // investigador (todos, desde el panel). Sin proyecto ni cambio concreto,
+  // la descarga masiva es solo para el administrador.
   const where: { projectId?: string; id?: string } = {};
-  if (projectId) where.projectId = projectId;
+  if (projectId) {
+    if (!(await puedeAbrirProyecto(projectId))) return NextResponse.json({ error: "no encontrado" }, { status: 404 });
+    where.projectId = projectId;
+  } else if (changeId) {
+    const cambio = await prisma.changeRequest.findUnique({ where: { id: changeId }, select: { projectId: true } });
+    if (!cambio || !(await puedeAbrirProyecto(cambio.projectId))) return NextResponse.json({ error: "no encontrado" }, { status: 404 });
+  } else if (!(await isAdmin())) {
+    return NextResponse.json({ error: "La exportación completa es solo para el panel del investigador." }, { status: 403 });
+  }
   if (changeId) where.id = changeId;
 
   const changes = await prisma.changeRequest.findMany({

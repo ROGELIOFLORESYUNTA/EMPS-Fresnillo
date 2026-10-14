@@ -9,6 +9,8 @@ import {
   computeOnTimeRisk,
   computeMaintenanceMonthly,
   computeChangeRangeByType,
+  factorHorasCambio,
+  preciosDeCambioPorTipo,
 } from "@/lib/engine/reports-insights";
 
 describe("computeProviderOpportunityCost", () => {
@@ -179,5 +181,89 @@ describe("computeChangeRangeByType", () => {
       expect(r.etiqueta.length).toBeGreaterThan(0);
       expect(r.description.length).toBeGreaterThan(0);
     });
+  });
+});
+
+describe("los cambios chicos tambien se abaratan con la IA", () => {
+  it("sin factor, los rangos son los de siempre y traen sus horas", () => {
+    const rows = computeChangeRangeByType(40_000);
+    const correccion = rows.find((r) => r.type === "correccion")!;
+    expect(correccion.minHours).toBe(2);
+    expect(correccion.maxHours).toBe(8);
+    expect(correccion.minCost).toBeCloseTo(2 * 1000 * 0.85, 2);
+  });
+
+  it("con casi todo con IA y un equipo que la domina (0.65), una correccion menor lleva 1.3 a 5.2 horas", () => {
+    const rows = computeChangeRangeByType(40_000, 40, 0.65);
+    const correccion = rows.find((r) => r.type === "correccion")!;
+    expect(correccion.minHours).toBeCloseTo(1.3, 4);
+    expect(correccion.maxHours).toBeCloseTo(5.2, 4);
+    expect(correccion.minCost).toBeCloseTo(1.3 * 1000 * 0.85, 2);
+    const base = computeChangeRangeByType(40_000).find((r) => r.type === "correccion")!;
+    expect(correccion.maxCost / base.maxCost).toBeCloseTo(0.65, 4);
+  });
+
+  it("un factor raro no rompe los rangos", () => {
+    expect(computeChangeRangeByType(40_000, 40, 0)[0].minHours).toBeCloseTo(2 * 0.2, 4);
+    expect(computeChangeRangeByType(40_000, 40, 9)[0].minHours).toBeCloseTo(2 * 1.5, 4);
+    expect(computeChangeRangeByType(40_000, 40, Number.NaN)[0].minHours).toBe(2);
+  });
+});
+
+describe("factorHorasCambio: la misma regla que la calculadora de cambios, moderada por la pericia", () => {
+  it("con pericia nominal da el factor del modo tal cual (casi todo con IA: 0.68)", () => {
+    expect(factorHorasCambio(0.68, 1)).toBe(0.68);
+    expect(factorHorasCambio(1, 1)).toBe(1);
+  });
+  it("con pericia 1 (35 % del ahorro) casi todo con IA queda en 0.888", () => {
+    expect(factorHorasCambio(0.68, 0.35)).toBeCloseTo(1 - 0.32 * 0.35, 4);
+  });
+  it("con pericia 5 (115 %) se acredita un poco mas del ahorro nominal", () => {
+    expect(factorHorasCambio(0.68, 1.15)).toBeCloseTo(1 - 0.32 * 1.15, 4);
+  });
+  it("valores raros no rompen nada", () => {
+    expect(factorHorasCambio(Number.NaN, 1)).toBe(1);
+    expect(factorHorasCambio(0.68, Number.NaN)).toBe(0.68);
+    expect(factorHorasCambio(0, 1)).toBeCloseTo(0.2, 4);
+  });
+});
+
+describe("preciosDeCambioPorTipo: del costo al precio con margen e IVA", () => {
+  const rangos = computeChangeRangeByType(40_000);
+
+  it("con margen 0.2 cada precio es el costo entre 0.8", () => {
+    const precios = preciosDeCambioPorTipo(rangos, 0.2, 0.16);
+    expect(precios).toHaveLength(rangos.length);
+    precios.forEach((p, i) => {
+      expect(p.minPrecio).toBeCloseTo(rangos[i].minCost / 0.8, 6);
+      expect(p.maxPrecio).toBeCloseTo(rangos[i].maxCost / 0.8, 6);
+    });
+  });
+
+  it("el precio con IVA al 16 % es el precio por 1.16", () => {
+    const precios = preciosDeCambioPorTipo(rangos, 0.2, 0.16);
+    precios.forEach((p) => {
+      expect(p.minPrecioConIva).toBeCloseTo(p.minPrecio * 1.16, 6);
+      expect(p.maxPrecioConIva).toBeCloseTo(p.maxPrecio * 1.16, 6);
+    });
+  });
+
+  it("conserva las columnas del costo y el orden de los tipos", () => {
+    const precios = preciosDeCambioPorTipo(rangos, 0.2, 0.16);
+    expect(precios.map((p) => p.type)).toEqual(rangos.map((r) => r.type));
+    expect(precios[0].minCost).toBe(rangos[0].minCost);
+    expect(precios[0].etiqueta).toBe(rangos[0].etiqueta);
+    precios.forEach((p) => expect(p.minPrecio).toBeLessThanOrEqual(p.maxPrecio));
+  });
+
+  it("sin margen el precio es el costo, y un margen o un IVA raros no rompen el reporte", () => {
+    const sinMargen = preciosDeCambioPorTipo(rangos, 0, 0);
+    expect(sinMargen[0].minPrecio).toBeCloseTo(rangos[0].minCost, 6);
+    expect(sinMargen[0].minPrecioConIva).toBeCloseTo(rangos[0].minCost, 6);
+    const raro = preciosDeCambioPorTipo(rangos, Number.NaN, Number.NaN);
+    expect(raro[0].minPrecio).toBeCloseTo(rangos[0].minCost, 6);
+    const enorme = preciosDeCambioPorTipo(rangos, 5, 0.16);
+    expect(Number.isFinite(enorme[0].minPrecio)).toBe(true);
+    expect(enorme[0].minPrecio).toBeCloseTo(rangos[0].minCost / 0.01, 6);
   });
 });

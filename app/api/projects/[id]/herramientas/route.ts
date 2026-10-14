@@ -8,21 +8,21 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCurrentWorkspaceId } from "@/lib/workspace";
+import { cargarProyectoConAcceso } from "@/lib/acceso-proyecto";
 import { loadAllForEstimate } from "@/lib/parameters";
 import { MODOS } from "@/lib/engine/aptitud";
 import { asientosDeHerramienta, periciaDelEquipo, ajustarPorPericia, costoHerramientasPorModo, NIVELES_HERRAMIENTA } from "@/lib/engine/herramientas";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const acceso = await cargarProyectoConAcceso(id);
+  if (!acceso.project) return NextResponse.json({ error: "No encontrado." }, { status: acceso.status });
   const project = await prisma.project.findUnique({
     where: { id },
-    select: { id: true, isTemplate: true, workspaceId: true, expectedUsers: true, targetDate: true, team: true },
+    select: { id: true, expectedUsers: true, targetDate: true, team: true },
   });
   if (!project) return NextResponse.json({ error: "No encontrado." }, { status: 404 });
   const workspaceId = await getCurrentWorkspaceId();
-  if (!project.isTemplate && project.workspaceId && project.workspaceId !== workspaceId) {
-    return NextResponse.json({ error: "No encontrado." }, { status: 404 });
-  }
 
   const ctx = await loadAllForEstimate(project.targetDate?.getFullYear() ?? 2026, workspaceId);
   const asientos = asientosDeHerramienta(project.team);
@@ -56,11 +56,21 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     };
   }
 
+  // De cuándo son los precios: la fecha de consulta que trae la propia tabla y la fuente de
+  // su versión vigente. Si la persona editó la tabla en su espacio, la fuente es suya y no se cita.
+  const filaDePrecios = ctx.snapshot.find((r) => r.key === "AI_TOOL_COSTS");
+  const consultado = typeof ctx.aiToolCosts._consultado === "string" ? ctx.aiToolCosts._consultado : null;
+  const preciosConsultados = {
+    fecha: consultado,
+    fuente: filaDePrecios && !filaDePrecios.source.includes("override workspace") ? filaDePrecios.source : null,
+  };
+
   return NextResponse.json({
     asientos,
     pericia: { promedio: pericia.promedio, conDato: pericia.conDato },
     tipoCambio: ctx.tipoCambio,
     aumentoAnual: ctx.aiToolAumentoAnual,
+    preciosConsultados,
     porModo,
   });
 }

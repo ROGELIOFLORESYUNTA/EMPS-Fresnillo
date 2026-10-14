@@ -1,6 +1,14 @@
 .venv/
 .tools/
-data/raw/
-data/processed/
+# Datos crudos y procesados: no se versionan, salvo los datasets publicos de esfuerzo
+# (data/raw/promise, todos de menos de 40 KB), la nota de procedencia del punto mexicano
+# y su tabla transcrita. El PDF del articulo mexicano no se sube (es de la editorial): se
+# baja con scripts/09b_punto_mexicano.py y se verifica con su hash.
+data/raw/*
+!data/raw/promise/
+!data/raw/mexico_valdes_2024/
+data/raw/mexico_valdes_2024/*.pdf
+data/processed/*
+!data/processed/mexico_valdes_2024.csv
 data/articulo_usuario_texto.txt
 __pycache__/

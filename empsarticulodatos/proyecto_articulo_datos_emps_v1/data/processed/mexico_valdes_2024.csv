@@ -1,0 +1,65 @@
+# Fuente: Valdés-Souto, F. y Valeriano-Assem, J. (2024). Merging Distinct Sources Databases to Improve Software Estimation Models. Programming and Computer Software, 50(8), 786-795. DOI 10.1134/S0361768824700762.
+# Tabla 5 (Anexo 1) del articulo; PDF: https://cosmic-sizing.org/wp-content/uploads/2025/01/Merging-Distinct-Sources-Databases-to-Improve-Software-Estimation-Models.pdf
+# Descargado el 14 de octubre de 2026; sha256 del PDF b88b2ab00a8004825107431d5ae86eb68d4087789d893225a1998de3b9a672b0
+# Transcripcion automatica con pypdf y verificada: 57 filas, PDR publicado = esfuerzo/CFP, sumas de CFP = Tabla 1b.
+# cfp = tamano funcional COSMIC (puntos COSMIC); esfuerzo_horas = esfuerzo total en horas-hombre (HH).
+# en_modelo_42 = proyectos mexicanos que usan los autores (COMPANY + AMMS); ISBSG fue rechazada por Kruskal-Wallis.
+# Leer con pandas.read_csv(ruta, comment='#').
+numero,base,id_en_base,cfp,esfuerzo_horas,pdr_publicado,origen,en_modelo_42
+1,COMPANY,1,374.2,5040.0,13.47,"empresa internacional, oficina en México (institución financiera)",True
+2,COMPANY,2,193.1,2440.0,12.64,"empresa internacional, oficina en México (institución financiera)",True
+3,COMPANY,3,195.0,6928.0,35.53,"empresa internacional, oficina en México (institución financiera)",True
+4,COMPANY,4,352.3,4368.0,12.4,"empresa internacional, oficina en México (institución financiera)",True
+5,COMPANY,5,718.0,13048.0,18.17,"empresa internacional, oficina en México (institución financiera)",True
+6,COMPANY,6,277.0,3400.0,12.27,"empresa internacional, oficina en México (institución financiera)",True
+7,COMPANY,7,84.6,1848.0,21.84,"empresa internacional, oficina en México (institución financiera)",True
+8,COMPANY,8,224.5,3360.0,14.97,"empresa internacional, oficina en México (institución financiera)",True
+9,ISBSG,1,46.0,20.0,0.43,ISBSG (base internacional; rechazada por la prueba de Kruskal-Wallis),False
+10,ISBSG,2,114.0,429.0,3.76,ISBSG (base internacional; rechazada por la prueba de Kruskal-Wallis),False
+11,ISBSG,3,97.0,20.0,0.21,ISBSG (base internacional; rechazada por la prueba de Kruskal-Wallis),False
+12,ISBSG,4,177.0,694.0,3.92,ISBSG (base internacional; rechazada por la prueba de Kruskal-Wallis),False
+13,ISBSG,5,80.0,355.0,4.44,ISBSG (base internacional; rechazada por la prueba de Kruskal-Wallis),False
+14,ISBSG,6,118.0,489.0,4.14,ISBSG (base internacional; rechazada por la prueba de Kruskal-Wallis),False
+15,ISBSG,7,57.0,20.0,0.35,ISBSG (base internacional; rechazada por la prueba de Kruskal-Wallis),False
+16,ISBSG,8,155.0,491.0,3.17,ISBSG (base internacional; rechazada por la prueba de Kruskal-Wallis),False
+17,ISBSG,9,135.0,600.0,4.44,ISBSG (base internacional; rechazada por la prueba de Kruskal-Wallis),False
+18,ISBSG,10,209.0,606.0,2.9,ISBSG (base internacional; rechazada por la prueba de Kruskal-Wallis),False
+19,ISBSG,11,223.0,509.0,2.28,ISBSG (base internacional; rechazada por la prueba de Kruskal-Wallis),False
+20,ISBSG,12,157.0,899.0,5.73,ISBSG (base internacional; rechazada por la prueba de Kruskal-Wallis),False
+21,ISBSG,13,2003.0,47493.0,23.71,ISBSG (base internacional; rechazada por la prueba de Kruskal-Wallis),False
+22,ISBSG,14,142.0,669.0,4.71,ISBSG (base internacional; rechazada por la prueba de Kruskal-Wallis),False
+23,ISBSG,15,160.0,784.0,4.9,ISBSG (base internacional; rechazada por la prueba de Kruskal-Wallis),False
+24,AMMS,1,464.8,9656.4,20.78,Asociación Mexicana de Métricas de Software (proyectos mexicanos concluidos),True
+25,AMMS,2,1154.1,10563.0,9.15,Asociación Mexicana de Métricas de Software (proyectos mexicanos concluidos),True
+26,AMMS,3,1864.1,23358.0,12.53,Asociación Mexicana de Métricas de Software (proyectos mexicanos concluidos),True
+27,AMMS,4,507.5,12111.0,23.86,Asociación Mexicana de Métricas de Software (proyectos mexicanos concluidos),True
+28,AMMS,5,463.2,12264.0,26.48,Asociación Mexicana de Métricas de Software (proyectos mexicanos concluidos),True
+29,AMMS,6,513.2,7373.0,14.37,Asociación Mexicana de Métricas de Software (proyectos mexicanos concluidos),True
+30,AMMS,7,815.7,16566.0,20.31,Asociación Mexicana de Métricas de Software (proyectos mexicanos concluidos),True
+31,AMMS,8,806.2,22743.0,28.21,Asociación Mexicana de Métricas de Software (proyectos mexicanos concluidos),True
+32,AMMS,9,10.4,394.0,37.88,Asociación Mexicana de Métricas de Software (proyectos mexicanos concluidos),True
+33,AMMS,10,26.9,1193.8,44.38,Asociación Mexicana de Métricas de Software (proyectos mexicanos concluidos),True
+34,AMMS,11,10.8,260.0,24.07,Asociación Mexicana de Métricas de Software (proyectos mexicanos concluidos),True
+35,AMMS,12,50.8,1034.0,20.35,Asociación Mexicana de Métricas de Software (proyectos mexicanos concluidos),True
+36,AMMS,13,8.1,148.0,18.27,Asociación Mexicana de Métricas de Software (proyectos mexicanos concluidos),True
+37,AMMS,14,7.7,16.0,2.08,Asociación Mexicana de Métricas de Software (proyectos mexicanos concluidos),True
+38,AMMS,15,28.4,40.0,1.41,Asociación Mexicana de Métricas de Software (proyectos mexicanos concluidos),True
+39,AMMS,16,7.7,48.0,6.23,Asociación Mexicana de Métricas de Software (proyectos mexicanos concluidos),True
+40,AMMS,17,665.3,4414.0,6.63,Asociación Mexicana de Métricas de Software (proyectos mexicanos concluidos),True
+41,AMMS,18,2085.5,8400.0,4.03,Asociación Mexicana de Métricas de Software (proyectos mexicanos concluidos),True
+42,AMMS,19,9.5,79.0,8.32,Asociación Mexicana de Métricas de Software (proyectos mexicanos concluidos),True
+43,AMMS,20,1479.9,11354.0,7.67,Asociación Mexicana de Métricas de Software (proyectos mexicanos concluidos),True
+44,AMMS,21,636.8,6182.0,9.71,Asociación Mexicana de Métricas de Software (proyectos mexicanos concluidos),True
+45,AMMS,22,1010.6,6882.0,6.81,Asociación Mexicana de Métricas de Software (proyectos mexicanos concluidos),True
+46,AMMS,23,84.0,1192.0,14.19,Asociación Mexicana de Métricas de Software (proyectos mexicanos concluidos),True
+47,AMMS,24,684.6,3416.0,4.99,Asociación Mexicana de Métricas de Software (proyectos mexicanos concluidos),True
+48,AMMS,25,345.9,3733.0,10.79,Asociación Mexicana de Métricas de Software (proyectos mexicanos concluidos),True
+49,AMMS,26,183.6,2682.0,14.61,Asociación Mexicana de Métricas de Software (proyectos mexicanos concluidos),True
+50,AMMS,27,8.8,96.0,10.91,Asociación Mexicana de Métricas de Software (proyectos mexicanos concluidos),True
+51,AMMS,28,2.9,408.0,140.69,Asociación Mexicana de Métricas de Software (proyectos mexicanos concluidos),True
+52,AMMS,29,14.6,184.0,12.6,Asociación Mexicana de Métricas de Software (proyectos mexicanos concluidos),True
+53,AMMS,30,11.8,120.0,10.17,Asociación Mexicana de Métricas de Software (proyectos mexicanos concluidos),True
+54,AMMS,31,611.9,5568.0,9.1,Asociación Mexicana de Métricas de Software (proyectos mexicanos concluidos),True
+55,AMMS,32,484.0,3919.1,8.1,Asociación Mexicana de Métricas de Software (proyectos mexicanos concluidos),True
+56,AMMS,33,353.7,2865.0,8.1,Asociación Mexicana de Métricas de Software (proyectos mexicanos concluidos),True
+57,AMMS,34,262.0,3776.0,14.41,Asociación Mexicana de Métricas de Software (proyectos mexicanos concluidos),True

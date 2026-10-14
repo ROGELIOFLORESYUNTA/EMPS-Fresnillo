@@ -1,0 +1,26 @@
+\begin{table}[t]
+\centering
+\caption{Exactitud estandarizada (SA, promedio de 50 pliegues) de cuatro modelos en 7 datasets p\'ublicos de esfuerzo, de menos a m\'as proyectos. Uno es sin error y cero es adivinar al azar.}
+\label{tab:sa}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\resizebox{\ifdim\width>\columnwidth\columnwidth\else\width\fi}{!}{%
+\begin{tabular}{lrrrrr}
+\toprule
+Dataset & $n$ & Mediana & \shortstack{Log-\\lineal} & \shortstack{Lineal\\transf.} & \shortstack{Bosque\\aleatorio} \\
+\midrule
+Albrecht & 24 & 0.41 & \textbf{0.76} & 0.34 & 0.63 \\
+Maxwell & 62 & 0.36 & \textbf{0.57} & 0.51 & 0.56 \\
+COCOMO81 & 63 & 0.48 & 0.60 & \textbf{0.79} & 0.64$^{*}$ \\
+Desharnais & 81 & 0.34 & \textbf{0.52} & 0.48 & 0.48 \\
+NASA93 & 93 & 0.38 & 0.60 & \textbf{0.65} & 0.64$^{*}$ \\
+Kitchenham & 145 & 0.45 & 0.59 & \textbf{0.61} & 0.51 \\
+China & 499 & 0.37 & \textbf{0.53} & 0.51 & 0.49 \\
+\midrule
+Mediana de los 7 & & 0.38 & 0.59 & 0.51 & 0.56 \\
+\bottomrule
+\end{tabular}%
+}
+\par\smallskip
+{\scriptsize\raggedright $^{*}$ El bosque aleatorio supera al log-lineal (MAE por pliegue, prueba de Wilcoxon, $p<0.05$). En negritas, el mejor modelo de cada dataset.\par}
+\end{table}

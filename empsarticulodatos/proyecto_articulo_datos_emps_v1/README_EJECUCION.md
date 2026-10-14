@@ -83,11 +83,33 @@ cd article
 
 `scripts/05_verify_results.py` recalcula desde cero (con código independiente
 del pipeline) cada número que aparece en el artículo y lo compara contra las
-tablas generadas. Última corrida: **26/26 PASS**.
+tablas generadas. Última corrida: **87/87 PASS** (26 de las cifras originales + 61 de las cifras nuevas de octubre de 2026; ver la sección siguiente).
 
 ```powershell
 .venv\Scripts\python scripts\05_verify_results.py
 ```
+
+## Datasets públicos de esfuerzo (octubre de 2026)
+
+Se agregó un análisis con siete datasets públicos de esfuerzo de la familia PROMISE (Albrecht, China,
+COCOMO81, Desharnais, Kitchenham, Maxwell y NASA93; 967 proyectos) para probar la hipótesis sobre pocos
+proyectos: ¿un modelo paramétrico calibrado con datos locales iguala o supera al aprendizaje automático?
+También se aprovecha la duración de SEERA y un punto de calibración mexicano (Valdés-Souto y Valeriano-Assem, 2024).
+Resultados, honestos y con límites, en `docs/07_resultados_datasets_publicos_2026-10.md`.
+
+```powershell
+.venv\Scripts\python scripts\07a_descargar_promise.py     # baja los datasets y escribe data/raw/promise/PROCEDENCIA.md
+.venv\Scripts\python scripts\07_modelos_simples_vs_ml.py  # cuatro modelos, validación cruzada repetida, figura 3
+.venv\Scripts\python scripts\08_curva_aprendizaje.py      # curvas con 4, 8, 16 y 32 proyectos, figura 4
+.venv\Scripts\python scripts\09_seera_duracion.py         # duración estimada contra real en SEERA, figura 5
+.venv\Scripts\python scripts\09b_punto_mexicano.py        # punto de calibración mexicano (baja el PDF si falta)
+.venv\Scripts\python scripts\10_cifras_nuevas.py          # macros \nuevo... en cifras.tex y tablas y figuras de LaTeX
+.venv\Scripts\python scripts\05_verify_results.py         # 26 comprobaciones anteriores + las nuevas (05b)
+```
+
+Notas: `common_promise.py` guarda lo compartido (lector de ARFF, fichas de los datasets, modelos y métricas).
+`04b_generate_custom_assets.py` reescribe `cifras.tex` completo: si se vuelve a correr, hay que correr otra vez el
+script 10. Los CSV nuevos están en `outputs/` y los fragmentos de LaTeX en `article/generated/`.
 
 ## Desviaciones respecto al plan original
 

@@ -265,14 +265,14 @@ Umbrales sugeridos:
 
 Hasta septiembre de 2026 el motor acreditaba que la IA hace mas rapido el trabajo (`effort_efficiency`, `velocity_factor`) sin cobrar las herramientas y sin distinguir si el equipo sabia usarla. Se agregaron dos piezas (`lib/engine/herramientas.ts`, parametros `AI_TOOL_COSTS`, `AI_SKILL_FACTORS`, `TIPO_CAMBIO_USD_MXN`):
 
-**Herramientas por forma de hacerlo** (USD de lista por persona tecnica al mes, sin IVA porque es acreditable; precios consultados el 09-09-2026, fuentes en el seed):
+**Herramientas por forma de hacerlo** (USD de lista por persona tecnica al mes, sin IVA porque es acreditable; precios de las páginas consultadas el 13-10-2026, fuentes en el seed):
 
 | Modo | USD/persona/mes | Sobreconsumo | Nota |
 |---|---|---|---|
 | traditional | 0 | 0 | sin IA |
-| ai_assisted | 30 | 10 % | Copilot o Cursor mas un asistente |
-| hybrid | 100 | 20 % | Claude Max 5x o Cursor Pro+ mas Copilot |
-| bytecoding_prompts | 250 | 30 % | Claude Max 20x o Cursor Ultra mas consumo de agentes |
+| ai_assisted | 30 | 10 % | Copilot Pro mas ChatGPT Plus o Claude Pro |
+| hybrid | 110 | 20 % | Claude Max mas Copilot Pro, o Cursor Premium con Copilot |
+| bytecoding_prompts | 230 | 30 % | Claude Max 20x mas Cursor Premium y consumo de agentes |
 | low_code | 40 | 0 | asiento de constructor; ademas 20 USD por usuario final al mes despues de entregar (no entra al precio, se informa) |
 
 ```
@@ -294,7 +294,7 @@ prototipo_efectivo  = 1 + (prototype_speedup - 1) * f
 
 Aplica a ai_assisted, hybrid y bytecoding_prompts; traditional y low_code no cambian. Aptitud: bytecoding no se recomienda con pericia menor a 2 y va con reservas por debajo de 3; asistido e hibrido van con reservas por debajo de 2. Evidencia: METR 2025 (-19 % con pocas horas en la herramienta), Google 2024 (+21 %), Peng et al. 2023 (+56 %), McKinsey 2023, DORA 2025, Stack Overflow 2025, arXiv 2507.18638.
 
-**Niveles, plan propio y aumento de precios** (lo que pasa en la vida real): cada forma de hacerlo tiene tres niveles de plan por persona (`niveles.basico / tipico / maximo`, por ejemplo casi todo con IA 100 / 250 / 400 USD) que se eligen por proyecto (`aiToolLevel`, default tipico); cada persona puede traer su propio plan (`TeamProfile.aiToolUsdMonthly`) y ese asiento cobra lo suyo:
+**Niveles, plan propio y aumento de precios** (lo que pasa en la vida real): cada forma de hacerlo tiene tres niveles de plan por persona (`niveles.basico / tipico / maximo`, por ejemplo casi todo con IA 100 / 230 / 400 USD) que se eligen por proyecto (`aiToolLevel`, default tipico); cada persona puede traer su propio plan (`TeamProfile.aiToolUsdMonthly`) y ese asiento cobra lo suyo:
 
 ```
 herramientas_mes = (asientos_al_nivel * usd_del_nivel + suma_planes_propios) * (1 + sobreconsumo) * TIPO_CAMBIO_USD_MXN

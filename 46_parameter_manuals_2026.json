@@ -422,14 +422,14 @@
     },
     "AI_TOOL_COSTS": {
       "title": "Herramientas de IA por forma de hacerlo",
-      "originSource": "Páginas de precios oficiales (GitHub, Cursor, Anthropic, Microsoft, Google) y gasto real publicado (morphllm, DX, Gartner citado), consultados el 09-sep-2026",
+      "originSource": "Páginas de precios consultadas el 13 de octubre de 2026 (Anthropic, Cursor, GitHub Copilot, OpenAI, Google Gemini); gasto real publicado (morphllm, DX, Gartner citado) y Power Apps, consultados el 09-sep-2026",
       "originUrl": "https://github.com/features/copilot/plans",
-      "originDocument": "Investigación de precios EMPS-Fresnillo, 9 de septiembre de 2026",
-      "whatItAffects": "Suma al costo del proyecto (y por tanto al precio y al flujo de efectivo) lo que cuestan al mes las herramientas de IA de cada persona técnica del equipo. Se cobra POR PERSONA (asiento), no por equipo. Tiene tres niveles por forma de hacerlo (básico, típico, máximo) que se eligen en Calcular; cada persona puede además traer su propio plan en Equipo. Valores típicos según la forma de hacerlo: 0 USD a mano, 30 con ayuda de IA, 100 híbrido, 250 casi todo con IA, 40 en plataforma de armado (más 20 por cada usuario final después de entregar). Se multiplica por (1 + sobreconsumo) y por el tipo de cambio. Sin IVA porque es acreditable.",
+      "originDocument": "Investigación de precios EMPS-Fresnillo, 13 de octubre de 2026",
+      "whatItAffects": "Suma al costo del proyecto (y por tanto al precio y al flujo de efectivo) lo que cuestan al mes las herramientas de IA de cada persona técnica del equipo. Se cobra POR PERSONA (asiento), no por equipo. Tiene tres niveles por forma de hacerlo (básico, típico, máximo) que se eligen en Calcular; cada persona puede además traer su propio plan en Equipo. Valores típicos según la forma de hacerlo: 0 USD a mano, 30 con ayuda de IA, 110 híbrido, 230 casi todo con IA, 40 en plataforma de armado (más 20 por cada usuario final después de entregar). Se multiplica por (1 + sobreconsumo) y por el tipo de cambio. Sin IVA porque es acreditable.",
       "howToModify": "- Revisar la página de precios de cada herramienta (cambian varias veces al año).\n- Ajustar usd_por_persona_mes y sobreconsumo por modo; no mezclar con TIPO_CAMBIO_USD_MXN.\n- Si el proveedor usa otra canasta, editarla en su workspace, no en el valor global.\n- Registrar fecha de consulta en _consultado.",
-      "referencesMarkdown": "- Copilot: https://github.com/features/copilot/plans\n- Cursor: https://cursor.com/pricing\n- Claude y Claude Code: https://claude.com/pricing\n- Gasto real con agentes: https://www.morphllm.com/ai-coding-costs\n- Presupuestos de IA por ingeniero: https://getdx.com/blog/how-are-engineering-leaders-approaching-2026-ai-tooling-budget/\n- Power Apps: https://www.microsoft.com/en-us/power-platform/products/power-apps/pricing\n- IVA a servicios digitales extranjeros (LIVA 18-B): https://www.diputados.gob.mx/LeyesBiblio/pdf/LIVA.pdf",
+      "referencesMarkdown": "- Copilot: https://github.com/features/copilot/plans\n- Cursor: https://cursor.com/pricing\n- Claude y Claude Code: https://claude.com/pricing\n- ChatGPT: https://openai.com/chatgpt/pricing/\n- Gasto real con agentes: https://www.morphllm.com/ai-coding-costs\n- Presupuestos de IA por ingeniero: https://getdx.com/blog/how-are-engineering-leaders-approaching-2026-ai-tooling-budget/\n- Power Apps: https://www.microsoft.com/en-us/power-platform/products/power-apps/pricing\n- IVA a servicios digitales extranjeros (LIVA 18-B): https://www.diputados.gob.mx/LeyesBiblio/pdf/LIVA.pdf",
       "sourceTrustLevel": "secundaria",
-      "lastReviewedAt": "2026-09-09"
+      "lastReviewedAt": "2026-10-13"
     },
     "AI_SKILL_FACTORS": {
       "title": "Pericia del equipo con la IA",

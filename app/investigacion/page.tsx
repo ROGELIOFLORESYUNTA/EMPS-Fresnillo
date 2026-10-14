@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 
 export const metadata = {
-  title: "Investigación - EMPS Fresnillo",
+  title: "Investigación",
 };
 
 export default async function InvestigacionPage() {

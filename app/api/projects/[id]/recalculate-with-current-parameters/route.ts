@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { runEstimate } from "@/lib/estimate-service";
 import type { DevelopmentMode, Scenario } from "@/lib/engine";
 import { getCurrentWorkspace, logWorkspaceActivity } from "@/lib/workspace";
+import { cargarProyectoConAcceso } from "@/lib/acceso-proyecto";
 
 /**
  * Re-ejecuta la ultima estimacion del proyecto usando los parametros vigentes,
@@ -12,6 +13,8 @@ import { getCurrentWorkspace, logWorkspaceActivity } from "@/lib/workspace";
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
+    const acceso = await cargarProyectoConAcceso(id);
+    if (!acceso.project) return NextResponse.json({ error: "Proyecto no encontrado." }, { status: acceso.status });
     const last = await prisma.estimate.findFirst({
       where: { projectId: id },
       orderBy: { createdAt: "desc" },

@@ -1,7 +1,7 @@
 // EMPS-Fresnillo - Schema canonico
 // Fuente: 06_modelo_datos.md (reconciliado Fase B con PDF §8)
 // Decisiones:
-//  - MySQL/MariaDB en VPS (rama deploy/vps-mariadb); SQLite en main para dev local.
+//  - SQLite para prototipo local; cambiar a postgresql para VPS via DATABASE_URL.
 //  - Strings (no enums) en campos enumerados para portabilidad SQLite/Postgres.
 //  - Decimal precision: 18,4 para montos; 18,6 para tasas/factores.
 //  - JSON para snapshots y tablas (CEAV, vacaciones, parameters_snapshot).
@@ -50,6 +50,8 @@ model Project {
   estimatedBudget         Decimal?
   clientAvailabilityLevel String? // alta | media | baja: que tan disponible esta el cliente para dudas (entra al riesgo)
   shareToken              String?   @unique // enlace de solo lectura /r/[token]; null = no compartido
+  lado                    String?   // desarrollador | ayuntamiento (lib/lado.ts); null = anterior a la separacion, se trata como ayuntamiento
+  shareIncludeBreakdown   Boolean   @default(false) // el enlace compartido muestra tambien el desglose interno (nomina, costo, utilidad)
   expectedUsers           Int? // cuantas personas van a usar el sistema (licencias por usuario final en low-code)
   targetDate              DateTime?
   priority                String    @default("media") // baja|media|alta|critica
@@ -68,6 +70,7 @@ model Project {
   cashflow  CashFlowLine[]
   resources ProjectResourceCost[]
   decisions ProjectDecision[]
+  cotizacion Cotizacion?
   workspace Workspace?            @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
 
   @@index([status])
@@ -142,10 +145,14 @@ model TeamProfile {
   role                String // lider_tecnico|dev_senior|dev_junior|analista|tester|disenador|soporte|contador|administrativo
   level               String   @default("mid") // junior|mid|senior|lead
   monthlySalary       Decimal
+  payBasis            String? // mensual | diario (como captura el pago esta persona; el motor siempre lee monthlySalary)
+  dailyRate           Decimal? // pago por dia cuando payBasis = diario (monthlySalary = dailyRate x 30.4)
   hourlyCost          Decimal?
   availabilityPercent Int      @default(100)
   monthsAssigned      Decimal
-  contractType        String   @default("nomina") // asimilados|honorarios|nomina|resico_pf|freelance
+  weeksAssigned       Decimal? // semanas que participa en el proyecto; null = todo el proyecto
+  isOwner             Boolean  @default(false) // la persona que cotiza y cobra su propio tiempo
+  contractType        String   @default("nomina") // asimilados|honorarios|nomina|resico_pf|freelance|propio
   productivityFactor  Decimal  @default(1.0)
   turnoverRisk        Int      @default(2) // 1-5
   supervisionRequired Int      @default(2) // 1-5
@@ -228,7 +235,7 @@ model Estimate {
   // Auditoria (RNF-03)
   parametersSnapshot String @db.LongText // JSON con copia de los Parameters usados
   inputsSnapshot     String @db.LongText // JSON con los inputs usados (modules count, complexities, etc.)
-  explanationJson    String? @db.LongText // cadena de calculo paso a paso ("de donde sale este numero")
+  explanationJson    String? // cadena de calculo paso a paso ("de donde sale este numero")
 
   createdById String?
   createdAt   DateTime @default(now())
@@ -780,7 +787,7 @@ model WorkspaceParameterOverride {
   parameterKey String // ej. "IVA_GENERAL", "CHANGE_PHASE_FACTOR", etc.
   value        String @db.LongText // JSON serializado igual que Parameter.value
   unit         String
-  source       String @db.Text   @default("Editado en este workspace")
+  source       String @db.Text @default("Editado en este workspace")
   notes        String? @db.Text
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -818,7 +825,7 @@ model WorkspaceActivityLog {
   id          String   @id @default(cuid())
   workspaceId String
   eventType   String // project_created | estimate_run | parameter_overridden | change_evaluated | report_viewed | etc.
-  payloadJson String? @db.Text
+  payloadJson String? @db.LongText
   createdAt   DateTime @default(now())
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -925,6 +932,51 @@ model ProjectDecision {
 }
 
 // ============================================================
+// COTIZACIÓN PARA EL CLIENTE (cara del desarrollador)
+// ============================================================
+// Lo que el desarrollador le entrega a su cliente: precio, tiempo, alcance,
+// lo que no incluye, mantenimiento, precio de los cambios y forma de pago, con
+// las condiciones que la ley pide por escrito. Una por proyecto.
+//
+// El cliente NUNCA ve nómina, costo, utilidad ni capital de trabajo: el
+// documento y el enlace compartido solo muestran lo que está aquí.
+//
+// numero: COT-AAAA-NNNN, consecutivo por año de quien cotiza (no es único en
+//   toda la base: dos desarrolladores distintos pueden tener su COT-2026-0001).
+// snapshotJson: las cifras congeladas al guardar (subtotal, IVA, total, semanas,
+//   piezas, precio de los cambios, mantenimiento y calendario de pagos), para que
+//   recalcular la estimación después no cambie una cotización ya entregada.
+// Los campos de texto largo van como String en SQLite; en MySQL llevan @db.Text.
+model Cotizacion {
+  id                   String   @id @default(cuid())
+  projectId            String   @unique
+  numero               String
+  fecha                DateTime @default(now())
+  vigenciaDias         Int      @default(15)
+  proveedorNombre      String
+  proveedorRfc         String?
+  proveedorContacto    String?
+  clienteNombre        String
+  mode                 String // traditional|ai_assisted|hybrid|bytecoding_prompts|low_code
+  scenario             String // optimistic|probable|conservative
+  estimateId           String? // la estimación de la que salen las cifras congeladas
+  exclusionesJson      String @db.Text // JSON: arreglo de textos "Qué no incluye". // deploy: @db.Text
+  supuestosJson        String @db.Text // JSON: arreglo de textos "Supuestos". // deploy: @db.Text
+  incluyeMantenimiento Boolean  @default(true)
+  mantenimientoMensual Decimal? // null = el sugerido (2 % del precio con IVA); con IVA incluido
+  anticipoPct          Int      @default(30)
+  finalPct             Int      @default(30)
+  notas                String? @db.Text // deploy: @db.Text
+  snapshotJson         String @db.Text // JSON: cifras congeladas al guardar. // deploy: @db.Text
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([numero])
+}
+
+// ============================================================
 // OBSERVATORIO DE COMENTARIOS PUBLICOS
 // ============================================================
 // Testimonios que la gente publica sobre sus proyectos de software.
@@ -940,11 +992,11 @@ model ObservatorioFuente {
   nombre          String
   plataforma      String    @default("youtube")
   tipo            String // busqueda | canal | video
-  consulta        String @db.Text // terminos de busqueda, o el id del canal/video
+  consulta        String // terminos de busqueda, o el id del canal/video
   idioma          String? // es | en | null = cualquiera
   activa          Boolean   @default(true)
   ultimaCosechaEl DateTime?
-  notas           String? @db.Text
+  notas           String?
   createdAt       DateTime  @default(now())
 
   comentarios ObservatorioComentario[]
@@ -958,7 +1010,7 @@ model ObservatorioComentario {
   plataforma  String    @default("youtube")
   externalId  String    @unique // id del comentario en la plataforma: evita reanalizar
   videoId     String?
-  videoTitulo String? @db.Text
+  videoTitulo String?
   canal       String?
   publicadoEl DateTime?
   likes       Int?
@@ -966,7 +1018,7 @@ model ObservatorioComentario {
 
   // Texto crudo. Las politicas de YouTube obligan a borrarlo o refrescarlo a
   // los 30 dias; el analisis derivado si se conserva. Lo hace POST /purgar.
-  textoOriginal String? @db.Text
+  textoOriginal String?
   textoExpiraEl DateTime?
   cosechadoEl   DateTime  @default(now())
 
@@ -981,16 +1033,16 @@ model ObservatorioComentario {
   tamanoEquipo           Int?
   desviacion             String? // mas | igual | menos | no_dice
   desviacionPct          Decimal?
-  causasJson             String? @db.Text // JSON: lista de la taxonomia cerrada
+  causasJson             String? // JSON: lista de la taxonomia cerrada
   confianza              String? // alta | media | baja
-  citasJson              String? @db.Text // JSON: { campo: "frase textual de donde salio" }
-  razonamiento           String? @db.Text
-  errorAnalisis          String? @db.Text // si fallo, por que; para reintentar despues
+  citasJson              String? // JSON: { campo: "frase textual de donde salio" }
+  razonamiento           String?
+  errorAnalisis          String? // si fallo, por que; para reintentar despues
 
   // --- Validacion del anotador (acuerdo entre el modelo y una persona) ---
   revisadoPorHumano Boolean  @default(false)
   coincideConHumano Boolean?
-  notaRevision      String? @db.Text
+  notaRevision      String?
 
   fuente ObservatorioFuente @relation(fields: [fuenteId], references: [id], onDelete: Cascade)
 
@@ -998,4 +1050,25 @@ model ObservatorioComentario {
   @@index([analizadoEl])
   @@index([esTestimonio])
   @@index([textoExpiraEl])
+}
+
+// Encuesta de salida del piloto: cuatro preguntas al pie del resultado. Da
+// estadisticas de los dos lados (Ayuntamiento y proveedor) sin esperar a que
+// un proyecto termine. Anonima: solo el workspace por cookie y su rol.
+model PilotoRespuesta {
+  id                 String   @id @default(cuid())
+  workspaceId        String?
+  projectId          String?
+  rol                String? // rol del workspace al responder: operador_municipal | proveedor | ...
+  credibilidad       Int // 1 no la creo ... 5 la creo del todo
+  cifraEsperada      Decimal? // lo que pensaba que iba a costar o cobrar, antes de ver el resultado
+  totalMostrado      Decimal? // la cifra que tenia en pantalla al responder
+  formaQueUsaria     String? // modo que usaria o pediria; no_se
+  comentario         String? @db.Text
+  segundosEnPantalla Int?
+  createdAt          DateTime @default(now())
+
+  @@index([workspaceId])
+  @@index([projectId])
+  @@index([rol])
 }

@@ -33,6 +33,16 @@
     --ring: 217 91% 35%;
 
     --radius: 0.75rem;
+
+    /* Paleta de la cara del desarrollador: azul marino y blanco, un solo acento
+       de acción (docs/diseno/estudio_visual_2026-10.md). Van como canales RGB
+       para poder usar bg-marino/90 y similares. */
+    --lienzo: 255 255 255;   /* #FFFFFF  fondo de página y de recibos */
+    --papel: 244 247 251;    /* #F4F7FB  franjas y fondo de campos */
+    --tinta: 11 31 58;       /* #0B1F3A  texto */
+    --tinta-suave: 74 90 112;/* #4A5A70  ayudas y etiquetas */
+    --marino: 15 43 76;      /* #0F2B4C  marca, botón principal, cifras */
+    --accion: 31 95 191;     /* #1F5FBF  enlaces y foco */
   }
 
   .dark {

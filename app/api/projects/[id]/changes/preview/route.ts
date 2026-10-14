@@ -8,6 +8,7 @@
  * Carga parámetros del motor v7 desde tabla Parameter.
  */
 import { NextRequest, NextResponse } from "next/server";
+import { cargaNominaDelProyecto } from "@/lib/equipo-server";
 import { changeImpactInputSchema } from "@/lib/validators";
 import { computeChangeImpact } from "@/lib/engine";
 import { loadChangeImpactParameters } from "@/lib/parameters";
@@ -29,7 +30,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const input = changeImpactInputSchema.parse(body);
 
     const engineParams = await loadChangeImpactParameters(2026, "Zacatecas");
-    const result = computeChangeImpact({ ...input, projectId: id }, engineParams);
+    const result = computeChangeImpact({ ...input, projectId: id, cargaNomina: await cargaNominaDelProyecto(id) }, engineParams);
 
     return NextResponse.json({
       result,

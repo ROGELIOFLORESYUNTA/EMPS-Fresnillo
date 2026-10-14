@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { CheckCircle2 } from "lucide-react";
 import { apiPost } from "@/lib/api-client";
 
 export function ElegirOpcionButton({
@@ -63,9 +62,8 @@ export function ElegirOpcionButton({
 
   if (!open) {
     return (
-      <Button size="sm" onClick={() => setOpen(true)}>
-        <CheckCircle2 className="w-4 h-4 mr-1.5" />
-        {variant === "recomendada" ? "Elegir esta opción como mi decisión" : "Elegir la opción que estoy viendo"}
+      <Button variant="outline" onClick={() => setOpen(true)} className="h-11 px-5 text-base font-semibold">
+        {variant === "recomendada" ? "Elegir esta opción como mi decisión" : "Elegir esta opción"}
       </Button>
     );
   }
@@ -73,7 +71,7 @@ export function ElegirOpcionButton({
   return (
     <div className="rounded-md border bg-background p-3 space-y-3 w-full max-w-md">
       <p className="text-sm">
-        Vas a registrar tu decisión: <strong>{modeLabel}</strong> · escenario <strong>{scenarioLabel}</strong>.
+        Vas a registrar tu decisión: <strong>{modeLabel}</strong>, escenario <strong>{scenarioLabel}</strong>.
       </p>
       <p className="text-xs text-muted-foreground">
         Se guarda la opción con sus cifras de hoy. Si después recalculas o pides cambios, el sistema te muestra qué tanto se movió.

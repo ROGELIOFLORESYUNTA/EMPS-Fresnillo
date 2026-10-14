@@ -4,14 +4,20 @@
  * 2. Agrega módulos
  * 3. Agrega equipo
  * 4. Estima los 5 modos
- * 5. Verifica reportes
+ * 5. Verifica reportes (cada uno en su cara: el sistema tiene dos, ver lib/lado.ts)
  * 6. Edita parámetro fiscal y verifica auditoría
  * 7. Cambia calibración del motor
  * 8. Recalcula proyecto y confirma versionado
  */
-import { test, expect, type APIRequestContext } from "@playwright/test";
+import { test, expect, request as pwRequest, type APIRequestContext } from "@playwright/test";
 
 let createdProjectId: string;
+
+// Cada proyecto es de quien lo creó (cookie anónima de workspace). Todas las
+// pruebas de este archivo hablan como la misma persona, para que lo que crea la
+// 01 lo vean la 02 y las siguientes.
+const ESPACIO_E2E = "wsk_e2e_simulacion";
+test.use({ extraHTTPHeaders: { Cookie: `emps_workspace_id=${ESPACIO_E2E}` } });
 
 async function getProjectByName(req: APIRequestContext, name: string): Promise<string | null> {
   const r = await req.get("/api/projects");
@@ -119,14 +125,70 @@ test.describe("Simulación profunda como usuario real", () => {
     expect(Number(lowProb.weeksTotal)).toBeLessThan(Number(tradProb.weeksTotal));
   });
 
-  test("05: los 3 reportes responden HTTP 200 con datos", async ({ page }) => {
+  test("05: cada reporte se abre desde su cara", async ({ page, baseURL }) => {
+    // El navegador también habla como esa misma persona.
+    await page.context().addCookies([{ name: "emps_workspace_id", value: ESPACIO_E2E, url: baseURL ?? "http://localhost:3000" }]);
+    // El host por omisión (localhost) es la cara del desarrollador: ahí el
+    // reporte del proveedor existe y el del Ayuntamiento no.
     const r = await page.request.get("/api/projects");
     const d = await r.json();
     const proj = d.projects.find((p: { name: string }) => p.name === "Simulacion E2E - Sistema de tramites Fresnillo");
     expect(proj).toBeTruthy();
-    for (const type of ["municipal", "provider", "research"]) {
-      await page.goto(`/projects/${proj.id}/reports/${type}`);
-      await expect(page.getByRole("heading").first()).toBeVisible();
+    await page.goto(`/projects/${proj.id}/reports/provider`);
+    await expect(page.getByRole("heading").first()).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Reporte de viabilidad para proveedor/i })).toBeVisible();
+
+    // El reporte del Ayuntamiento no se ofrece del lado del desarrollador: 404.
+    const municipalEnDev = await page.request.get(`/projects/${proj.id}/reports/municipal`);
+    expect(municipalEnDev.status()).toBe(404);
+
+    // El reporte académico pide sesión de investigador (cookie de administrador);
+    // sin ella contesta 404. Con sesión se prueba en e2e/admin-extra.spec.ts.
+    const academico = await page.request.get(`/projects/${proj.id}/reports/research`);
+    expect(academico.status()).toBe(404);
+  });
+
+  test("05b: el reporte para el Ayuntamiento se abre desde la cara del Ayuntamiento", async () => {
+    // Un host distinto es otra cara: ayuntamientos.localhost. Se crea un
+    // proyecto de ese lado (el lado lo decide el host) y se abre su reporte
+    // con ese mismo host. Playwright deja poner el encabezado Host a mano.
+    const base = process.env.BASE_URL ?? "http://localhost:3000";
+    const puerto = new URL(base).port;
+    const ayto = await pwRequest.newContext({
+      baseURL: base,
+      extraHTTPHeaders: { Host: `ayuntamientos.localhost${puerto ? `:${puerto}` : ""}` },
+    });
+    try {
+      // La primera visita recibe la cookie anónima del workspace; sin ella el alta contesta 400.
+      await ayto.get("/");
+      const c = await ayto.post("/api/projects", {
+        data: {
+          name: "Simulacion E2E - Reporte municipal",
+          client: "Ayuntamiento de Fresnillo",
+          clientType: "municipal",
+          municipalArea: "Atencion Ciudadana",
+          objective: "Probar que el reporte municipal se abre desde su cara",
+          systemType: "tramites",
+        },
+      });
+      expect(c.status(), await c.text()).toBe(201);
+      const id = (await c.json()).project.id as string;
+      expect((await ayto.post(`/api/projects/${id}/modules`, { data: { name: "Predial", complexity: 3, clarity: 3, criticality: 3, screensCount: 2, type: "transaccional" } })).status()).toBe(201);
+      expect((await ayto.post(`/api/projects/${id}/team`, { data: { name: "Dev Senior", role: "dev_senior", level: "senior", monthlySalary: 38000, monthsAssigned: 3, contractType: "nomina" } })).status()).toBe(201);
+      const est = await ayto.post(`/api/projects/${id}/estimate`, {
+        data: { mode: "hybrid", targetMargin: 0.2, cashFlowAssumptions: { anticipoPct: 0.3, finalPaymentPct: 0.3, durationMonths: 3, monthlyToolsCost: 0, monthlyAdminCost: 0 } },
+      });
+      expect(est.status()).toBe(201);
+
+      const municipal = await ayto.get(`/projects/${id}/reports/municipal`);
+      expect(municipal.status()).toBe(200);
+      expect(await municipal.text()).toContain("Reporte para Ayuntamiento");
+      // y el del proveedor no se ofrece desde esa cara
+      expect((await ayto.get(`/projects/${id}/reports/provider`)).status()).toBe(404);
+
+      expect([200, 204]).toContain((await ayto.delete(`/api/projects/${id}`)).status());
+    } finally {
+      await ayto.dispose();
     }
   });
 

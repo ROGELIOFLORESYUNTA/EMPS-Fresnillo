@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { UserCircle2, KeyRound, Copy, Smartphone, Save, Check, Info, ChevronDown, ChevronUp } from "lucide-react";
 import { ROLES } from "@/lib/roles";
+import { COPIA } from "@/lib/lado-copy";
+import type { Lado } from "@/lib/lado";
 
 interface MyAccount {
   id: string;
@@ -23,7 +25,8 @@ export default function MiCuentaPage() {
   const router = useRouter();
   const [me, setMe] = useState<MyAccount | null>(null);
   const [name, setName] = useState("");
-  const [role, setRole] = useState("");
+  // El lado lo decide el host (estimacion.hazlatarea.com o ayuntamientos.hazlatarea.com).
+  const [lado, setLado] = useState<Lado | null>(null);
   const [email, setEmail] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -39,8 +42,8 @@ export default function MiCuentaPage() {
       .then((r) => r.json())
       .then((d) => {
         setMe(d.workspace);
+        setLado(d.lado === "ayuntamiento" || d.lado === "desarrollador" ? d.lado : null);
         setName(d.workspace?.displayName ?? "");
-        setRole(d.workspace?.role ?? "");
         setEmail(d.workspace?.contactEmail ?? "");
       });
   }, []);
@@ -52,7 +55,7 @@ export default function MiCuentaPage() {
     const r = await fetch("/api/workspace/me", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ displayName: name, role, contactEmail: email }),
+      body: JSON.stringify({ displayName: name, contactEmail: email }),
     });
     const d = await r.json();
     if (r.ok) {
@@ -155,26 +158,16 @@ export default function MiCuentaPage() {
                 id="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="ej. María del Ayuntamiento, Juan, etc."
+                placeholder="ej. María, Juan"
                 maxLength={80}
               />
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="role">¿Para qué vas a usar este sitio?</Label>
-              <select
-                id="role"
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                className="border border-input bg-background rounded-md h-10 px-3 text-sm"
-              >
-                <option value="">Prefiero no decir</option>
-                {ROLES.map((r) => (
-                  <option key={r.value} value={r.value}>{r.label}</option>
-                ))}
-              </select>
+            <div className="grid gap-1">
+              <p className="text-sm font-medium leading-none">Desde qué lado usas el sitio</p>
+              <p className="text-sm">{lado ? COPIA[lado].etiquetaDeLado : "..."}</p>
               <p className="text-xs text-muted-foreground">
-                El autor del estudio agrupa respuestas anónimas por este campo para sus estadísticas. Además, el sistema
-                ordena las opciones de desarrollo según el lado desde el que trabajas.
+                No se elige: lo decide la dirección web por la que entraste. El sistema ordena las opciones según este
+                lado, y el autor del estudio agrupa por él las respuestas anónimas.
               </p>
             </div>
             <div className="grid gap-2">
@@ -184,7 +177,7 @@ export default function MiCuentaPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="ej. maria@fresnillo.gob.mx"
+                placeholder="ej. maria@correo.com"
                 maxLength={120}
               />
               <p className="text-xs text-muted-foreground">

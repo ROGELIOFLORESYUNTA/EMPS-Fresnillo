@@ -30,6 +30,7 @@ import type {
   AffectedArtifactInput,
 } from "./change-types";
 import { buildClarificationQuestions } from "./change-questions";
+import { CARGA_NOMINA_POR_OMISION, CARGA_ADMIN_POR_OMISION } from "./equipo";
 
 // ====== Parámetros DEFAULT del motor (fallback si la tabla Parameter no los tiene) ======
 // v7: el motor ahora acepta params: ChangeImpactParameters como segundo argumento opcional.
@@ -120,9 +121,11 @@ const FISCAL_RATES_FALLBACK = {
   // cost.ts YA CON el SBC integrado (factor 1.0493) y el tope de 25 UMA:
   // $15k/mes → 25.7%, $20k → 24.7%, $30k → 23.7%, $50k → 22.9% (el tope pesa).
   // El 26.5% anterior era una aproximación sin memoria de cálculo.
-  imssPatronalApprox: 0.245,
+  // Es la carga de un equipo 100% en nómina; la calculadora la ajusta con
+  // cargaNomina cuando el equipo trae otros contratos (cargaNominaDelEquipo).
+  imssPatronalApprox: CARGA_NOMINA_POR_OMISION,
   isnZacatecasEffective: 0.0385, // ISN 3.5% × (1 + UAZ 10%)
-  adminOverheadPct: 0.10, // 10% para gastos administrativos del proveedor
+  adminOverheadPct: CARGA_ADMIN_POR_OMISION, // 10% para gastos administrativos del proveedor
 };
 
 // Optimista/conservador como ±25% sobre probable (consistente con scenario_factors del proyecto)
@@ -279,9 +282,18 @@ function buildExplanation(
 
 // ====== Funciones puras v7 (financiero, mantenimiento, explicaciones, guardrails) ======
 
+/** Una carga sobre la mano de obra vale de 0 a 1; si no viene (o viene rara) se usa la de siempre. */
+function cargaValida(valor: number | undefined, porOmision: number): number {
+  return typeof valor === "number" && Number.isFinite(valor) && valor >= 0 && valor <= 1 ? valor : porOmision;
+}
+
 /**
  * Desglose financiero del cambio (v7).
  * laborCost = subtotal sin overhead; sobre éste se calculan IMSS, ISN, admin.
+ *
+ * `cargas.cargaNomina` (IMSS + INFONAVIT) y `cargas.cargaAdmin` (administración)
+ * valen 0.245 y 0.10 si no se pasan. Un equipo propio o por honorarios pasa
+ * cargaNomina = 0 (ver cargaNominaDelEquipo en equipo.ts).
  */
 export function computeFinancialBreakdown(
   probableHours: number,
@@ -289,11 +301,12 @@ export function computeFinancialBreakdown(
   contingencyRate: number,
   riskLevel: ChangeRiskLevel,
   params: ChangeImpactParameters = DEFAULT_CHANGE_PARAMETERS,
+  cargas: { cargaNomina?: number; cargaAdmin?: number } = {},
 ): ChangeFinancialBreakdown {
   const laborCost = probableHours * hourlyRate;
-  const imssEstimated = laborCost * FISCAL_RATES_FALLBACK.imssPatronalApprox;
+  const imssEstimated = laborCost * cargaValida(cargas.cargaNomina, FISCAL_RATES_FALLBACK.imssPatronalApprox);
   const isnEstimated = laborCost * FISCAL_RATES_FALLBACK.isnZacatecasEffective;
-  const adminOverhead = laborCost * FISCAL_RATES_FALLBACK.adminOverheadPct;
+  const adminOverhead = laborCost * cargaValida(cargas.cargaAdmin, FISCAL_RATES_FALLBACK.adminOverheadPct);
   const contingencyAmount = laborCost * contingencyRate;
   const subtotalBeforeVat = laborCost + imssEstimated + isnEstimated + adminOverhead + contingencyAmount;
   const vat = subtotalBeforeVat * FISCAL_RATES_FALLBACK.iva;
@@ -549,7 +562,10 @@ export function computeChangeImpact(
   const questionsToClarify = buildClarificationQuestions(input);
 
   // === v7: campos nuevos opcionales ===
-  const financialBreakdown = computeFinancialBreakdown(probableHours, hourlyRate, contingencyRate, riskLevel, params);
+  const financialBreakdown = computeFinancialBreakdown(probableHours, hourlyRate, contingencyRate, riskLevel, params, {
+    cargaNomina: input.cargaNomina,
+    cargaAdmin: input.cargaAdmin,
+  });
   const plainExplanationForClient = buildPlainExplanationForClient(input, suggestedType, riskLevel, requiresFormalApproval);
   const technicalExplanationForProvider = buildTechnicalExplanationForProvider(input, breakdown, financialBreakdown, hourlyRate);
   const legalReferences = buildLegalReferences(input);

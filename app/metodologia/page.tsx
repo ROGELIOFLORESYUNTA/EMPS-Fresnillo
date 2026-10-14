@@ -42,7 +42,7 @@ export default async function MetodologiaPage() {
         <CardHeader><CardTitle className="text-base">1. Hipótesis</CardTitle></CardHeader>
         <CardContent className="space-y-3 text-sm">
           <blockquote className="border-l-4 border-blue-500 pl-4 italic">
-            Una estimación temprana mejora cuando integra esfuerzo técnico, modo de desarrollo, cambios y
+            Una estimación temprana mejora cuando integra esfuerzo técnico, forma de hacerlo, cambios y
             viabilidad fiscal-laboral antes de comprometer precio, calendario y mantenimiento.
           </blockquote>
           <p>
@@ -73,7 +73,7 @@ export default async function MetodologiaPage() {
             <p className="text-muted-foreground">Features: clarity_avg, n_modules, n_integrations, criticality_avg.</p>
           </div>
           <div>
-            <p className="font-semibold">VI 2: modo de desarrollo declarado</p>
+            <p className="font-semibold">VI 2: forma de hacerlo declarada</p>
             <p className="text-muted-foreground">Feature: dev_mode (one-hot encoding de traditional / ai_assisted / hybrid / bytecoding_prompts / low_code).</p>
           </div>
           <div>
@@ -137,7 +137,7 @@ export default async function MetodologiaPage() {
           <ol className="list-decimal list-inside ml-2 space-y-1">
             <li>Descargar el CSV desde <Link href="/investigacion/validacion-hipotesis" className="text-blue-700 hover:underline">/validacion-hipotesis</Link> (botón "Descargar CSV").</li>
             <li>Instalar dependencias: <code className="bg-muted px-1 rounded">pip install pandas scikit-learn matplotlib jupyter</code>.</li>
-            <li>Abrir <code className="bg-muted px-1 rounded">entregable-investigacion/notebooks/validar_hipotesis.ipynb</code>.</li>
+            <li>Abrir <code className="bg-muted px-1 rounded break-all">entregable-investigacion/notebooks/validar_hipotesis.ipynb</code>.</li>
             <li>Apuntar al CSV descargado y ejecutar todas las celdas.</li>
             <li>R², MAPE y feature importance deben coincidir con los del sistema (±0.01).</li>
           </ol>
@@ -149,7 +149,7 @@ export default async function MetodologiaPage() {
         <CardContent className="text-sm space-y-2">
           <p>
             Las formas de hacerlo con IA no solo tardan menos: cuestan herramientas y rinden según quién las use. El motor cobra, por cada persona técnica del equipo,
-            la canasta típica de la forma de hacerlo (0 USD a mano, 30 con ayuda de IA, 100 híbrido, 250 casi todo con IA, 40 en plataforma de armado, más 20 por usuario final
+            la canasta típica de la forma de hacerlo (0 USD a mano, 30 con ayuda de IA, 110 híbrido, 230 casi todo con IA, 40 en plataforma de armado, más 20 por usuario final
             mientras se use el sistema), por (1 + sobreconsumo) y por el tipo de cambio del DOF. Sin IVA porque es acreditable. Ese monto entra al costo, al precio y al flujo con el mismo número.
           </p>
           <p>

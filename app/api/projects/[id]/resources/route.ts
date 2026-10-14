@@ -9,11 +9,14 @@ import { Decimal } from "decimal.js";
 import { prisma } from "@/lib/db";
 import { resourceCostSchema } from "@/lib/validators";
 import { getCurrentWorkspace, logWorkspaceActivity } from "@/lib/workspace";
+import { cargarProyectoConAcceso } from "@/lib/acceso-proyecto";
 
 const dec = (v: number | string) => new Decimal(v);
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const acceso = await cargarProyectoConAcceso(id);
+  if (!acceso.project) return NextResponse.json({ error: "Proyecto no encontrado." }, { status: acceso.status });
   const resources = await prisma.projectResourceCost.findMany({
     where: { projectId: id },
     orderBy: { createdAt: "asc" },
@@ -32,8 +35,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: "Workspace no identificado." }, { status: 400 });
     }
 
-    const project = await prisma.project.findUnique({ where: { id } });
-    if (!project) return NextResponse.json({ error: "Proyecto no encontrado." }, { status: 404 });
+    const acceso = await cargarProyectoConAcceso(id);
+    if (!acceso.project) return NextResponse.json({ error: "Proyecto no encontrado." }, { status: acceso.status });
 
     const resource = await prisma.projectResourceCost.create({
       data: {

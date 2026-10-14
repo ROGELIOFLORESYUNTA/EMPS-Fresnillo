@@ -10,8 +10,9 @@ import type {
   PricingResult,
   IMSSRiskClass,
 } from "./types";
+import { FACTOR_DIAS_MES } from "./pago";
 
-const DAYS_PER_MONTH_DEFAULT = 30.4;
+const DAYS_PER_MONTH_DEFAULT = FACTOR_DIAS_MES;
 
 /**
  * Días de vacaciones por año de antigüedad (LFT Art. 76, Reforma "Vacaciones
@@ -269,6 +270,9 @@ export function computeProfileCost(
  *   asimilados: sin IMSS ni INFONAVIT ni prestaciones; el ISN si aplica
  *               (Zacatecas grava las remuneraciones asimiladas).
  *   honorarios, resico_pf, freelance: solo el pago acordado.
+ *   propio: lo que vale el tiempo de quien cotiza y cobra su propio trabajo.
+ *           Sin IMSS ni impuesto sobre nomina: cuesta solo lo pactado, igual
+ *           que freelance, y no entra a la liquidacion LFT.
  */
 export function computeProfileCostSinNomina(
   input: ProfileCostInput,

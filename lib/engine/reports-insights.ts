@@ -226,6 +226,9 @@ export interface ChangeRangeRow {
   etiqueta: string;
   minCost: number;
   maxCost: number;
+  /** Horas tipicas ya ajustadas por la forma de hacerlo. */
+  minHours: number;
+  maxHours: number;
   description: string;
 }
 
@@ -239,11 +242,31 @@ const HOURS_PER_WEEK_DEFAULT = 40;
  * heurísticas simples para que el reporte pueda mostrar la tabla
  * incluso cuando aún no hay cambios reales registrados.
  */
+/**
+ * Factor de horas para los rangos rapidos de cambios: la MISMA regla que la
+ * calculadora exacta (CHANGE_MODE_FACTOR por forma de hacerlo), moderada por
+ * la pericia del equipo con la IA. Con pericia nominal (f = 1) da el factor
+ * del modo tal cual; con pericia baja solo se acredita parte del ahorro.
+ */
+export function factorHorasCambio(modeFactor: number, fPericia: number = 1): number {
+  const m = Number.isFinite(modeFactor) ? Math.min(1.5, Math.max(0.2, modeFactor)) : 1;
+  const f = Number.isFinite(fPericia) ? Math.min(1.5, Math.max(0, fPericia)) : 1;
+  return Math.round((1 - (1 - m) * f) * 10000) / 10000;
+}
+
 export function computeChangeRangeByType(
   weeklyTeamRate: number,
   hoursPerWeek: number = HOURS_PER_WEEK_DEFAULT,
+  /**
+   * Los cambios chicos tambien se abaratan con la IA: es la eficiencia efectiva
+   * de la forma de hacerlo (effort_efficiency ya ajustada por la pericia del
+   * equipo). 1 = a mano; 0.65 = casi todo con IA con un equipo que la domina.
+   * Se acota a 0.2..1.5 para que un dato raro no rompa los rangos.
+   */
+  factorHoras: number = 1,
 ): ChangeRangeRow[] {
   const hourlyRate = hoursPerWeek > 0 ? weeklyTeamRate / hoursPerWeek : 0;
+  const f = Math.min(1.5, Math.max(0.2, Number.isFinite(factorHoras) ? factorHoras : 1));
   const OPTIMISTIC = 0.85;
   const CONSERVATIVE = 1.25;
 
@@ -283,12 +306,58 @@ export function computeChangeRangeByType(
 
   return (Object.keys(HOURS_BY_TYPE) as ChangeType[]).map((type) => {
     const cfg = HOURS_BY_TYPE[type];
+    const minHours = cfg.min * f;
+    const maxHours = cfg.max * f;
     return {
       type,
       etiqueta: cfg.etiqueta,
-      minCost: cfg.min * hourlyRate * OPTIMISTIC,
-      maxCost: cfg.max * hourlyRate * CONSERVATIVE,
+      minCost: minHours * hourlyRate * OPTIMISTIC,
+      maxCost: maxHours * hourlyRate * CONSERVATIVE,
+      minHours,
+      maxHours,
       description: cfg.description,
+    };
+  });
+}
+
+// ============================================================
+// 7. Precio por tipo de cambio (costo con margen e IVA)
+// ============================================================
+
+export interface ChangePriceRow extends ChangeRangeRow {
+  /** Precio sin IVA: costo / (1 - margen). */
+  minPrecio: number;
+  maxPrecio: number;
+  /** Precio con IVA. */
+  minPrecioConIva: number;
+  maxPrecioConIva: number;
+}
+
+/**
+ * Lo que se le cobra al cliente por cada tipo de cambio: el costo de
+ * computeChangeRangeByType llevado a precio con la misma regla del proyecto
+ * (costo / (1 - margen)) y con IVA. La tabla de costos sola no lleva la
+ * utilidad, y se leía como si fuera lo que se cobra.
+ *
+ * El margen se acota a 0..0.99 (como en la captura de la estimación) y un IVA
+ * que no sea número se toma como 0, para que un dato raro no rompa el reporte.
+ */
+export function preciosDeCambioPorTipo(
+  rangos: ChangeRangeRow[],
+  margin: number,
+  ivaRate: number,
+): ChangePriceRow[] {
+  const m = Number.isFinite(margin) ? Math.min(0.99, Math.max(0, margin)) : 0;
+  const iva = Number.isFinite(ivaRate) ? Math.max(0, ivaRate) : 0;
+  return rangos.map((r) => {
+    const minPrecio = r.minCost / (1 - m);
+    const maxPrecio = r.maxCost / (1 - m);
+    return {
+      ...r,
+      minPrecio,
+      maxPrecio,
+      minPrecioConIva: minPrecio * (1 + iva),
+      maxPrecioConIva: maxPrecio * (1 + iva),
     };
   });
 }

@@ -10,6 +10,7 @@ Si TODO da PASS, los numeros del PDF son correctos y consistentes.
 
 Uso: .venv\\Scripts\\python scripts\\05_verify_results.py
 """
+import sys
 from pathlib import Path
 import numpy as np
 import pandas as pd
@@ -149,16 +150,29 @@ r2_tab2 = float(tm[(tm.dataset == "SEERA") & (tm.modelo == "bosque_aleatorio")][
 check("tabla R2 SEERA == re-entrenamiento", r2_tab2, float(r2_seera), tol=0.001)
 
 # ------------------------------------------------------------------
+# 7) Cifras NUEVAS (octubre de 2026): datasets publicos de esfuerzo, exactitud
+#    estandarizada, curvas de aprendizaje, duracion en SEERA y punto mexicano.
+#    El detalle esta en 05b_verify_nuevos.py; usa esta misma funcion `check`.
+# ------------------------------------------------------------------
+import importlib.util
+_spec = importlib.util.spec_from_file_location("verify_nuevos", Path(__file__).with_name("05b_verify_nuevos.py"))
+_nuevos = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_nuevos)
+_nuevos.correr(check)
+
+# ------------------------------------------------------------------
 # Reporte final
 # ------------------------------------------------------------------
 print()
-print(f"{'Indicador':<48} {'Esperado':>10} {'Recalc.':>10} {'Estado':>7}")
-print("-" * 78)
+print(f"{'Indicador':<76} {'Esperado':>10} {'Recalc.':>10} {'Estado':>7}")
+print("-" * 107)
 fails = 0
 for nombre, esp, rec, estado in RESULTS:
-    print(f"{nombre:<48} {esp:>10} {rec:>10} {estado:>7}")
+    print(f"{nombre[:76]:<76} {esp:>10} {rec:>10} {estado:>7}")
     if estado == "FAIL":
         fails += 1
-print("-" * 78)
+print("-" * 107)
 total = len(RESULTS)
 print(f"TOTAL: {total - fails}/{total} PASS" + ("  *** HAY FALLAS ***" if fails else "  (todo correcto)"))
+if fails:
+    sys.exit(1)
