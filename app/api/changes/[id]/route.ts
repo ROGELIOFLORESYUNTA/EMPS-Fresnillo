@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { changeRequestUpdateSchema } from "@/lib/validators";
+import { puedeAbrirProyecto } from "@/lib/acceso-proyecto";
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
+    const before = await prisma.changeRequest.findUnique({ where: { id } });
+    // Un cambio se decide o se edita solo desde el proyecto al que pertenece (dueño y lado).
+    if (!before || !(await puedeAbrirProyecto(before.projectId))) {
+      return NextResponse.json({ error: "no encontrado" }, { status: 404 });
+    }
     const body = await req.json();
     const data = changeRequestUpdateSchema.parse(body);
-    const before = await prisma.changeRequest.findUnique({ where: { id } });
     const change = await prisma.changeRequest.update({
       where: { id },
       data: {
@@ -20,7 +25,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         entity: "ChangeRequest",
         entityId: change.id,
         action: "update",
-        before: before ? JSON.stringify(before) : null,
+        before: JSON.stringify(before),
         after: JSON.stringify(change),
       },
     });

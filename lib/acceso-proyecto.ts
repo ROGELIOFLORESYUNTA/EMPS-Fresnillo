@@ -38,6 +38,17 @@ export async function cargarProyectoConAcceso(id: string): Promise<AccesoProyect
 }
 
 /**
+ * Para las rutas que reciben el id de una pieza (módulo, historia, estimación,
+ * cambio) y no el del proyecto: contesta si el visitante puede abrir el
+ * proyecto al que pertenece. Sin projectId no hay forma de saberlo: no.
+ */
+export async function puedeAbrirProyecto(projectId: string | null | undefined): Promise<boolean> {
+  if (!projectId) return false;
+  const { project } = await cargarProyectoConAcceso(projectId);
+  return project !== null;
+}
+
+/**
  * Condición de Prisma para las listas: solo los proyectos de ese lado. Los
  * proyectos viejos (lado nulo) cuentan como de ayuntamiento, igual que en
  * ladoDelProyecto.

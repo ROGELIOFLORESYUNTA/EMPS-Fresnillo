@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { projectUpdateSchema } from "@/lib/validators";
 import { cargarProyectoConAcceso } from "@/lib/acceso-proyecto";
+import { isAdmin } from "@/lib/admin-auth";
+
+// La plantilla de ejemplo la abre cualquiera de su lado, pero solo el investigador la edita o la borra.
+const PLANTILLA_PROTEGIDA = NextResponse.json(
+  { error: "Este proyecto es la plantilla de ejemplo compartida. Crea tu propio proyecto para modificarlo." },
+  { status: 400 },
+);
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -26,6 +33,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const { id } = await params;
     const acceso = await cargarProyectoConAcceso(id);
     if (!acceso.project) return NextResponse.json({ error: "no encontrado" }, { status: acceso.status });
+    if (acceso.project.isTemplate && !(await isAdmin())) return PLANTILLA_PROTEGIDA;
     const body = await req.json();
     const data = projectUpdateSchema.parse(body);
     const project = await prisma.project.update({
@@ -45,6 +53,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   const { id } = await params;
   const acceso = await cargarProyectoConAcceso(id);
   if (!acceso.project) return NextResponse.json({ error: "no encontrado" }, { status: acceso.status });
+  if (acceso.project.isTemplate && !(await isAdmin())) return PLANTILLA_PROTEGIDA;
   await prisma.project.delete({ where: { id } });
   return NextResponse.json({ ok: true });
 }
