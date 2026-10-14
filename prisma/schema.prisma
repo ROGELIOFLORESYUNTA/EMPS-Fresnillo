@@ -235,7 +235,7 @@ model Estimate {
   // Auditoria (RNF-03)
   parametersSnapshot String @db.LongText // JSON con copia de los Parameters usados
   inputsSnapshot     String @db.LongText // JSON con los inputs usados (modules count, complexities, etc.)
-  explanationJson    String? // cadena de calculo paso a paso ("de donde sale este numero")
+  explanationJson    String? @db.LongText // cadena de calculo paso a paso ("de donde sale este numero")
 
   createdById String?
   createdAt   DateTime @default(now())
@@ -270,7 +270,7 @@ model ChangeRequest {
   decidedAt           DateTime?
   // Addendum v6 — campos opcionales del SDS 28
   phaseAtRequest      String?
-  clientOriginalText  String?
+  clientOriginalText  String? @db.Text
   approvedBy          String?
   approvalDate        DateTime?
   baselineVersion     Int?
@@ -331,8 +331,8 @@ model ChangeImpactAssessment {
   decidedBy              String?
   decidedAt              DateTime?
 
-  explanationJson        String
-  questionsToClarifyJson String
+  explanationJson        String @db.LongText
+  questionsToClarifyJson String @db.LongText
   parametersSnapshot     String @db.LongText
 
   // === Addendum v7 (campos opcionales, migracion aditiva) ===
@@ -585,7 +585,7 @@ model MLModelRegistry {
   modelName            String
   targetVariable       String // effort_hours | change_risk | cost_deviation | mode_factor
   algorithm            String @db.Text // linear_regression | random_forest | gradient_boosting | ...
-  trainingDatasetNotes String?
+  trainingDatasetNotes String? @db.Text
   featureSchema        String? @db.LongText // JSONB en Postgres
   modelArtifactPath    String?
   status               String    @default("draft") // draft | trained | approved | retired
@@ -661,8 +661,8 @@ model LiveSourceSnapshot {
   checkedAt      DateTime  @default(now())
   contentHash    String?
   httpStatus     Int?
-  extractedText  String?
-  extractedJson  String? // JSONB
+  extractedText  String? @db.Text
+  extractedJson  String? @db.LongText // JSONB
   changeDetected Boolean   @default(false)
   reviewStatus   String    @default("pending") // pending | approved | rejected
   reviewedBy     String?
@@ -684,7 +684,7 @@ model FiscalParameterVersion {
   parameterName    String
   jurisdiction     String    @default("MX") // MX | MX-ZAC | MX-FRESNILLO | ...
   valueNumeric     Decimal?
-  valueText        String?
+  valueText        String? @db.Text
   unit             String?
   validFrom        DateTime?
   validTo          DateTime?
@@ -711,7 +711,7 @@ model ParameterChangeReview {
   detectedAt       DateTime  @default(now())
   riskLevel        String    @default("medium") // low | medium | high | critical
   decision         String    @default("pending") // pending | accepted | rejected
-  reviewerNotes    String?
+  reviewerNotes    String? @db.Text
   decidedBy        String?
   decidedAt        DateTime?
 
@@ -996,7 +996,7 @@ model ObservatorioFuente {
   idioma          String? // es | en | null = cualquiera
   activa          Boolean   @default(true)
   ultimaCosechaEl DateTime?
-  notas           String?
+  notas           String? @db.Text
   createdAt       DateTime  @default(now())
 
   comentarios ObservatorioComentario[]
@@ -1018,7 +1018,7 @@ model ObservatorioComentario {
 
   // Texto crudo. Las politicas de YouTube obligan a borrarlo o refrescarlo a
   // los 30 dias; el analisis derivado si se conserva. Lo hace POST /purgar.
-  textoOriginal String?
+  textoOriginal String? @db.Text
   textoExpiraEl DateTime?
   cosechadoEl   DateTime  @default(now())
 
@@ -1033,10 +1033,10 @@ model ObservatorioComentario {
   tamanoEquipo           Int?
   desviacion             String? // mas | igual | menos | no_dice
   desviacionPct          Decimal?
-  causasJson             String? // JSON: lista de la taxonomia cerrada
+  causasJson             String? @db.LongText // JSON: lista de la taxonomia cerrada
   confianza              String? // alta | media | baja
-  citasJson              String? // JSON: { campo: "frase textual de donde salio" }
-  razonamiento           String?
+  citasJson              String? @db.LongText // JSON: { campo: "frase textual de donde salio" }
+  razonamiento           String? @db.Text
   errorAnalisis          String? // si fallo, por que; para reintentar despues
 
   // --- Validacion del anotador (acuerdo entre el modelo y una persona) ---
