@@ -47,6 +47,7 @@ Comandos útiles:
 | `npm run e2e` | Tests end-to-end con Playwright |
 | `npm run db:studio` | Interfaz visual de la base de datos (Prisma Studio) |
 | `npm run db:reset` | Borra la DB y siembra desde cero |
+| `npx tsx prisma/seed-ejemplo-desarrollador.ts` | Crea el proyecto de ejemplo del lado del desarrollador (clínica dental, trabajo propio); se puede repetir sin riesgo. También hay que correrlo en el servidor después de desplegar la versión de dos lados (en una base nueva, antes corre `ensure-ejemplo-publico.ts`) |
 | `npm run screenshots` | Genera capturas automáticas en `docs/screenshots/` |
 | `npm run typecheck` | Valida TypeScript |
 
