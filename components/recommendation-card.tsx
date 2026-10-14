@@ -1,16 +1,13 @@
 /**
- * Tarjeta "¿Cuál opción te conviene?" - presenta la recomendación del motor
- * (lib/engine/recommendation.ts) con sus razones y advertencias en lenguaje
- * llano. Server component presentacional: recibe todo por props.
+ * "¿Cuál te conviene?": la recomendación del motor (lib/engine/recommendation.ts)
+ * en dos renglones y un botón. El primero dice la opción y su precio; el
+ * segundo, la razón principal. Las demás razones, las advertencias, lo que se
+ * descartó y la segunda opción quedan en "Ver todas las razones", plegado.
+ * Server component presentacional: recibe todo por props.
  */
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Sparkles, AlertTriangle, Eye } from "lucide-react";
-import { formatMXN, DEVELOPMENT_MODES, SCENARIO_LABELS, labelOf } from "@/lib/utils";
-import { InfoTip } from "@/components/info-tip";
-import { ElegirOpcionButton } from "@/components/elegir-opcion-button";
+import { nombreDeForma, NOMBRE_DE_ESCENARIO, NOMBRE_TECNICO_DE_FORMA } from "@/lib/formas";
+import { pesos } from "@/lib/graficas";
 import type { RecommendationResult } from "@/lib/engine/recommendation";
 
 export function RecommendationCard({
@@ -25,107 +22,108 @@ export function RecommendationCard({
   selectedScenario: string;
 }) {
   const r = recommendation;
-  const modeLabels = Object.fromEntries(DEVELOPMENT_MODES.map((m) => [m.value, m.label]));
-  const modeLabel = modeLabels[r.best.mode] ?? r.best.mode;
-  const scenarioLabel = labelOf(SCENARIO_LABELS, r.best.scenario);
+  const escenario = (s: string) => NOMBRE_DE_ESCENARIO[s] ?? s;
   const isViewing = r.best.mode === selectedMode && r.best.scenario === selectedScenario;
 
-  const headline =
+  const intro =
     r.roleUsed === "operador_municipal"
-      ? "Como personal del Ayuntamiento, te conviene presupuestar con:"
+      ? "Como personal del Ayuntamiento, te conviene presupuestar con"
       : r.roleUsed === "proveedor"
-        ? "Como proveedor, te conviene cotizar con:"
-        : "Comparando precio, riesgo y tiempo, la opción más equilibrada es:";
+        ? "Te conviene cotizar con"
+        : "La opción más equilibrada es";
+
+  const masRazones = r.reasons.slice(1);
+  const hayMas = masRazones.length > 0 || r.warnings.length > 0 || r.excluidos.length > 0 || !!r.runnerUp || r.roleUsed === "neutral";
 
   return (
-    <Card className="border-primary/40 bg-primary/[0.03]">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-primary" />
-          ¿Cuál opción te conviene?
-          <InfoTip title="¿Cómo se elige?">
-            El sistema compara las opciones ya calculadas de este proyecto con reglas fijas (no adivina): descarta las de
-            riesgo crítico y las formas de hacerlo que no sirven para este proyecto (por sus integraciones, datos
-            personales, criticidad o claridad), y pondera precio, riesgo y tiempo según quién eres. Abajo están las razones con las cifras
-            reales. La decisión final siempre es tuya.
-          </InfoTip>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <p className="text-sm text-muted-foreground">{headline}</p>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xl font-bold">{modeLabel}</span>
-          <Badge variant="secondary">escenario {scenarioLabel}</Badge>
-          <span className="text-xl font-bold text-primary">{formatMXN(r.bestOption.total)}</span>
-          {isViewing && <Badge variant="success">Estás viendo esta opción</Badge>}
+    <section aria-labelledby="cual-te-conviene" className="border-l-4 border-marino pl-5">
+      <h2 id="cual-te-conviene" className="text-seccion text-tinta">
+        ¿Cuál te conviene?
+      </h2>
+      <p className="mt-2 text-base text-tinta">
+        {intro}{" "}
+        <strong className="font-semibold" title={NOMBRE_TECNICO_DE_FORMA[r.best.mode]}>
+          {nombreDeForma(r.best.mode)}
+        </strong>
+        , escenario {escenario(r.best.scenario)}: <strong className="font-semibold">{pesos(r.bestOption.total)}</strong>.
+        {isViewing && " Es la opción que estás viendo."}
+      </p>
+      {r.reasons[0] && <p className="mt-1 text-base text-tinta-suave">{r.reasons[0]}</p>}
+
+      {!isViewing && (
+        <div className="mt-3">
+          <Link
+            href={`/projects/${projectId}?mode=${r.best.mode}&scenario=${r.best.scenario}`}
+            scroll={false}
+            className="inline-flex min-h-11 items-center rounded-lg border border-marino px-5 text-base font-semibold text-marino transition-colors hover:bg-papel"
+          >
+            Ver esta opción
+          </Link>
         </div>
+      )}
 
-        <ul className="list-disc list-inside space-y-1.5 text-sm marker:text-primary">
-          {r.reasons.map((reason, i) => (
-            <li key={i}>{reason}</li>
-          ))}
-        </ul>
+      {hayMas && (
+        <details className="mt-2">
+          <summary className="inline-flex min-h-11 cursor-pointer items-center text-base font-semibold text-accion underline-offset-4 hover:underline">
+            Ver todas las razones
+          </summary>
+          <div className="space-y-4 pb-1 pt-1 text-base">
+            {masRazones.length > 0 && (
+              <ul className="list-inside list-disc space-y-1.5 marker:text-marino">
+                {masRazones.map((reason, i) => (
+                  <li key={i}>{reason}</li>
+                ))}
+              </ul>
+            )}
 
-        {r.warnings.length > 0 && (
-          <div className="border-l-4 border-amber-400 bg-amber-50/60 rounded-md p-3 space-y-1">
-            {r.warnings.map((w, i) => (
-              <p key={i} className="text-xs text-amber-950 flex gap-1.5">
-                <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0 text-amber-600" />
-                <span>{w}</span>
+            {r.warnings.length > 0 && (
+              <div className="space-y-1 border-l-4 border-amber-600 pl-4">
+                {r.warnings.map((w, i) => (
+                  <p key={i} className="text-amber-950">
+                    {w}
+                  </p>
+                ))}
+              </div>
+            )}
+
+            {r.excluidos.length > 0 && (
+              <div className="space-y-1">
+                <p className="font-semibold">Descartadas para este proyecto, aunque salgan más baratas:</p>
+                {r.excluidos.map((x) => (
+                  <p key={x.mode} className="text-tinta-suave">
+                    <strong className="font-semibold text-tinta" title={NOMBRE_TECNICO_DE_FORMA[x.mode]}>
+                      {nombreDeForma(x.mode)}
+                    </strong>{" "}
+                    ({pesos(x.total)}): {x.razones[0]}
+                  </p>
+                ))}
+              </div>
+            )}
+
+            {r.runnerUp && (
+              <p className="text-tinta-suave">
+                Segunda opción: <strong className="font-semibold text-tinta">{nombreDeForma(r.runnerUp.mode)}</strong>, escenario{" "}
+                {escenario(r.runnerUp.scenario)}. {r.runnerUp.why}
               </p>
-            ))}
-          </div>
-        )}
+            )}
 
-        {r.excluidos.length > 0 && (
-          <div className="rounded-md border bg-muted/40 p-3 space-y-1">
-            <p className="text-xs font-medium">Descartadas para este proyecto, aunque salgan más baratas:</p>
-            {r.excluidos.map((x) => (
-              <p key={x.mode} className="text-xs text-muted-foreground">
-                <strong>{modeLabels[x.mode] ?? x.mode}</strong> ({formatMXN(x.total)}): {x.razones[0]}
+            {r.roleUsed === "neutral" && (
+              <p className="text-tinta-suave">
+                ¿Trabajas en un Ayuntamiento o eres proveedor?{" "}
+                <Link href="/mi-cuenta" className="font-medium text-accion underline underline-offset-4">
+                  Dinos en Mi cuenta
+                </Link>{" "}
+                y la recomendación se ajusta a tu caso.
               </p>
-            ))}
+            )}
+
+            <p className="text-tinta-suave">
+              Así se elige: el sistema compara las opciones ya calculadas de este proyecto con reglas fijas, sin adivinar. Descarta las de riesgo crítico y las formas
+              de hacerlo que no sirven para este proyecto, y pondera precio, riesgo y tiempo según quién eres. La decisión final siempre es tuya.
+            </p>
           </div>
-        )}
-
-        {r.runnerUp && (
-          <p className="text-xs text-muted-foreground">
-            Segunda opción: <strong>{modeLabels[r.runnerUp.mode] ?? r.runnerUp.mode}</strong> ·{" "}
-            {labelOf(SCENARIO_LABELS, r.runnerUp.scenario)}. {r.runnerUp.why}
-          </p>
-        )}
-
-        {r.roleUsed === "neutral" && (
-          <p className="text-xs text-muted-foreground">
-            ¿Trabajas en un Ayuntamiento o eres proveedor?{" "}
-            <Link href="/mi-cuenta" className="text-primary underline hover:no-underline">
-              Dinos en Mi cuenta
-            </Link>{" "}
-            y la recomendación se ajusta a tu caso.
-          </p>
-        )}
-
-        <div className="flex flex-wrap items-center gap-2 pt-1">
-          {!isViewing && (
-            <Button size="sm" variant="outline" asChild>
-              <Link href={`/projects/${projectId}?mode=${r.best.mode}&scenario=${r.best.scenario}`}>
-                <Eye className="w-4 h-4 mr-1.5" />
-                Ver esta opción
-              </Link>
-            </Button>
-          )}
-          <ElegirOpcionButton
-            projectId={projectId}
-            mode={r.best.mode}
-            scenario={r.best.scenario}
-            modeLabel={modeLabel}
-            scenarioLabel={scenarioLabel}
-            recommendedMode={r.best.mode}
-            recommendedScenario={r.best.scenario}
-            variant="recomendada"
-          />
-        </div>
-      </CardContent>
-    </Card>
+        </details>
+      )}
+    </section>
   );
 }

@@ -20,7 +20,13 @@ function valorLegible(p: PasoDeCalculo) {
  * usuario tenga seleccionada, así que al cambiar de forma de hacerlo o de
  * escenario se ve moverse cada paso.
  */
-export function ExplicacionDelNumero(p: { pasos: PasoDeCalculo[]; modoLabel: string; escenarioLabel: string }) {
+export function ExplicacionDelNumero(p: {
+  pasos: PasoDeCalculo[];
+  modoLabel: string;
+  escenarioLabel: string;
+  /** El resumen en una línea (equipo, IA, otros gastos, utilidad, IVA y total), siempre a la vista. */
+  resumen?: string;
+}) {
   if (p.pasos.length === 0) {
     return (
       <Card>
@@ -33,13 +39,14 @@ export function ExplicacionDelNumero(p: { pasos: PasoDeCalculo[]; modoLabel: str
   }
   const total = p.pasos[p.pasos.length - 1];
   return (
-    <Card>
-      <details open>
+    <Card className="shadow-none">
+      <details>
         <summary className="cursor-pointer list-none">
           <CardHeader>
             <CardTitle className="text-base">De dónde sale este número: {valorLegible(total)}</CardTitle>
+            {p.resumen && <p className="text-base text-foreground">{p.resumen}.</p>}
             <CardDescription>
-              {p.modoLabel}, escenario {p.escenarioLabel}. Cada renglón sale del anterior; puedes rehacer la cuenta con calculadora. Cambia la forma de hacerlo o el escenario arriba y la cadena se vuelve a calcular.
+              {p.modoLabel}, escenario {p.escenarioLabel}. Toca para ver la cadena completa: cada renglón sale del anterior y puedes rehacer la cuenta con calculadora. Si cambias la forma de hacerlo o el escenario, la cadena se vuelve a calcular.
             </CardDescription>
           </CardHeader>
         </summary>

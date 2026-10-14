@@ -5,11 +5,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
-import { formatMXN, formatHours, formatWeeks, RISK_LEVELS, DEVELOPMENT_MODES, STATUS_LABELS, PRIORITY_LABELS, SYSTEM_TYPE_LABELS, SCENARIO_LABELS, CONTRACT_LABELS, ROLE_LABELS, LEVEL_LABELS, labelOf } from "@/lib/utils";
-import { FileText, Calculator, Users, Layers, GitPullRequest, TrendingUp, TrendingDown, Activity, CheckCircle2, Circle, ArrowRight, ClipboardCheck } from "lucide-react";
+import { formatMXN, formatHours, formatWeeks, RISK_LEVELS, STATUS_LABELS, PRIORITY_LABELS, SYSTEM_TYPE_LABELS, SCENARIO_LABELS, CONTRACT_LABELS, ROLE_LABELS, LEVEL_LABELS, labelOf } from "@/lib/utils";
+import { FileText, Calculator, Users, Layers, GitPullRequest, TrendingDown, CheckCircle2, Circle, ArrowRight, ClipboardCheck } from "lucide-react";
 import { RecalcularButton } from "@/components/recalcular-button";
 import { Breadcrumbs } from "@/components/breadcrumbs";
-import { ModeScenarioSelector } from "@/components/mode-scenario-selector";
 import { InfoTip } from "@/components/info-tip";
 import { RecommendationCard } from "@/components/recommendation-card";
 import { DecisionSection, type DecisionTimelineItem } from "@/components/decision-section";
@@ -23,12 +22,16 @@ import { getLado } from "@/lib/lado-server";
 import { TresRespuestas } from "@/components/tres-respuestas";
 import { CompartirEnlace } from "@/components/compartir-enlace";
 import { ExplicacionDelNumero } from "@/components/explicacion-del-numero";
-import { TarjetasDeOpcion, PorQueImportaLaForma, type TarjetaDeOpcion } from "@/components/tarjetas-de-opcion";
+import { PorQueImportaLaForma } from "@/components/tarjetas-de-opcion";
+import { GraficaComposicion } from "@/components/grafica-composicion";
+import { GraficaFormas } from "@/components/grafica-formas";
+import { GraficaFlujo } from "@/components/grafica-flujo";
+import { composicionDelPrecio, filasDeFormas, titularDeFormas, modeloDeFlujo, fraseDelBache } from "@/lib/graficas";
+import { NOMBRE_DE_FORMA } from "@/lib/formas";
 import { PreguntasDelPatron } from "@/components/preguntas-del-patron";
 import { EncuestaPiloto } from "@/components/encuesta-piloto";
 import { computeOnTimeRisk, computeMunicipalQuebrarRisk, computeProviderViabilityRatio, computeMaintenanceMonthly, computeChangeRangeByType, factorHorasCambio } from "@/lib/engine/reports-insights";
 import { loadChangeImpactParameters } from "@/lib/parameters";
-import { VEREDICTO_ETIQUETA } from "@/lib/engine/aptitud";
 import { NIVEL_ETIQUETA, type NivelHerramienta } from "@/lib/engine/herramientas";
 import type { PasoDeCalculo } from "@/lib/engine/explicacion";
 
@@ -60,7 +63,8 @@ export default async function ProjectDetailPage({
   const visitorWorkspace = await peekWorkspace();
   // Rol para personalizar la recomendación: lo implica el lado del host, ya no
   // se pregunta (desarrollador es proveedor; ayuntamiento, operador municipal).
-  const visitorRole: RecommendationRole = rolDeLado(await getLado());
+  const lado = await getLado();
+  const visitorRole: RecommendationRole = rolDeLado(lado);
 
   // Tomar último (mode, scenario) único - soporta múltiples versiones por modo.
   // Orden lógico: modos de más lento a más rápido, escenarios optimista->probable->conservador.
@@ -114,7 +118,8 @@ export default async function ProjectDetailPage({
     });
 
   const workingCapitalRequired = project.cashflow[0]?.workingCapitalRequired ?? 0;
-  const modeLabels = Object.fromEntries(DEVELOPMENT_MODES.map((m) => [m.value, m.label]));
+  // Nombres llanos (A mano, Con IA...); el técnico queda en el atributo title de las gráficas.
+  const modeLabels = NOMBRE_DE_FORMA;
   const scenarioLabels: Record<string, string> = {
     optimistic: "optimista",
     probable: "probable",
@@ -315,29 +320,64 @@ export default async function ProjectDetailPage({
     ? { usuarios: herramientasSel.usuariosFinales, usdPorUsuario: herramientasSel.usdPorUsuarioFinal, mensualMXN: herramientasSel.mensualUsuariosFinalesMXN, supuestos: herramientasSel.usuariosFinalesSupuestos }
     : null;
 
-  // Tres tarjetas en lugar de 15 renglones: la recomendada, la elegida y la más segura.
-  const buscar = (mode?: string | null, scenario?: string | null) =>
-    mode && scenario ? latestEstimates.find((e) => e.mode === mode && e.scenario === scenario) ?? null : null;
-  const tarjeta = (titulo: string, e: (typeof latestEstimates)[number] | null, porque: string): TarjetaDeOpcion => ({
-    titulo,
-    modoLabel: e ? modeLabels[e.mode] ?? e.mode : "",
-    escenarioLabel: e ? scenarioLabels[e.scenario] ?? e.scenario : "",
-    total: e ? Number(e.total) : null,
-    semanas: e?.weeksTotal != null ? Number(e.weeksTotal) : null,
-    riskLevel: e?.riskLevel ?? null,
-    veredicto: e ? VEREDICTO_ETIQUETA[aptitud[e.mode]?.veredicto ?? "apto"] : null,
-    porque: e ? `${porque} Herramientas de IA: ${formatMXN(leerSnapshot(e)?.herramientas?.mensualMXN ?? 0)} al mes, ya en el precio.` : porque,
-    href: e ? `/projects/${id}?mode=${e.mode}&scenario=${e.scenario}` : `/projects/${id}`,
-    activa: !!e && e.mode === selectedMode && e.scenario === selectedScenario,
+  // El detalle de "de dónde sale este precio": lo comparten la respuesta de arriba y la tarjeta del resumen.
+  const infoPrecio = (
+    <>
+                  <strong>Costo del proyecto</strong> durante los meses reales de la forma de hacerlo elegida: el equipo con sus cargas (sueldo + IMSS + INFONAVIT + ISN/UAZ + prestaciones LFT), las herramientas de IA de esa forma de hacerlo, otras herramientas y administración. Si el proyecto pasa de 6 meses con personal en nómina, suma indemnización LFT por terminación de contrato.
+                  <br /><br />
+                  Sobre ese costo se aplica el margen objetivo y el IVA 16%. Cambia la forma de hacerlo arriba: el precio sube o baja porque cada forma tarda distinto.
+                  <br /><br />
+                  Fuente: motor de cálculo, parámetros 2026 (DOF, CONASAMI, IMSS, SEFIN Zacatecas).
+    </>
+  );
+
+  // ===== Lo que dibujan las gráficas y las frases de arriba =====
+  // La opción que se ve de verdad: si la pedida en la dirección no tiene
+  // estimación, la pantalla cae a otra y las gráficas deben seguirla.
+  const modoVisto = selectedEstimate?.mode ?? selectedMode;
+  const escenarioVisto = selectedEstimate?.scenario ?? selectedScenario;
+  const soloTuTiempo = project.team.length > 0 && project.team.every((t) => t.contractType === "propio");
+  // "No aplica: cliente privado" y "Por definir" no dicen nada: no se muestran.
+  const mostrarArea = !/^(no aplica|por definir)/i.test(project.municipalArea.trim());
+  const hrefReporte = `/projects/${id}/reports/${visitorRole === "proveedor" ? "provider" : "municipal"}`;
+
+  const composicion = selectedEstimate
+    ? composicionDelPrecio(
+        {
+          directCost: selectedEstimate.directCost,
+          indirectCost: selectedEstimate.indirectCost,
+          subtotal: selectedEstimate.subtotal,
+          vat: selectedEstimate.vat,
+          total: selectedEstimate.total,
+          margin: selectedEstimate.margin,
+          explanationJson: selectedEstimate.explanationJson,
+          inputsSnapshot: selectedEstimate.inputsSnapshot,
+        },
+        { lado, soloTuTiempo },
+      )
+    : null;
+
+  const datosFormas = filasDeFormas({
+    estimaciones: latestEstimates.map((e) => ({
+      mode: e.mode,
+      scenario: e.scenario,
+      total: Number(e.total),
+      weeksTotal: e.weeksTotal !== null ? Number(e.weeksTotal) : null,
+    })),
+    aptitud,
+    modoSeleccionado: modoVisto,
+    escenario: escenarioVisto,
+    modoRecomendado: recommendation?.best.mode ?? null,
   });
-  const estRecomendada = buscar(recommendation?.best.mode, recommendation?.best.scenario);
-  const estElegida = buscar(activeDecision?.mode, activeDecision?.scenario);
-  const estSegura = buscar(activeDecision?.mode ?? recommendation?.best.mode ?? selectedMode, "conservative");
-  const tarjetas: TarjetaDeOpcion[] = [
-    tarjeta("Recomendada para ti", estRecomendada, recommendation?.reasons[0] ?? "Aún no hay recomendación: corre la estimación comparando las 5 formas de hacerlo."),
-    tarjeta("La que elegiste", estElegida, activeDecision ? (activeDecision.note || `Elegida el ${activeDecision.createdAt.toLocaleDateString("es-MX")}.`) : "Cuando elijas una opción con el botón de arriba, aquí aparece."),
-    tarjeta("La más segura", estSegura, "La misma forma de hacerlo con margen por si hay tropiezos: es lo más que podrías llegar a pagar."),
-  ];
+  const totalDeLaForma = (scenario: string) => {
+    const e = latestEstimates.find((x) => x.mode === modoVisto && x.scenario === scenario);
+    return e ? Number(e.total) : null;
+  };
+  const rangoDeLaForma = { optimista: totalDeLaForma("optimistic"), conservador: totalDeLaForma("conservative") };
+
+  const modeloFlujo = modeloDeFlujo(project.cashflow, totalSel);
+  const fraseFlujo = modeloFlujo ? fraseDelBache(modeloFlujo, lado) : "";
+
 
   // Checklist de progreso
   const tieneDatos = !!project.name && !!project.objective;
@@ -355,216 +395,9 @@ export default async function ProjectDetailPage({
   const pasosCompletos = pasos.filter((p) => p.done).length;
   const siguientePaso = pasos.find((p) => !p.done);
 
-  return (
-    <div className="space-y-6">
-      <Breadcrumbs items={[
-        { label: "Mis proyectos", href: "/projects" },
-        { label: project.name },
-      ]} />
-
-      {project.isTemplate && (
-        <div className="rounded-lg border border-amber-300 bg-amber-50/70 px-4 py-3">
-          <p className="font-semibold text-amber-950">Esto es un ejemplo, para que veas cómo funciona</p>
-          <p className="text-sm text-amber-900 mt-0.5">
-            {ladoDelProyecto(project.lado) === "ayuntamiento" ? "Es un proyecto municipal ya capturado" : "Es un proyecto ya capturado"}, con cifras calculadas de verdad. Recórrelo completo: los
-            módulos, el equipo, la comparación de opciones, el flujo de efectivo y los reportes. No es tuyo y no
-            aparece en tus proyectos.{" "}
-            <Link href="/projects/new" className="underline font-medium hover:text-amber-950">
-              Crear el mío
-            </Link>
-          </p>
-        </div>
-      )}
-
-      {/* Vino de Cotizar en un minuto: la cifra sale de valores típicos; invitar a afinar */}
-      {project.notes?.startsWith("Creado con Cotizar en un minuto") && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50/60 p-4 text-sm flex flex-wrap items-center justify-between gap-3">
-          <div className="max-w-2xl">
-            <p className="font-medium text-amber-900">Esta cifra sale de valores típicos</p>
-            <p className="text-amber-800">Cada parte se tomó de tamaño mediano y el equipo es un desarrollador. Afina los módulos y el equipo, vuelve a calcular, y el número será el tuyo.</p>
-          </div>
-          <div className="flex gap-2">
-            <Button size="sm" asChild><Link href={`/projects/${id}/modules`}>Afinar módulos</Link></Button>
-            <Button size="sm" variant="outline" asChild><Link href={`/projects/${id}/team`}>Afinar equipo</Link></Button>
-          </div>
-        </div>
-      )}
-
-      {/* Encabezado */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">{project.name}</h1>
-          <p className="text-muted-foreground">Cliente: {project.client} · {project.municipalArea}</p>
-          <div className="flex gap-2 mt-2 flex-wrap">
-            <Badge variant="outline">{labelOf(STATUS_LABELS, project.status)}</Badge>
-            <Badge variant="secondary">Prioridad {labelOf(PRIORITY_LABELS, project.priority).toLowerCase()}</Badge>
-            <Badge variant="outline">{labelOf(SYSTEM_TYPE_LABELS, project.systemType)}</Badge>
-          </div>
-          {activeDecision && (
-            <p className="mt-2 text-sm">
-              <strong>Decisión:</strong> {modeLabels[activeDecision.mode] ?? activeDecision.mode}, escenario {scenarioLabels[activeDecision.scenario] ?? activeDecision.scenario}, {formatMXN(Number(activeDecision.totalAtDecision))}, elegida el {activeDecision.createdAt.toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" })}{activeDecision.decidedByName ? ` por ${activeDecision.decidedByName}` : ""}.
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* Lo primero: cuánto, cuándo, si alcanza y qué se eligió */}
-      {selectedEstimate && totalSel != null && (
-        <TresRespuestas
-          total={totalSel}
-          semanas={semanasSel}
-          presupuesto={project.estimatedBudget != null ? Number(project.estimatedBudget) : null}
-          onTime={onTime}
-          modoLabel={modeLabels[selectedEstimate.mode] ?? selectedEstimate.mode}
-          escenarioLabel={scenarioLabels[selectedEstimate.scenario] ?? selectedEstimate.scenario}
-          decision={activeDecision ? {
-            modoLabel: modeLabels[activeDecision.mode] ?? activeDecision.mode,
-            escenarioLabel: scenarioLabels[activeDecision.scenario] ?? activeDecision.scenario,
-            fecha: activeDecision.createdAt,
-            por: activeDecision.decidedByName,
-          } : null}
-          esLaElegida={esLaElegida}
-          esRecomendada={esLaRecomendada}
-          hrefReporte={`/projects/${id}/reports/${visitorRole === "proveedor" ? "provider" : "municipal"}`}
-        />
-      )}
-
-      {/* Acerca de este proyecto - campos capturados en /projects/new que
-          antes no se mostraban (description, targetDate, estimatedBudget, responsable, objective). */}
-      {(project.description || project.objective || project.targetDate || project.estimatedBudget || project.responsible || project.notes) && (
-        <Card>
-          <details>
-          <summary className="cursor-pointer list-none"><CardHeader>
-            <CardTitle className="text-base">Acerca de este proyecto</CardTitle>
-            <CardDescription>Objetivo, descripción, responsable y notas. Haz clic para verlos; para cambiarlos, editar el proyecto.</CardDescription>
-          </CardHeader></summary>
-          <CardContent className="grid sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
-            {project.objective && (
-              <div className="sm:col-span-2">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Objetivo</p>
-                <p className="mt-0.5">{project.objective}</p>
-              </div>
-            )}
-            {project.description && (
-              <div className="sm:col-span-2">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Descripción</p>
-                <p className="mt-0.5 whitespace-pre-wrap">{project.description}</p>
-              </div>
-            )}
-            {project.responsible && (
-              <div>
-                <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Responsable</p>
-                <p className="mt-0.5">{project.responsible}</p>
-              </div>
-            )}
-            {project.targetDate && (
-              <div>
-                <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Fecha objetivo</p>
-                <p className="mt-0.5">{new Date(project.targetDate).toLocaleDateString("es-MX", { year: "numeric", month: "long", day: "numeric" })}</p>
-              </div>
-            )}
-            {project.estimatedBudget != null && (
-              <div>
-                <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">
-                  Presupuesto inicial estimado
-                  <InfoTip title="¿Por qué muestra esto?">
-                    Es el monto que se registró al crear el proyecto, antes de cualquier estimación detallada. Sirve como referencia para comparar contra el "Precio cotizado al cliente" que sale del motor (abajo). Si difieren mucho, hay que entender por qué.
-                  </InfoTip>
-                </p>
-                <p className="mt-0.5 font-mono">{formatMXN(Number(project.estimatedBudget))}</p>
-              </div>
-            )}
-            {project.notes && (
-              <div className="sm:col-span-2">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Notas</p>
-                <p className="mt-0.5 whitespace-pre-wrap text-muted-foreground">{project.notes}</p>
-              </div>
-            )}
-            <div className="sm:col-span-2 pt-2 mt-1 border-t border-dashed">
-              <p className="text-xs text-amber-800">
-                <strong>Aún no se captura:</strong> los términos del acuerdo con el cliente (% de anticipo, % de pagos parciales, % de pago final y plazo pactado). Mientras tanto, el flujo de efectivo se calcula con valores típicos. Puedes ajustarlos al correr la estimación.
-              </p>
-            </div>
-          </CardContent>
-        </details>
-        </Card>
-      )}
-
-      {/* Resultado real del proyecto (FASE H). Aparece cuando el proyecto está en
-          ejecución o cerrado, o si ya hay un resultado capturado. Alimenta la
-          validación de la hipótesis (estimado vs real). */}
-      {mostrarResultadoReal && (
-        <Card className={actualResult ? "border-green-200 bg-green-50/40" : "border-amber-200 bg-amber-50/40"}>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <ClipboardCheck className="w-4 h-4" />
-              Resultado real del proyecto
-            </CardTitle>
-            <CardDescription>
-              {actualResult
-                ? "Lo que costó y tardó de verdad. Esto retroalimenta el modelo y mide qué tan bien estimó el sistema."
-                : "Cuando el proyecto termine, registra aquí las horas y el costo reales. Con esto el sistema mide su propia precisión y alimenta la validación de la hipótesis para tu investigación."}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {actualResult ? (
-              <div className="space-y-4">
-                <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Horas estimadas</p>
-                    <p className="mt-0.5 font-mono">{estHoursTotal > 0 ? formatHours(estHoursTotal) : "—"}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Horas reales</p>
-                    <p className="mt-0.5 font-mono">{realHours != null ? formatHours(realHours) : "—"}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Costo estimado</p>
-                    <p className="mt-0.5 font-mono">{estCostTotal > 0 ? formatMXN(estCostTotal) : "—"}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Costo real</p>
-                    <p className="mt-0.5 font-mono">{realCost != null ? formatMXN(realCost) : "—"}</p>
-                  </div>
-                </div>
-                {(mapeHoursReal != null || mapeCostReal != null) && (
-                  <div className="flex flex-wrap gap-2">
-                    {mapeHoursReal != null && (
-                      <Badge variant={mapeHoursReal <= 15 ? "default" : mapeHoursReal <= 30 ? "secondary" : "outline"}>
-                        Error en horas: {mapeHoursReal.toFixed(1)}% {mapeHoursReal <= 15 ? "(preciso)" : mapeHoursReal <= 30 ? "(aceptable)" : "(impreciso)"}
-                      </Badge>
-                    )}
-                    {mapeCostReal != null && (
-                      <Badge variant={mapeCostReal <= 15 ? "default" : mapeCostReal <= 30 ? "secondary" : "outline"}>
-                        Error en costo: {mapeCostReal.toFixed(1)}%
-                      </Badge>
-                    )}
-                  </div>
-                )}
-                {actualResult.mainDeviationReason && (
-                  <p className="text-sm text-muted-foreground">
-                    <span className="font-semibold">Razón de la desviación:</span> {actualResult.mainDeviationReason}
-                  </p>
-                )}
-                <Button asChild variant="outline" size="sm">
-                  <Link href={`/projects/${id}/resultado-real`}>Editar resultado real</Link>
-                </Button>
-              </div>
-            ) : (
-              <Button asChild>
-                <Link href={`/projects/${id}/resultado-real`}>
-                  <ClipboardCheck className="w-4 h-4 mr-2" />
-                  Registrar resultado real
-                </Link>
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Checklist de progreso */}
-      <Card>
-        <details open={pasosCompletos < pasos.length}>
+  const bloqueProgreso = (
+      <Card className="shadow-none">
+        <details open={!tieneEstimacion}>
           <summary className="cursor-pointer list-none"><CardHeader>
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div>
@@ -616,48 +449,375 @@ export default async function ProjectDetailPage({
         </CardContent>
       </details>
       </Card>
+  );
 
-      {/* Selector de modo + escenario */}
-      {selectedTotal && (
-        <div className="space-y-2">
-          <ModeScenarioSelector currentMode={selectedMode} currentScenario={selectedScenario} />
-          {!project.isTemplate && selectedEstimate && (
-            <div className="flex justify-end">
-              <ElegirOpcionButton
-                projectId={id}
-                mode={selectedEstimate.mode}
-                scenario={selectedEstimate.scenario}
-                modeLabel={modeLabels[selectedEstimate.mode] ?? selectedEstimate.mode}
-                scenarioLabel={scenarioLabels[selectedEstimate.scenario] ?? selectedEstimate.scenario}
-                recommendedMode={recommendation?.best.mode}
-                recommendedScenario={recommendation?.best.scenario}
-                variant="actual"
-              />
-            </div>
+  return (
+    <div className="space-y-8">
+      <Breadcrumbs items={[
+        { label: "Mis proyectos", href: "/projects" },
+        { label: project.name },
+      ]} />
+
+      {project.isTemplate && (
+        <div className="border-l-4 border-marino pl-4">
+          <p className="text-base font-semibold text-tinta">Esto es un ejemplo, para que veas cómo funciona</p>
+          {lado === "ayuntamiento" && (
+            <p className="mt-0.5 text-base text-tinta-suave">
+              Es un proyecto municipal ya capturado, con cifras calculadas de verdad. Recórrelo completo: los módulos, el equipo, la comparación de opciones, el flujo de efectivo y los reportes. No es tuyo y no aparece en tus proyectos.
+            </p>
           )}
+          <Link href="/projects/new" className="inline-flex min-h-11 items-center text-base font-semibold text-accion underline underline-offset-4">
+            Crear el mío
+          </Link>
         </div>
       )}
 
-      {/* De dónde sale este número: la cadena de cálculo de la opción seleccionada */}
-      {selectedEstimate && (
-        <ExplicacionDelNumero
-          pasos={pasosExplicacion}
+      {/* Encabezado: el nombre, para quién es y en qué va */}
+      <header>
+        <h1 className="text-titulo text-tinta">{project.name}</h1>
+        <p className="mt-2 text-base text-tinta-suave">
+          Cliente: {project.client}{mostrarArea ? ` · ${project.municipalArea}` : ""}
+        </p>
+        <p className="mt-1 text-sm text-tinta-suave">
+          {labelOf(STATUS_LABELS, project.status)} · Prioridad {labelOf(PRIORITY_LABELS, project.priority).toLowerCase()} · {labelOf(SYSTEM_TYPE_LABELS, project.systemType)}
+        </p>
+      </header>
+
+      {/* Sin estimación todavía: lo primero es seguir los pasos */}
+      {!tieneEstimacion && bloqueProgreso}
+
+      {/* 1. Las cuatro respuestas: cuánto, cuándo, si alcanza y qué se eligió */}
+      {selectedEstimate && totalSel != null && (
+        <TresRespuestas
+          total={totalSel}
+          semanas={semanasSel}
+          presupuesto={project.estimatedBudget != null ? Number(project.estimatedBudget) : null}
+          onTime={onTime}
           modoLabel={modeLabels[selectedEstimate.mode] ?? selectedEstimate.mode}
           escenarioLabel={scenarioLabels[selectedEstimate.scenario] ?? selectedEstimate.scenario}
+          margen={Number(selectedEstimate.margin)}
+          rango={rangoDeLaForma}
+          perspectiva={lado}
+          soloTuTiempo={soloTuTiempo}
+          incluyeIA={composicion?.segmentos.some((s) => s.clave === "ia") ?? false}
+          decision={activeDecision ? {
+            modoLabel: modeLabels[activeDecision.mode] ?? activeDecision.mode,
+            escenarioLabel: scenarioLabels[activeDecision.scenario] ?? activeDecision.scenario,
+            fecha: activeDecision.createdAt,
+            por: activeDecision.decidedByName,
+          } : null}
+          esLaElegida={esLaElegida}
+          esRecomendada={esLaRecomendada}
+          infoPrecio={infoPrecio}
         />
       )}
 
-      {/* Recomendación según quién usa el sistema */}
+      {/* Vino de Cotizar en un minuto: la cifra sale de valores típicos; invitar a afinar */}
+      {project.notes?.startsWith("Creado con Cotizar en un minuto") && (
+        <div className="flex flex-wrap items-center justify-between gap-3 border-l-4 border-marino pl-4">
+          <div className="max-w-2xl">
+            <p className="text-base font-semibold text-tinta">Esta cifra sale de valores típicos</p>
+            <p className="text-base text-tinta-suave">
+              Cada parte se tomó de tamaño mediano y el equipo es {soloTuTiempo ? "tu tiempo, sin cargas de nómina" : "una persona a sueldo"}. Afina los módulos y el equipo, vuelve a calcular, y el número será el tuyo.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Link href={`/projects/${id}/modules`} className="inline-flex min-h-11 items-center rounded-lg bg-marino px-5 text-base font-semibold text-white transition-colors hover:bg-marino/90">Afinar módulos</Link>
+            <Link href={`/projects/${id}/team`} className="inline-flex min-h-11 items-center rounded-lg border border-marino px-5 text-base font-semibold text-marino transition-colors hover:bg-papel">Afinar equipo</Link>
+          </div>
+        </div>
+      )}
+
+      {/* 2. De qué se compone el precio */}
+      {composicion && (
+        <GraficaComposicion segmentos={composicion.segmentos} total={composicion.total} titular={composicion.titular} />
+      )}
+
+      {/* 3. Las cinco formas de hacerlo, con su rango */}
+      {latestEstimates.length > 0 && (
+        <div className="space-y-3">
+          <GraficaFormas
+            datos={datosFormas}
+            titular={titularDeFormas(datosFormas)}
+            ayuda="Cada barra va de lo optimista a lo conservador y el punto oscuro es el escenario que ves. Toca una forma para ver sus cifras arriba."
+            escenario={escenarioVisto}
+            hrefBase={`/projects/${id}`}
+          />
+          <details className="rounded-lg border bg-lienzo">
+              <summary className="cursor-pointer px-4 py-3 text-base font-semibold text-tinta">Ver las 15 combinaciones en una tabla (versión {latestVersion})</summary>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Forma de hacerlo</TableHead>
+                  <TableHead>Escenario</TableHead>
+                  <TableHead className="text-right">Horas</TableHead>
+                  <TableHead className="text-right">Semanas</TableHead>
+                  <TableHead className="text-right">
+                    Prototipo
+                    <InfoTip title="¿Qué es el prototipo?">
+                      Semanas para tener una PRIMERA versión funcionando que ya se puede enseñar al área usuaria. El resto de las semanas se usa en terminar, probar y endurecer el sistema.
+                    </InfoTip>
+                  </TableHead>
+                  <TableHead className="text-right">Subtotal</TableHead>
+                  <TableHead className="text-right">IVA</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead>
+                    Riesgo
+                    <InfoTip title="¿De dónde sale el riesgo?">
+                      Combina 5 factores del proyecto: qué tan complejo es técnicamente, qué tan claros están los requisitos, el riesgo fiscal-laboral del equipo, el riesgo de flujo de efectivo y la probabilidad de cambios. Bajo = todo en orden; Crítico = varios factores altos a la vez. Para bajarlo: aclara los requisitos (claridad de los módulos), estabiliza al equipo y pacta anticipos suficientes.
+                    </InfoTip>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {latestEstimates.map((e) => {
+                  const totalHours = Number(e.codingHours) + Number(e.reviewHours) + Number(e.testingHours) + Number(e.documentationHours) + Number(e.deploymentHours) + Number(e.trainingHours) + Number(e.supportHours) + Number(e.hardeningHours) + Number(e.analysisHours) + Number(e.designHours);
+                  return (
+                    <TableRow key={e.id}>
+                      <TableCell><Badge variant="outline">{modeLabels[e.mode] ?? e.mode}</Badge></TableCell>
+                      <TableCell><Badge variant="secondary">{labelOf(SCENARIO_LABELS, e.scenario)}</Badge></TableCell>
+                      <TableCell className="text-right">{formatHours(totalHours)}</TableCell>
+                      <TableCell className="text-right">{e.weeksTotal ? formatWeeks(Number(e.weeksTotal)) : "—"}</TableCell>
+                      <TableCell className="text-right">{e.weeksToPrototype ? formatWeeks(Number(e.weeksToPrototype)) : "—"}</TableCell>
+                      <TableCell className="text-right">{formatMXN(Number(e.subtotal))}</TableCell>
+                      <TableCell className="text-right text-muted-foreground">{formatMXN(Number(e.vat))}</TableCell>
+                      <TableCell className="text-right font-semibold">{formatMXN(Number(e.total))}</TableCell>
+                      <TableCell><Badge className={RISK_LEVELS[e.riskLevel as keyof typeof RISK_LEVELS]?.bg}>{RISK_LEVELS[e.riskLevel as keyof typeof RISK_LEVELS]?.label ?? e.riskLevel}</Badge></TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+            </details>
+          <details className="rounded-lg border bg-lienzo">
+            <summary className="cursor-pointer px-4 py-3 text-base font-semibold text-tinta">Por qué la forma de hacerlo importa tanto</summary>
+            <div className="px-4 pb-4"><PorQueImportaLaForma /></div>
+          </details>
+        </div>
+      )}
+
+      {/* 4. La recomendación, en dos renglones */}
       {recommendation && (
         <RecommendationCard
           projectId={id}
           recommendation={recommendation}
-          selectedMode={selectedMode}
-          selectedScenario={selectedScenario}
+          selectedMode={modoVisto}
+          selectedScenario={escenarioVisto}
         />
       )}
 
-      {/* Tu decisión y lo que pasó después */}
+      {/* 5. Qué sigue: llevar el reporte, compartir o decidir */}
+      {tieneEstimacion && (
+        <section aria-label="Qué sigue" className="flex flex-wrap items-start gap-3">
+          <Link
+            href={hrefReporte}
+            className="inline-flex min-h-11 items-center rounded-lg bg-marino px-5 text-base font-semibold text-white transition-colors hover:bg-marino/90"
+          >
+            Ver el reporte para llevar
+          </Link>
+          {!project.isTemplate && (
+            <div className="[&_button]:h-11 [&_button]:px-5 [&_button]:text-base [&_button]:font-semibold">
+              <CompartirEnlace projectId={id} token={project.shareToken} />
+            </div>
+          )}
+          {!project.isTemplate && selectedEstimate && (
+            <ElegirOpcionButton
+              projectId={id}
+              mode={selectedEstimate.mode}
+              scenario={selectedEstimate.scenario}
+              modeLabel={modeLabels[selectedEstimate.mode] ?? selectedEstimate.mode}
+              scenarioLabel={scenarioLabels[selectedEstimate.scenario] ?? selectedEstimate.scenario}
+              recommendedMode={recommendation?.best.mode}
+              recommendedScenario={recommendation?.best.scenario}
+              variant="actual"
+            />
+          )}
+        </section>
+      )}
+
+      {/* 6. La pregunta de credibilidad: un toque. Las otras tres, plegadas. */}
+      {selectedEstimate && totalSel != null && (
+        <EncuestaPiloto projectId={id} totalMostrado={totalSel} modoLabel={modeLabels[selectedEstimate.mode] ?? selectedEstimate.mode} />
+      )}
+
+      {/* 7. Dinero que adelantas, mes a mes */}
+      {modeloFlujo && (() => {
+                const incomes = project.cashflow.map((m) => Number(m.income));
+        const maxIncome = Math.max(...incomes);
+        const firstMaxIdx = incomes.indexOf(maxIncome);
+        const lastMaxIdx = incomes.lastIndexOf(maxIncome);
+        const worstAccIdx = project.cashflow.reduce((bestIdx, m, idx) => Number(m.accumulatedFlow) < Number(project.cashflow[bestIdx].accumulatedFlow) ? idx : bestIdx, 0);
+        const cashflowMonths = project.cashflow.length;
+        const intermediatePayments = project.cashflow.filter((m, i) => i !== firstMaxIdx && i !== lastMaxIdx && Number(m.income) > 0).length;
+        const totalPayments = project.cashflow.filter((m) => Number(m.income) > 0).length;
+        const selectedWeeks = selectedEstimate?.weeksTotal ? Number(selectedEstimate.weeksTotal) : null;
+        const selectedMonthsFromWeeks = selectedWeeks ? selectedWeeks / 4.33 : null;
+        const cashflowVsEstimateMismatch = selectedMonthsFromWeeks !== null && Math.abs(selectedMonthsFromWeeks - cashflowMonths) > 1.0;
+        function conceptoDelMes(idx: number, income: number) {
+          if (income === 0) return { label: "Sin cobro", className: "text-muted-foreground", esCobro: false };
+          if (idx === firstMaxIdx && idx !== lastMaxIdx) return { label: "Anticipo (cobro)", className: "text-blue-700 font-medium", esCobro: true };
+          if (idx === lastMaxIdx && lastMaxIdx !== firstMaxIdx) return { label: "Pago final (cobro)", className: "text-emerald-700 font-medium", esCobro: true };
+          if (idx === firstMaxIdx && idx === lastMaxIdx) return { label: "Pago único (cobro)", className: "text-emerald-700 font-medium", esCobro: true };
+          return { label: "Pago parcial (cobro)", className: "text-foreground", esCobro: true };
+        }
+        return (
+          <section aria-labelledby="flujo-titulo" className="rounded-xl border bg-lienzo p-5 sm:p-7">
+            <h2 id="flujo-titulo" className="text-seccion text-tinta">
+              {lado === "desarrollador" ? "El dinero que adelantas, mes a mes" : "El dinero que adelanta el proveedor, mes a mes"}
+            </h2>
+            <p className="mt-1 text-base text-tinta-suave">
+              {modeLabels[selectedMode] ?? selectedMode}, escenario {scenarioLabels[selectedScenario] ?? selectedScenario}. Los cobros al cliente suben, los gastos bajan y la línea es lo que llevas acumulado.
+            </p>
+            {cashflowVsEstimateMismatch && selectedMonthsFromWeeks !== null && (
+              <div className="mt-4 border-l-4 border-amber-600 pl-4 text-base text-amber-950">
+                <strong>El flujo no coincide con la duración de esta forma de hacerlo:</strong> tarda unos {selectedMonthsFromWeeks.toFixed(1)} meses según la estimación, pero el flujo está calculado para {cashflowMonths}. Recalcula el proyecto eligiendo esta forma de hacerlo para sincronizarlo.
+              </div>
+            )}
+            <div className="mt-5">
+              <GraficaFlujo modelo={modeloFlujo} frase={fraseFlujo} />
+            </div>
+            <details className="mt-6 rounded-lg border">
+              <summary className="cursor-pointer px-4 py-3 text-base font-semibold text-tinta">Ver la tabla mes a mes y cómo se calcula</summary>
+              <div className="space-y-2 px-4 pb-3 text-sm text-muted-foreground">
+                <div className="flex flex-wrap items-center gap-1 font-semibold text-foreground">
+                  Flujo de efectivo · {modeLabels[selectedMode] ?? selectedMode} · escenario {scenarioLabels[selectedScenario] ?? selectedScenario}
+                  <InfoTip title="¿Por qué esta forma de hacerlo y este escenario?">
+                <p>Este flujo está calculado sobre la última estimación con la forma de hacerlo <strong>{modeLabels[selectedMode] ?? selectedMode}</strong> y escenario <strong>{scenarioLabels[selectedScenario] ?? selectedScenario}</strong>.</p>
+                <p>El default es <strong>híbrido + probable</strong> porque es la línea base realista: combina capacidades humanas con asistencia generativa, sin asumir productividades extremas que pueden no cumplirse.</p>
+                <p>Si cambias el selector arriba, los precios de las tarjetas se ajustan, pero <strong>esta tabla y el bache se mantienen</strong> hasta que recalcules el proyecto en esa otra configuración.</p>
+              </InfoTip>
+                </div>
+                <div className="space-y-2">Cómo entra y sale el dinero del proveedor mes a mes. Los <strong>cobros al cliente</strong> son ingresos (todos en verde porque son dinero que ENTRA al proveedor). Las <strong>salidas</strong> son nómina del equipo, impuestos, herramientas y administración.
+              
+              <span className="block mt-1">
+                <strong className="text-foreground">Estructura de pagos de este proyecto:</strong> {totalPayments} cobros en total: 1 anticipo al arrancar, {intermediatePayments} {intermediatePayments === 1 ? "pago parcial intermedio" : "pagos parciales intermedios"} y 1 pago final al cerrar. Distribuidos en <strong>{cashflowMonths} meses</strong>.
+                <InfoTip title="¿Por qué está en meses y no en semanas? ¿Por qué pagos parciales mensuales?">
+                  <p>El flujo de efectivo se modela en MESES porque los ciclos de nómina, impuestos (IMSS, ISN), facturación y rentas administrativas son mensuales. Las {selectedWeeks ? `${selectedWeeks.toFixed(1)} semanas` : "semanas"} de calendario de la forma de hacerlo se convierten a meses dividiendo entre 4.33.</p>
+                  <p>Los <strong>pagos parciales</strong> entre el anticipo y el pago final se asumen <strong>mensuales</strong> por defecto del modelo. Esto refleja la práctica común en contratos municipales (estimación mensual contra avance, art. 54 LOPSRM). Si tu contrato real es a 3 pagos totales (anticipo + 1 intermedio + finiquito) o anticipo + finiquito, eso se configura en el wizard de estimación con los porcentajes.</p>
+                </InfoTip>
+              </span>
+              
+              <strong className="text-foreground">Bache de caja máximo: {formatMXN(Number(project.cashflow[0].workingCapitalRequired))}</strong> {worstAccumulated && (
+                <>(aparece en el mes <strong>{worstAccumulated.monthNumber}</strong>, marcado abajo). Es el saldo más profundo en negativo: lo que el proveedor debe tener en banco antes de arrancar.</>
+              )}</div>
+              </div>
+                          <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Mes</TableHead>
+                  <TableHead>
+                    <span className="inline-flex items-center">
+                      Concepto
+                      <InfoTip title="¿Cómo se etiqueta cada mes?">
+                        <p>Todas las filas marcadas en verde son <strong>cobros que el proveedor recibe del cliente</strong> (dinero que entra). El sistema mira el monto y asigna:</p>
+                        <ul className="list-disc ml-4 space-y-0.5">
+                          <li><strong>Anticipo (cobro)</strong>: el primer mes con el cobro más alto. Es el pago inicial al arrancar.</li>
+                          <li><strong>Pago final (cobro)</strong>: el último mes con el cobro más alto. Es el pago de cierre cuando se entrega. Aquí lo nombramos "Pago final" en lugar de "Finiquito" porque finiquito en español también significa liquidación al trabajador, y el pago aquí es del CLIENTE al PROVEEDOR.</li>
+                          <li><strong>Pago parcial (cobro)</strong>: meses intermedios donde el cliente paga contra avance. Se asume mensual por defecto del modelo (práctica común en contratos municipales). Si tu contrato es a 2 pagos totales, ajusta los % en el wizard.</li>
+                          <li><strong>Sin cobro</strong>: meses sin ingreso del cliente. El proveedor solo paga (nómina, impuestos, etc.).</li>
+                        </ul>
+                        <p>En este proyecto el patrón es {firstMaxIdx === lastMaxIdx ? "un solo pago grande" : `anticipo + ${intermediatePayments} pago${intermediatePayments === 1 ? "" : "s"} parcial${intermediatePayments === 1 ? "" : "es"} + pago final`}, por eso las etiquetas quedan en esa posición.</p>
+                      </InfoTip>
+                    </span>
+                  </TableHead>
+                  <TableHead className="text-right">Cobro al cliente</TableHead>
+                  <TableHead className="text-right">Nómina</TableHead>
+                  <TableHead className="text-right">Impuestos</TableHead>
+                  <TableHead className="text-right">Herramientas</TableHead>
+                  <TableHead className="text-right">Admin</TableHead>
+                  <TableHead className="text-right">Saldo del mes</TableHead>
+                  <TableHead className="text-right">
+                    <span className="inline-flex items-center">
+                      Saldo acumulado
+                      <InfoTip title="¿Cómo se acumula?">
+                        <p><strong>Saldo acumulado del mes N = Saldo acumulado del mes N-1 + Saldo del mes N.</strong></p>
+                        <p>O sea: cada mes arrastra el resultado del anterior. Si en el mes 1 el saldo acumulado quedó en $50,000 y en el mes 2 el saldo del mes fue de $20,000, entonces el acumulado del mes 2 es $70,000 (el sistema ya lo sumó por ti; la columna "Operación" lo escribe explícito para que lo verifiques sin calculadora).</p>
+                        <p>Por eso el <strong>bache de caja</strong> es el mínimo de esta columna: el peor momento donde el proveedor lleva más dinero gastado de lo que ha cobrado.</p>
+                      </InfoTip>
+                    </span>
+                  </TableHead>
+                  <TableHead className="text-right text-xs">
+                    Operación
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {/* Mes 0: punto de partida explícito */}
+                <TableRow className="bg-muted/40 text-xs">
+                  <TableCell className="font-medium">Mes 0</TableCell>
+                  <TableCell className="italic text-muted-foreground">Punto de partida (antes de arrancar)</TableCell>
+                  <TableCell className="text-right text-muted-foreground">—</TableCell>
+                  <TableCell className="text-right text-muted-foreground">—</TableCell>
+                  <TableCell className="text-right text-muted-foreground">—</TableCell>
+                  <TableCell className="text-right text-muted-foreground">—</TableCell>
+                  <TableCell className="text-right text-muted-foreground">—</TableCell>
+                  <TableCell className="text-right text-muted-foreground">$0</TableCell>
+                  <TableCell className="text-right font-mono">$0</TableCell>
+                  <TableCell className="text-right text-muted-foreground italic">inicio</TableCell>
+                </TableRow>
+                {project.cashflow.map((m, idx) => {
+                  const concepto = conceptoDelMes(idx, Number(m.income));
+                  const isBacheRow = idx === worstAccIdx && Number(m.accumulatedFlow) < 0;
+                  const acumAnterior = idx === 0 ? 0 : Number(project.cashflow[idx - 1].accumulatedFlow);
+                  const saldoMes = Number(m.netFlow);
+                  const acumNuevo = Number(m.accumulatedFlow);
+                  const operacion = `${formatMXN(acumAnterior)} ${saldoMes >= 0 ? "+" : "−"} ${formatMXN(Math.abs(saldoMes))} = ${formatMXN(acumNuevo)}`;
+                  return (
+                  <TableRow key={m.id} className={isBacheRow ? "bg-orange-50" : ""}>
+                    <TableCell>Mes {m.monthNumber}</TableCell>
+                    <TableCell className={concepto.className}>
+                      <span className="inline-flex items-center gap-1">
+                        {concepto.esCobro && <TrendingDown aria-hidden className="w-3.5 h-3.5 text-green-600" />}
+                        <span>{concepto.label}</span>
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {Number(m.income) > 0 ? (
+                        <span className="text-green-700 font-medium">+{formatMXN(Number(m.income))}</span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right text-muted-foreground">{formatMXN(-Number(m.payrollOutflow))}</TableCell>
+                    <TableCell className="text-right text-muted-foreground">{formatMXN(-Number(m.taxOutflow))}</TableCell>
+                    <TableCell className="text-right text-muted-foreground">{formatMXN(-Number(m.toolsOutflow))}</TableCell>
+                    <TableCell className="text-right text-muted-foreground">{formatMXN(-Number(m.adminOutflow))}</TableCell>
+                    <TableCell className={`text-right font-medium ${saldoMes >= 0 ? "text-green-700" : "text-destructive"}`}>{formatMXN(saldoMes)}</TableCell>
+                    <TableCell className={`text-right ${acumNuevo >= 0 ? "" : "text-destructive font-medium"}`}>
+                      {formatMXN(acumNuevo)}
+                      {isBacheRow && <span className="block text-[10px] text-orange-700 font-bold mt-0.5">AQUÍ ESTÁ EL BACHE DE CAJA</span>}
+                    </TableCell>
+                    <TableCell className="text-right text-[11px] font-mono text-muted-foreground whitespace-nowrap" title="acum mes anterior + saldo de este mes = acum nuevo">
+                      {operacion}
+                    </TableCell>
+                  </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+            <div className="px-4 py-3 border-t bg-muted/30 text-xs text-muted-foreground">
+              <p><strong className="text-foreground">Nota:</strong> el saldo acumulado SIEMPRE incluye los meses anteriores. La columna <strong>Operación</strong> muestra la suma explícita (acum mes anterior + saldo de este mes = acum nuevo) para que NO necesites calculadora. Si las cifras no cuadran, hay un error, repórtalo.</p>
+            </div>
+            </details>
+          </section>
+        );
+      })()}
+
+      {/* Todo lo demás, plegado como siempre */}
+      <section aria-labelledby="mas-detalle" className="space-y-4">
+        <h2 id="mas-detalle" className="text-seccion text-tinta">Más detalle</h2>
+
+        {/* La cadena de cálculo, cerrada, con su resumen a la vista */}
+        {selectedEstimate && (
+          <ExplicacionDelNumero
+            pasos={pasosExplicacion}
+            modoLabel={modeLabels[selectedEstimate.mode] ?? selectedEstimate.mode}
+            escenarioLabel={scenarioLabels[selectedEstimate.scenario] ?? selectedEstimate.scenario}
+            resumen={composicion?.resumen}
+          />
+        )}
+
+        {/* Tu decisión y lo que pasó después */}
       {activeDecision && (
         <DecisionSection
           decision={{
@@ -681,24 +841,18 @@ export default async function ProjectDetailPage({
         />
       )}
 
-      {/* Resumen financiero */}
-      {selectedTotal && (
-        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
+        {selectedTotal && (
+          <details className="rounded-lg border bg-lienzo">
+            <summary className="cursor-pointer px-4 py-3 text-base font-semibold text-tinta">Más cifras del resumen: herramientas de IA, dinero que adelantas y cambios</summary>
+            <div className="p-3">
+              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
           <SummaryCard
             label="Precio cotizado al cliente"
             value={formatMXN(Number(selectedTotal))}
             hint={`Forma de hacerlo: ${modeLabels[selectedMode] ?? selectedMode} · escenario ${scenarioLabels[selectedScenario] ?? selectedScenario} · v${latestVersion}. Cambia arriba para ver otras formas de hacerlo.`}
             info={{
               title: "¿De dónde sale este precio?",
-              body: (
-                <>
-                  <strong>Costo del proyecto</strong> durante los meses reales de la forma de hacerlo elegida: el equipo con sus cargas (sueldo + IMSS + INFONAVIT + ISN/UAZ + prestaciones LFT), las herramientas de IA de esa forma de hacerlo, otras herramientas y administración. Si el proyecto pasa de 6 meses con personal en nómina, suma indemnización LFT por terminación de contrato.
-                  <br /><br />
-                  Sobre ese costo se aplica el margen objetivo y el IVA 16%. Cambia la forma de hacerlo arriba: el precio sube o baja porque cada forma tarda distinto.
-                  <br /><br />
-                  Fuente: motor de cálculo, parámetros 2026 (DOF, CONASAMI, IMSS, SEFIN Zacatecas).
-                </>
-              ),
+              body: infoPrecio,
             }}
           />
           <SummaryCard
@@ -780,11 +934,15 @@ export default async function ProjectDetailPage({
             hint={`pendientes · de ${project.changes.length} totales`}
           />
         </div>
-      )}
+            </div>
+          </details>
+        )}
 
-      {/* Las preguntas del reporte, aquí mismo */}
-      {selectedEstimate && totalSel != null && (
-        <PreguntasDelPatron
+        {selectedEstimate && totalSel != null && (
+          <details className="rounded-lg border bg-lienzo">
+            <summary className="cursor-pointer px-4 py-3 text-base font-semibold text-tinta">Más preguntas: tiempo, mantenimiento y qué pasa si piden cambios</summary>
+            <div className="p-3">
+              <PreguntasDelPatron
           onTime={onTime}
           capitalRequerido={capitalRequerido}
           quebrar={quebrar}
@@ -795,91 +953,147 @@ export default async function ProjectDetailPage({
           licenciasUsuarioFinal={licenciasSel}
           ajusteHorasCambios={{ factor: factorHorasCambios, modoLabel: (modeLabels[selectedMode] ?? selectedMode).toLowerCase() }}
         />
+            </div>
+          </details>
+        )}
+
+        {/* Acerca de este proyecto - campos capturados en /projects/new que
+          antes no se mostraban (description, targetDate, estimatedBudget, responsable, objective). */}
+      {(project.description || project.objective || project.targetDate || project.estimatedBudget || project.responsible || project.notes) && (
+        <Card className="shadow-none">
+          <details>
+          <summary className="cursor-pointer list-none"><CardHeader>
+            <CardTitle className="text-base">Acerca de este proyecto</CardTitle>
+            <CardDescription>Objetivo, descripción, responsable y notas. Haz clic para verlos; para cambiarlos, editar el proyecto.</CardDescription>
+          </CardHeader></summary>
+          <CardContent className="grid sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+            {project.objective && (
+              <div className="sm:col-span-2">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Objetivo</p>
+                <p className="mt-0.5">{project.objective}</p>
+              </div>
+            )}
+            {project.description && (
+              <div className="sm:col-span-2">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Descripción</p>
+                <p className="mt-0.5 whitespace-pre-wrap">{project.description}</p>
+              </div>
+            )}
+            {project.responsible && (
+              <div>
+                <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Responsable</p>
+                <p className="mt-0.5">{project.responsible}</p>
+              </div>
+            )}
+            {project.targetDate && (
+              <div>
+                <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Fecha objetivo</p>
+                <p className="mt-0.5">{new Date(project.targetDate).toLocaleDateString("es-MX", { year: "numeric", month: "long", day: "numeric" })}</p>
+              </div>
+            )}
+            {project.estimatedBudget != null && (
+              <div>
+                <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">
+                  Presupuesto inicial estimado
+                  <InfoTip title="¿Por qué muestra esto?">
+                    Es el monto que se registró al crear el proyecto, antes de cualquier estimación detallada. Sirve como referencia para comparar contra el "Precio cotizado al cliente" que sale del motor (abajo). Si difieren mucho, hay que entender por qué.
+                  </InfoTip>
+                </div>
+                <p className="mt-0.5 font-mono">{formatMXN(Number(project.estimatedBudget))}</p>
+              </div>
+            )}
+            {project.notes && (
+              <div className="sm:col-span-2">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Notas</p>
+                <p className="mt-0.5 whitespace-pre-wrap text-muted-foreground">{project.notes}</p>
+              </div>
+            )}
+            <div className="sm:col-span-2 pt-2 mt-1 border-t border-dashed">
+              <p className="text-xs text-amber-800">
+                <strong>Aún no se captura:</strong> los términos del acuerdo con el cliente (% de anticipo, % de pagos parciales, % de pago final y plazo pactado). Mientras tanto, el flujo de efectivo se calcula con valores típicos. Puedes ajustarlos al correr la estimación.
+              </p>
+            </div>
+          </CardContent>
+        </details>
+        </Card>
       )}
 
-      {/* Encuesta de salida del piloto: cuatro preguntas, para la investigacion */}
-      {selectedEstimate && totalSel != null && (
-        <EncuestaPiloto projectId={id} totalMostrado={totalSel} modoLabel={modeLabels[selectedEstimate.mode] ?? selectedEstimate.mode} />
-      )}
-
-      {/* Acciones rápidas */}
-      {tieneEstimacion && (
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" asChild><Link href={`/projects/${id}/modules`}><Layers className="w-4 h-4 mr-2" />Módulos</Link></Button>
-          <Button variant="outline" asChild><Link href={`/projects/${id}/team`}><Users className="w-4 h-4 mr-2" />Equipo</Link></Button>
-          <Button variant="outline" asChild><Link href={`/projects/${id}/changes`}><GitPullRequest className="w-4 h-4 mr-2" />Cambios</Link></Button>
-          <Button variant="outline" asChild><Link href={`/projects/${id}/estimate`}><Calculator className="w-4 h-4 mr-2" />Recalcular</Link></Button>
-          <Button asChild><Link href={`/projects/${id}/reports`}><FileText className="w-4 h-4 mr-2" />Ver reportes</Link></Button>
-          <RecalcularButton projectId={id} />
-          {!project.isTemplate && <CompartirEnlace projectId={id} token={project.shareToken} />}
-        </div>
-      )}
-
-      {/* Comparador de modos */}
-      {latestEstimates.length > 0 && (
-        <Card>
+        {/* Resultado real del proyecto (FASE H). Aparece cuando el proyecto está en
+          ejecución o cerrado, o si ya hay un resultado capturado. Alimenta la
+          validación de la hipótesis (estimado vs real). */}
+      {mostrarResultadoReal && (
+        <Card className={`shadow-none ${actualResult ? "border-green-200 bg-green-50/40" : "border-amber-200 bg-amber-50/40"}`}>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
-              <TrendingUp className="w-4 h-4" />
-              Las opciones · Versión {latestVersion}
+              <ClipboardCheck className="w-4 h-4" />
+              Resultado real del proyecto
             </CardTitle>
-            <CardDescription>Las tres que importan primero. Abajo, plegadas, las 15 combinaciones (5 formas de hacerlo por 3 escenarios).</CardDescription>
+            <CardDescription>
+              {actualResult
+                ? "Lo que costó y tardó de verdad. Esto retroalimenta el modelo y mide qué tan bien estimó el sistema."
+                : "Cuando el proyecto termine, registra aquí las horas y el costo reales. Con esto el sistema mide su propia precisión y alimenta la validación de la hipótesis para tu investigación."}
+            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <TarjetasDeOpcion tarjetas={tarjetas} />
-            <PorQueImportaLaForma />
-            <details className="rounded-md border">
-              <summary className="cursor-pointer px-4 py-2 text-sm font-medium">Ver las 15 combinaciones</summary>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Forma de hacerlo</TableHead>
-                  <TableHead>Escenario</TableHead>
-                  <TableHead className="text-right">Horas</TableHead>
-                  <TableHead className="text-right">Semanas</TableHead>
-                  <TableHead className="text-right">
-                    Prototipo
-                    <InfoTip title="¿Qué es el prototipo?">
-                      Semanas para tener una PRIMERA versión funcionando que ya se puede enseñar al área usuaria. El resto de las semanas se usa en terminar, probar y endurecer el sistema.
-                    </InfoTip>
-                  </TableHead>
-                  <TableHead className="text-right">Subtotal</TableHead>
-                  <TableHead className="text-right">IVA</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
-                  <TableHead>
-                    Riesgo
-                    <InfoTip title="¿De dónde sale el riesgo?">
-                      Combina 5 factores del proyecto: qué tan complejo es técnicamente, qué tan claros están los requisitos, el riesgo fiscal-laboral del equipo, el riesgo de flujo de efectivo y la probabilidad de cambios. Bajo = todo en orden; Crítico = varios factores altos a la vez. Para bajarlo: aclara los requisitos (claridad de los módulos), estabiliza al equipo y pacta anticipos suficientes.
-                    </InfoTip>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {latestEstimates.map((e) => {
-                  const totalHours = Number(e.codingHours) + Number(e.reviewHours) + Number(e.testingHours) + Number(e.documentationHours) + Number(e.deploymentHours) + Number(e.trainingHours) + Number(e.supportHours) + Number(e.hardeningHours) + Number(e.analysisHours) + Number(e.designHours);
-                  return (
-                    <TableRow key={e.id}>
-                      <TableCell><Badge variant="outline">{modeLabels[e.mode] ?? e.mode}</Badge></TableCell>
-                      <TableCell><Badge variant="secondary">{labelOf(SCENARIO_LABELS, e.scenario)}</Badge></TableCell>
-                      <TableCell className="text-right">{formatHours(totalHours)}</TableCell>
-                      <TableCell className="text-right">{e.weeksTotal ? formatWeeks(Number(e.weeksTotal)) : "—"}</TableCell>
-                      <TableCell className="text-right">{e.weeksToPrototype ? formatWeeks(Number(e.weeksToPrototype)) : "—"}</TableCell>
-                      <TableCell className="text-right">{formatMXN(Number(e.subtotal))}</TableCell>
-                      <TableCell className="text-right text-muted-foreground">{formatMXN(Number(e.vat))}</TableCell>
-                      <TableCell className="text-right font-semibold">{formatMXN(Number(e.total))}</TableCell>
-                      <TableCell><Badge className={RISK_LEVELS[e.riskLevel as keyof typeof RISK_LEVELS]?.bg}>{RISK_LEVELS[e.riskLevel as keyof typeof RISK_LEVELS]?.label ?? e.riskLevel}</Badge></TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-            </details>
+          <CardContent>
+            {actualResult ? (
+              <div className="space-y-4">
+                <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Horas estimadas</p>
+                    <p className="mt-0.5 font-mono">{estHoursTotal > 0 ? formatHours(estHoursTotal) : "—"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Horas reales</p>
+                    <p className="mt-0.5 font-mono">{realHours != null ? formatHours(realHours) : "—"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Costo estimado</p>
+                    <p className="mt-0.5 font-mono">{estCostTotal > 0 ? formatMXN(estCostTotal) : "—"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Costo real</p>
+                    <p className="mt-0.5 font-mono">{realCost != null ? formatMXN(realCost) : "—"}</p>
+                  </div>
+                </div>
+                {(mapeHoursReal != null || mapeCostReal != null) && (
+                  <div className="flex flex-wrap gap-2">
+                    {mapeHoursReal != null && (
+                      <Badge variant={mapeHoursReal <= 15 ? "default" : mapeHoursReal <= 30 ? "secondary" : "outline"}>
+                        Error en horas: {mapeHoursReal.toFixed(1)}% {mapeHoursReal <= 15 ? "(preciso)" : mapeHoursReal <= 30 ? "(aceptable)" : "(impreciso)"}
+                      </Badge>
+                    )}
+                    {mapeCostReal != null && (
+                      <Badge variant={mapeCostReal <= 15 ? "default" : mapeCostReal <= 30 ? "secondary" : "outline"}>
+                        Error en costo: {mapeCostReal.toFixed(1)}%
+                      </Badge>
+                    )}
+                  </div>
+                )}
+                {actualResult.mainDeviationReason && (
+                  <p className="text-sm text-muted-foreground">
+                    <span className="font-semibold">Razón de la desviación:</span> {actualResult.mainDeviationReason}
+                  </p>
+                )}
+                <Button asChild variant="outline" size="sm">
+                  <Link href={`/projects/${id}/resultado-real`}>Editar resultado real</Link>
+                </Button>
+              </div>
+            ) : (
+              <Button asChild>
+                <Link href={`/projects/${id}/resultado-real`}>
+                  <ClipboardCheck className="w-4 h-4 mr-2" />
+                  Registrar resultado real
+                </Link>
+              </Button>
+            )}
           </CardContent>
         </Card>
       )}
 
-      {/* Módulos */}
-      <Card>
+        {tieneEstimacion && bloqueProgreso}
+
+        {/* Módulos */}
+      <Card className="shadow-none">
         <details>
           <summary className="cursor-pointer list-none"><CardHeader className="flex flex-row items-center justify-between">
           <div>
@@ -1000,8 +1214,8 @@ export default async function ProjectDetailPage({
       </details>
       </Card>
 
-      {/* Equipo */}
-      <Card>
+        {/* Equipo */}
+      <Card className="shadow-none">
         <details>
           <summary className="cursor-pointer list-none"><CardHeader className="flex flex-row items-center justify-between">
           <div>
@@ -1049,9 +1263,9 @@ export default async function ProjectDetailPage({
       </details>
       </Card>
 
-      {/* Cambios */}
+        {/* Cambios */}
       {project.changes.length > 0 && (
-        <Card>
+        <Card className="shadow-none">
           <details>
           <summary className="cursor-pointer list-none"><CardHeader className="flex flex-row items-center justify-between">
             <div>
@@ -1096,162 +1310,18 @@ export default async function ProjectDetailPage({
         </Card>
       )}
 
-      {/* Flujo de efectivo */}
-      {project.cashflow.length > 0 && (() => {
-        const incomes = project.cashflow.map((m) => Number(m.income));
-        const maxIncome = Math.max(...incomes);
-        const firstMaxIdx = incomes.indexOf(maxIncome);
-        const lastMaxIdx = incomes.lastIndexOf(maxIncome);
-        const worstAccIdx = project.cashflow.reduce((bestIdx, m, idx) => Number(m.accumulatedFlow) < Number(project.cashflow[bestIdx].accumulatedFlow) ? idx : bestIdx, 0);
-        const cashflowMonths = project.cashflow.length;
-        const intermediatePayments = project.cashflow.filter((m, i) => i !== firstMaxIdx && i !== lastMaxIdx && Number(m.income) > 0).length;
-        const totalPayments = project.cashflow.filter((m) => Number(m.income) > 0).length;
-        const selectedWeeks = selectedEstimate?.weeksTotal ? Number(selectedEstimate.weeksTotal) : null;
-        const selectedMonthsFromWeeks = selectedWeeks ? selectedWeeks / 4.33 : null;
-        const cashflowVsEstimateMismatch = selectedMonthsFromWeeks !== null && Math.abs(selectedMonthsFromWeeks - cashflowMonths) > 1.0;
-        function conceptoDelMes(idx: number, income: number) {
-          if (income === 0) return { label: "Sin cobro", className: "text-muted-foreground", esCobro: false };
-          if (idx === firstMaxIdx && idx !== lastMaxIdx) return { label: "Anticipo (cobro)", className: "text-blue-700 font-medium", esCobro: true };
-          if (idx === lastMaxIdx && lastMaxIdx !== firstMaxIdx) return { label: "Pago final (cobro)", className: "text-emerald-700 font-medium", esCobro: true };
-          if (idx === firstMaxIdx && idx === lastMaxIdx) return { label: "Pago único (cobro)", className: "text-emerald-700 font-medium", esCobro: true };
-          return { label: "Pago parcial (cobro)", className: "text-foreground", esCobro: true };
-        }
-        return (
-        <Card>
-          <details>
-          <summary className="cursor-pointer list-none"><CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Activity className="w-4 h-4" />Flujo de efectivo · {modeLabels[selectedMode] ?? selectedMode} · escenario {scenarioLabels[selectedScenario] ?? selectedScenario}
-              <InfoTip title="¿Por qué esta forma de hacerlo y este escenario?">
-                <p>Este flujo está calculado sobre la última estimación con la forma de hacerlo <strong>{modeLabels[selectedMode] ?? selectedMode}</strong> y escenario <strong>{scenarioLabels[selectedScenario] ?? selectedScenario}</strong>.</p>
-                <p>El default es <strong>híbrido + probable</strong> porque es la línea base realista: combina capacidades humanas con asistencia generativa, sin asumir productividades extremas que pueden no cumplirse.</p>
-                <p>Si cambias el selector arriba, los precios de las tarjetas se ajustan, pero <strong>esta tabla y el bache se mantienen</strong> hasta que recalcules el proyecto en esa otra configuración.</p>
-              </InfoTip>
-            </CardTitle>
-            <CardDescription>
-              Cómo entra y sale el dinero del proveedor mes a mes. Los <strong>cobros al cliente</strong> son ingresos (todos en verde porque son dinero que ENTRA al proveedor). Las <strong>salidas</strong> son nómina del equipo, impuestos, herramientas y administración.
-              <br />
-              <span className="block mt-1">
-                <strong className="text-foreground">Estructura de pagos de este proyecto:</strong> {totalPayments} cobros en total: 1 anticipo al arrancar, {intermediatePayments} {intermediatePayments === 1 ? "pago parcial intermedio" : "pagos parciales intermedios"} y 1 pago final al cerrar. Distribuidos en <strong>{cashflowMonths} meses</strong>.
-                <InfoTip title="¿Por qué está en meses y no en semanas? ¿Por qué pagos parciales mensuales?">
-                  <p>El flujo de efectivo se modela en MESES porque los ciclos de nómina, impuestos (IMSS, ISN), facturación y rentas administrativas son mensuales. Las {selectedWeeks ? `${selectedWeeks.toFixed(1)} semanas` : "semanas"} de calendario de la forma de hacerlo se convierten a meses dividiendo entre 4.33.</p>
-                  <p>Los <strong>pagos parciales</strong> entre el anticipo y el pago final se asumen <strong>mensuales</strong> por defecto del modelo. Esto refleja la práctica común en contratos municipales (estimación mensual contra avance, art. 54 LOPSRM). Si tu contrato real es a 3 pagos totales (anticipo + 1 intermedio + finiquito) o anticipo + finiquito, eso se configura en el wizard de estimación con los porcentajes.</p>
-                </InfoTip>
-              </span>
-              {cashflowVsEstimateMismatch && selectedMonthsFromWeeks !== null && (
-                <span className="block mt-2 p-2 rounded border border-amber-300 bg-amber-50 text-amber-900 text-xs">
-                  <strong>El flujo de efectivo no coincide con la duración de esta forma de hacerlo:</strong> la forma de hacerlo {modeLabels[selectedMode]} tarda ~{selectedMonthsFromWeeks.toFixed(1)} meses según la estimación, pero esta tabla está calculada para {cashflowMonths} meses. El cashflow se generó una sola vez con la duración del wizard. Para sincronizarlo, recalcula el proyecto eligiendo esta forma de hacerlo.
-                </span>
-              )}
-              <br />
-              <strong className="text-foreground">Bache de caja máximo: {formatMXN(Number(project.cashflow[0].workingCapitalRequired))}</strong> {worstAccumulated && (
-                <>(aparece en el mes <strong>{worstAccumulated.monthNumber}</strong>, marcado abajo). Es el saldo más profundo en negativo: lo que el proveedor debe tener en banco antes de arrancar.</>
-              )}
-            </CardDescription>
-          </CardHeader></summary>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Mes</TableHead>
-                  <TableHead>
-                    <span className="inline-flex items-center">
-                      Concepto
-                      <InfoTip title="¿Cómo se etiqueta cada mes?">
-                        <p>Todas las filas marcadas en verde son <strong>cobros que el proveedor recibe del cliente</strong> (dinero que entra). El sistema mira el monto y asigna:</p>
-                        <ul className="list-disc ml-4 space-y-0.5">
-                          <li><strong>Anticipo (cobro)</strong>: el primer mes con el cobro más alto. Es el pago inicial al arrancar.</li>
-                          <li><strong>Pago final (cobro)</strong>: el último mes con el cobro más alto. Es el pago de cierre cuando se entrega. Aquí lo nombramos "Pago final" en lugar de "Finiquito" porque finiquito en español también significa liquidación al trabajador, y el pago aquí es del CLIENTE al PROVEEDOR.</li>
-                          <li><strong>Pago parcial (cobro)</strong>: meses intermedios donde el cliente paga contra avance. Se asume mensual por defecto del modelo (práctica común en contratos municipales). Si tu contrato es a 2 pagos totales, ajusta los % en el wizard.</li>
-                          <li><strong>Sin cobro</strong>: meses sin ingreso del cliente. El proveedor solo paga (nómina, impuestos, etc.).</li>
-                        </ul>
-                        <p>En este proyecto el patrón es {firstMaxIdx === lastMaxIdx ? "un solo pago grande" : `anticipo + ${intermediatePayments} pago${intermediatePayments === 1 ? "" : "s"} parcial${intermediatePayments === 1 ? "" : "es"} + pago final`}, por eso las etiquetas quedan en esa posición.</p>
-                      </InfoTip>
-                    </span>
-                  </TableHead>
-                  <TableHead className="text-right">Cobro al cliente</TableHead>
-                  <TableHead className="text-right">Nómina</TableHead>
-                  <TableHead className="text-right">Impuestos</TableHead>
-                  <TableHead className="text-right">Herramientas</TableHead>
-                  <TableHead className="text-right">Admin</TableHead>
-                  <TableHead className="text-right">Saldo del mes</TableHead>
-                  <TableHead className="text-right">
-                    <span className="inline-flex items-center">
-                      Saldo acumulado
-                      <InfoTip title="¿Cómo se acumula?">
-                        <p><strong>Saldo acumulado del mes N = Saldo acumulado del mes N-1 + Saldo del mes N.</strong></p>
-                        <p>O sea: cada mes arrastra el resultado del anterior. Si en el mes 1 el saldo acumulado quedó en $50,000 y en el mes 2 el saldo del mes fue de $20,000, entonces el acumulado del mes 2 es $70,000 (el sistema ya lo sumó por ti; la columna "Operación" lo escribe explícito para que lo verifiques sin calculadora).</p>
-                        <p>Por eso el <strong>bache de caja</strong> es el mínimo de esta columna: el peor momento donde el proveedor lleva más dinero gastado de lo que ha cobrado.</p>
-                      </InfoTip>
-                    </span>
-                  </TableHead>
-                  <TableHead className="text-right text-xs">
-                    Operación
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {/* Mes 0: punto de partida explícito */}
-                <TableRow className="bg-muted/40 text-xs">
-                  <TableCell className="font-medium">Mes 0</TableCell>
-                  <TableCell className="italic text-muted-foreground">Punto de partida (antes de arrancar)</TableCell>
-                  <TableCell className="text-right text-muted-foreground">—</TableCell>
-                  <TableCell className="text-right text-muted-foreground">—</TableCell>
-                  <TableCell className="text-right text-muted-foreground">—</TableCell>
-                  <TableCell className="text-right text-muted-foreground">—</TableCell>
-                  <TableCell className="text-right text-muted-foreground">—</TableCell>
-                  <TableCell className="text-right text-muted-foreground">$0</TableCell>
-                  <TableCell className="text-right font-mono">$0</TableCell>
-                  <TableCell className="text-right text-muted-foreground italic">inicio</TableCell>
-                </TableRow>
-                {project.cashflow.map((m, idx) => {
-                  const concepto = conceptoDelMes(idx, Number(m.income));
-                  const isBacheRow = idx === worstAccIdx && Number(m.accumulatedFlow) < 0;
-                  const acumAnterior = idx === 0 ? 0 : Number(project.cashflow[idx - 1].accumulatedFlow);
-                  const saldoMes = Number(m.netFlow);
-                  const acumNuevo = Number(m.accumulatedFlow);
-                  const operacion = `${formatMXN(acumAnterior)} ${saldoMes >= 0 ? "+" : "−"} ${formatMXN(Math.abs(saldoMes))} = ${formatMXN(acumNuevo)}`;
-                  return (
-                  <TableRow key={m.id} className={isBacheRow ? "bg-orange-50" : ""}>
-                    <TableCell>Mes {m.monthNumber}</TableCell>
-                    <TableCell className={concepto.className}>
-                      <span className="inline-flex items-center gap-1">
-                        {concepto.esCobro && <TrendingDown aria-hidden className="w-3.5 h-3.5 text-green-600" />}
-                        <span>{concepto.label}</span>
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {Number(m.income) > 0 ? (
-                        <span className="text-green-700 font-medium">+{formatMXN(Number(m.income))}</span>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right text-muted-foreground">{formatMXN(-Number(m.payrollOutflow))}</TableCell>
-                    <TableCell className="text-right text-muted-foreground">{formatMXN(-Number(m.taxOutflow))}</TableCell>
-                    <TableCell className="text-right text-muted-foreground">{formatMXN(-Number(m.toolsOutflow))}</TableCell>
-                    <TableCell className="text-right text-muted-foreground">{formatMXN(-Number(m.adminOutflow))}</TableCell>
-                    <TableCell className={`text-right font-medium ${saldoMes >= 0 ? "text-green-700" : "text-destructive"}`}>{formatMXN(saldoMes)}</TableCell>
-                    <TableCell className={`text-right ${acumNuevo >= 0 ? "" : "text-destructive font-medium"}`}>
-                      {formatMXN(acumNuevo)}
-                      {isBacheRow && <span className="block text-[10px] text-orange-700 font-bold mt-0.5">AQUÍ ESTÁ EL BACHE DE CAJA</span>}
-                    </TableCell>
-                    <TableCell className="text-right text-[11px] font-mono text-muted-foreground whitespace-nowrap" title="acum mes anterior + saldo de este mes = acum nuevo">
-                      {operacion}
-                    </TableCell>
-                  </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-            <div className="px-4 py-3 border-t bg-muted/30 text-xs text-muted-foreground">
-              <p><strong className="text-foreground">Nota:</strong> el saldo acumulado SIEMPRE incluye los meses anteriores. La columna <strong>Operación</strong> muestra la suma explícita (acum mes anterior + saldo de este mes = acum nuevo) para que NO necesites calculadora. Si las cifras no cuadran, hay un error, repórtalo.</p>
-            </div>
-          </CardContent>
-        </details>
-        </Card>
-        );
-      })()}
+        {/* Seguir afinando */}
+        {tieneEstimacion && (
+          <div className="flex flex-wrap gap-2 pt-2">
+            <Button variant="outline" asChild><Link href={`/projects/${id}/modules`}><Layers className="w-4 h-4 mr-2" />Módulos</Link></Button>
+            <Button variant="outline" asChild><Link href={`/projects/${id}/team`}><Users className="w-4 h-4 mr-2" />Equipo</Link></Button>
+            <Button variant="outline" asChild><Link href={`/projects/${id}/changes`}><GitPullRequest className="w-4 h-4 mr-2" />Cambios</Link></Button>
+            <Button variant="outline" asChild><Link href={`/projects/${id}/estimate`}><Calculator className="w-4 h-4 mr-2" />Recalcular</Link></Button>
+            <Button variant="outline" asChild><Link href={`/projects/${id}/reports`}><FileText className="w-4 h-4 mr-2" />Todos los reportes</Link></Button>
+            <RecalcularButton projectId={id} />
+          </div>
+        )}
+      </section>
     </div>
   );
 }
@@ -1270,10 +1340,10 @@ function SummaryCard({
   return (
     <Card>
       <CardContent className="py-4">
-        <p className="text-xs text-muted-foreground uppercase mb-1 tracking-wide flex items-center">
+        <div className="text-xs text-muted-foreground uppercase mb-1 tracking-wide flex items-center">
           <span>{label}</span>
           {info && <InfoTip title={info.title}>{info.body}</InfoTip>}
-        </p>
+        </div>
         <p className="text-[clamp(1rem,1.6vw,1.5rem)] font-bold leading-tight tabular-nums">{value}</p>
         {hint && <p className="text-xs text-muted-foreground mt-1">{hint}</p>}
       </CardContent>

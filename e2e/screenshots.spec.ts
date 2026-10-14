@@ -34,7 +34,9 @@ async function getProjectId(page: Page): Promise<string> {
 test.describe("Capturas de pantalla principales", () => {
   test("01_dashboard", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: /EMPS Fresnillo/i }).first()).toBeVisible();
+    // El host por omisión es la cara del desarrollador (su portada pregunta
+    // cuánto cobrar); la del Ayuntamiento abre con el nombre del sistema.
+    await expect(page.getByRole("heading", { name: /Cuánto cobrar por este sistema|EMPS Fresnillo/i }).first()).toBeVisible();
     await snap(page, "01_dashboard");
   });
 

@@ -15,7 +15,7 @@ export const CATEGORIAS: Record<string, string> = {
   INFONAVIT: "INFONAVIT",
   FED: "Impuestos federales (IVA, ISR)",
   RECURSOS: "Equipo, materiales y gastos",
-  MODO: "Modos de desarrollo",
+  MODO: "Formas de hacerlo",
   CHANGE: "Cálculo de cambios a medio proyecto",
   CHATBOT: "Cotizador automático",
   OTROS: "Otros",
@@ -140,9 +140,9 @@ const NOMBRES_ES: Record<string, string> = {
   RESOURCE_VAT_CREDITABLE_WITH_CFDI_DEFAULT: "IVA que se puede acreditar con factura",
   RESOURCE_VAT_CREDITABLE_WITHOUT_CFDI_DEFAULT: "IVA que se puede acreditar sin factura",
 
-  // Modos de desarrollo
-  DEV_MODE_FACTORS: "Rendimiento de cada modo de desarrollo",
-  DEV_MODE_VELOCITY: "Velocidad de avance por modo de desarrollo",
+  // Formas de hacerlo
+  DEV_MODE_FACTORS: "Rendimiento de cada forma de hacerlo",
+  DEV_MODE_VELOCITY: "Velocidad de avance por forma de hacerlo",
   SCENARIO_FACTORS: "Factores de los escenarios optimista, probable y conservador",
   DEFAULT_CARGA_PATRONAL_ESTIMADA: "Carga patronal estimada cuando no se captura el equipo",
   AI_TOOL_COSTS: "Lo que cuestan las herramientas de IA por persona, según la forma de hacerlo",
@@ -155,11 +155,11 @@ const NOMBRES_ES: Record<string, string> = {
   CHANGE_CLARITY_FACTOR: "Ajuste según qué tan claro estaba el requerimiento",
   CHANGE_CONTINGENCY_BY_TYPE: "Reserva para imprevistos según el tipo de cambio",
   CHANGE_FREE_CHANGE_LIMIT_MXN: "Monto hasta el cual un cambio no se cobra",
-  CHANGE_HIGH_RISK_MODE_FLOOR: "Riesgo mínimo que se asume por modo de desarrollo",
+  CHANGE_HIGH_RISK_MODE_FLOOR: "Riesgo mínimo que se asume por forma de hacerlo",
   CHANGE_HOURLY_RATE_DEFAULT_MXN: "Tarifa por hora de referencia para cobrar cambios",
   CHANGE_MAINTENANCE_RATE_BY_RISK: "Costo del mantenimiento según el riesgo del sistema",
   CHANGE_MINIMUM_CHARGE_MXN: "Cobro mínimo por atender un cambio",
-  CHANGE_MODE_FACTOR: "Cuánto encarece el cambio según el modo de desarrollo",
+  CHANGE_MODE_FACTOR: "Cuánto encarece el cambio según la forma de hacerlo",
   CHANGE_PHASE_FACTOR: "Cuánto encarece el cambio según la fase del proyecto",
 };
 

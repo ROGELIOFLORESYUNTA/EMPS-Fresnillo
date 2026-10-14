@@ -7,7 +7,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, History } from "lucide-react";
-import { formatMXN, formatWeeks, DEVELOPMENT_MODES, SCENARIO_LABELS, RISK_LEVELS, labelOf } from "@/lib/utils";
+import { formatMXN, formatWeeks, SCENARIO_LABELS, RISK_LEVELS, labelOf } from "@/lib/utils";
+import { NOMBRE_DE_FORMA } from "@/lib/formas";
 import { InfoTip } from "@/components/info-tip";
 
 export interface DecisionTimelineItem {
@@ -41,7 +42,8 @@ export function DecisionSection({
   timeline: DecisionTimelineItem[];
   supersededCount: number;
 }) {
-  const modeLabels = Object.fromEntries(DEVELOPMENT_MODES.map((m) => [m.value, m.label]));
+  // Nombres llanos de las formas de hacerlo (A mano, Con IA...), los mismos de la pantalla del proyecto.
+  const modeLabels = NOMBRE_DE_FORMA;
   const modeLabel = modeLabels[decision.mode] ?? decision.mode;
   const scenarioLabel = labelOf(SCENARIO_LABELS, decision.scenario);
   const riskLabel = decision.riskLevelAtDecision

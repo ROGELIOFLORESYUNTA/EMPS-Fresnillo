@@ -169,16 +169,16 @@ export default function EstimatePage({ params }: { params: Promise<{ id: string 
 
             {!allModes && (
               <div className="grid gap-2">
-                <Label>Una sola forma de hacerlo</Label>
+                <Label className="leading-snug">Una sola forma de hacerlo</Label>
                 <Select value={form.mode} onChange={(e) => setForm({ ...form, mode: e.target.value })}>
                   {DEVELOPMENT_MODES.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
                 </Select>
               </div>
             )}
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <div className="grid gap-2">
-                <Label>Utilidad que quiere ganar el proveedor (%)</Label>
+                <Label className="leading-snug">Utilidad que quiere ganar el proveedor (%)</Label>
                 <div className="relative">
                   <Input
                     type="number"
@@ -194,7 +194,7 @@ export default function EstimatePage({ params }: { params: Promise<{ id: string 
                 <p className="text-xs text-muted-foreground">Ejemplo: 20 = gana 20 % sobre lo que le cuesta. Es la parte del precio que no es costo.</p>
               </div>
               <div className="grid gap-2">
-                <Label>Horas a la semana del equipo</Label>
+                <Label className="leading-snug">Horas a la semana del equipo</Label>
                 {capacidadDelEquipo ? (
                   <>
                     <p className="text-sm font-medium">{horasDelEquipo != null ? `${horasDelEquipo.toLocaleString("es-MX", { maximumFractionDigits: 0 })} horas` : "Se calculan del equipo"}</p>
@@ -214,12 +214,14 @@ export default function EstimatePage({ params }: { params: Promise<{ id: string 
                 )}
               </div>
               <div className="grid gap-2">
-                <Label>Cómo calcular lo que cuesta el equipo</Label>
+                <Label className="leading-snug">Cómo calcular lo que cuesta el equipo</Label>
                 <Select value={form.costMode} onChange={(e) => setForm({ ...form, costMode: e.target.value as "detailed" | "estimated" })}>
-                  <option value="detailed">Detallado: IMSS, INFONAVIT e impuesto sobre nómina, cuota por cuota</option>
-                  <option value="estimated">Rápido: 40 % sobre el sueldo</option>
+                  <option value="detailed">Detallado</option>
+                  <option value="estimated">Rápido</option>
                 </Select>
-                <p className="text-xs text-muted-foreground">Detallado es el exacto; rápido sirve para una primera idea.</p>
+                <p className="text-xs text-muted-foreground">
+                  Detallado suma el IMSS, el INFONAVIT y el impuesto sobre nómina cuota por cuota: es el exacto. Rápido pone 40 % sobre el sueldo y sirve para una primera idea.
+                </p>
               </div>
             </div>
 
@@ -259,7 +261,7 @@ export default function EstimatePage({ params }: { params: Promise<{ id: string 
             <span className="text-muted-foreground"> · anticipo {form.anticipoPct} %, pago final {form.finalPaymentPct} %, otras herramientas {formatMXN(form.monthlyToolsCost)} al mes, administración {formatMXN(form.monthlyAdminCost)} al mes, el proveedor puede adelantar {formatMXN(form.capitalDeclaredByProvider)}, herramientas de IA nivel {NIVELES.find((n) => n.v === aiToolLevel)?.t.toLowerCase()}</span>
           </summary>
           <div className="px-4 pb-3 space-y-2">
-            <Label>Nivel de herramientas de IA por persona</Label>
+            <Label className="leading-snug">Nivel de herramientas de IA por persona</Label>
             <div className="grid sm:grid-cols-3 gap-2">
               {NIVELES.map((n) => (
                 <button key={n.v} type="button" onClick={() => setAiToolLevel(n.v)} className={`rounded-md border p-3 text-left text-sm hover:bg-accent ${aiToolLevel === n.v ? "border-primary ring-1 ring-primary" : ""}`}>
@@ -284,9 +286,9 @@ export default function EstimatePage({ params }: { params: Promise<{ id: string 
             <CardDescription>Cuándo cobra el proveedor. Con esto se calcula cuánto dinero tiene que poner de su bolsa mientras le pagan (capital de trabajo).</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-5">
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <div className="grid gap-2">
-                <Label>Anticipo</Label>
+                <Label className="leading-snug">Anticipo</Label>
                 <div className="relative">
                   <Input
                     type="number"
@@ -302,12 +304,12 @@ export default function EstimatePage({ params }: { params: Promise<{ id: string 
                 <p className="text-xs text-muted-foreground">Pago al inicio</p>
               </div>
               <div className="grid gap-2">
-                <Label>Por entregables (calculado automáticamente)</Label>
+                <Label className="leading-snug">Por entregables (calculado automáticamente)</Label>
                 <Input type="text" readOnly value={`${entregablesPct}%`} className="bg-muted/50 font-medium" />
                 <p className="text-xs text-muted-foreground">Se reparte cada mes intermedio</p>
               </div>
               <div className="grid gap-2">
-                <Label>Pago final</Label>
+                <Label className="leading-snug">Pago final</Label>
                 <div className="relative">
                   <Input
                     type="number"
@@ -366,21 +368,21 @@ export default function EstimatePage({ params }: { params: Promise<{ id: string 
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="grid gap-2">
-                <Label>Otras herramientas al mes (servidores, dominios, licencias que no son de IA)</Label>
+                <Label className="leading-snug">Otras herramientas al mes (servidores, dominios, licencias que no son de IA)</Label>
                 <Input type="number" min={0} value={form.monthlyToolsCost} onChange={(e) => setForm({ ...form, monthlyToolsCost: +e.target.value })} />
                 <p className="text-xs text-muted-foreground">{formatMXN(form.monthlyToolsCost)}</p>
               </div>
               <div className="grid gap-2">
-                <Label>Administración al mes (contador, oficina)</Label>
+                <Label className="leading-snug">Administración al mes (contador, oficina)</Label>
                 <Input type="number" min={0} value={form.monthlyAdminCost} onChange={(e) => setForm({ ...form, monthlyAdminCost: +e.target.value })} />
                 <p className="text-xs text-muted-foreground">{formatMXN(form.monthlyAdminCost)}</p>
               </div>
             </div>
 
             <div className="grid gap-2">
-              <Label>Dinero que el proveedor puede adelantar (capital de trabajo)</Label>
+              <Label className="leading-snug">Dinero que el proveedor puede adelantar (capital de trabajo)</Label>
               <Input type="number" min={0} step={10000} value={form.capitalDeclaredByProvider} onChange={(e) => setForm({ ...form, capitalDeclaredByProvider: +e.target.value })} />
               <p className="text-xs text-muted-foreground">{formatMXN(form.capitalDeclaredByProvider)}. Es lo que pone de su bolsa mientras le pagan. Si el proyecto necesita más que esto, el sistema lo marca en rojo.</p>
             </div>

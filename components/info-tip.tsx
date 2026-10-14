@@ -17,9 +17,15 @@ import { Info } from "lucide-react";
 export function InfoTip({
   title,
   children,
+  grande = false,
+  etiqueta,
 }: {
   title?: string;
   children: React.ReactNode;
+  /** Icono de 24 px con zona de toque de 44 px (WCAG 2.5.8), para las cifras clave. */
+  grande?: boolean;
+  /** Texto para lectores de pantalla; por omisión, "¿De dónde sale este número?". */
+  etiqueta?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
@@ -81,11 +87,15 @@ export function InfoTip({
         ref={triggerRef}
         type="button"
         onClick={() => setOpen((s) => !s)}
-        className="inline-flex items-center justify-center w-4 h-4 ml-1 text-muted-foreground hover:text-foreground rounded-full focus:outline-none focus:ring-1 focus:ring-primary"
-        aria-label="¿De dónde sale este número?"
+        className={
+          grande
+            ? "-my-2.5 ml-0.5 inline-flex h-11 w-11 items-center justify-center rounded-full text-tinta-suave hover:text-tinta focus:outline-none focus-visible:ring-2 focus-visible:ring-accion"
+            : "inline-flex items-center justify-center w-4 h-4 ml-1 text-muted-foreground hover:text-foreground rounded-full focus:outline-none focus:ring-1 focus:ring-primary"
+        }
+        aria-label={etiqueta ?? "¿De dónde sale este número?"}
         aria-expanded={open}
       >
-        <Info className="w-3.5 h-3.5" />
+        <Info className={grande ? "h-6 w-6" : "w-3.5 h-3.5"} />
       </button>
       {open && (
         <div

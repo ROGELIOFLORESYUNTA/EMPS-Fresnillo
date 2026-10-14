@@ -42,7 +42,7 @@ export default async function MetodologiaPage() {
         <CardHeader><CardTitle className="text-base">1. Hipótesis</CardTitle></CardHeader>
         <CardContent className="space-y-3 text-sm">
           <blockquote className="border-l-4 border-blue-500 pl-4 italic">
-            Una estimación temprana mejora cuando integra esfuerzo técnico, modo de desarrollo, cambios y
+            Una estimación temprana mejora cuando integra esfuerzo técnico, forma de hacerlo, cambios y
             viabilidad fiscal-laboral antes de comprometer precio, calendario y mantenimiento.
           </blockquote>
           <p>
@@ -73,7 +73,7 @@ export default async function MetodologiaPage() {
             <p className="text-muted-foreground">Features: clarity_avg, n_modules, n_integrations, criticality_avg.</p>
           </div>
           <div>
-            <p className="font-semibold">VI 2: modo de desarrollo declarado</p>
+            <p className="font-semibold">VI 2: forma de hacerlo declarada</p>
             <p className="text-muted-foreground">Feature: dev_mode (one-hot encoding de traditional / ai_assisted / hybrid / bytecoding_prompts / low_code).</p>
           </div>
           <div>
