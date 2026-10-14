@@ -48,6 +48,17 @@ export interface EntradasExplicacion {
   meses: number;
   costoMensualEquipo: number;
   personas: number;
+  /**
+   * Personas que participan solo parte del proyecto (sus semanas asignadas son
+   * menos que las del proyecto). Sin dato, o vacío, todas participan todo el proyecto.
+   */
+  participacionParcial?: { semanas: number }[];
+  /**
+   * Costo del equipo en todo el proyecto, cada persona por los meses que
+   * participa. Solo hace falta cuando hay participación parcial; si no, el
+   * equipo cuesta costoMensualEquipo × meses.
+   */
+  costoEquipoProyecto?: number;
   liquidacionLFT: number;
   /** Pericia del equipo con la IA y qué parte de la ganancia nominal del modo se acredita. */
   pericia?: {
@@ -94,6 +105,15 @@ const r4 = (n: number) => Math.round(n * 10000) / 10000;
 // Los meses van a 3 decimales: con 2, rehacer la cuenta a mano se desvia
 // hasta doscientos pesos en los proyectos cortos.
 const r3 = (n: number) => Math.round(n * 1000) / 1000;
+
+/** "8 semanas", "1 semana". */
+const semanasEnTexto = (n: number) => `${r2(n)} ${r2(n) === 1 ? "semana" : "semanas"}`;
+
+/** Une una lista en español: "a", "a y b", "a, b y c". */
+function unirConY(partes: string[]): string {
+  if (partes.length <= 1) return partes.join("");
+  return `${partes.slice(0, -1).join(", ")} y ${partes[partes.length - 1]}`;
+}
 
 export function construirExplicacion(e: EntradasExplicacion): PasoDeCalculo[] {
   const pasos: PasoDeCalculo[] = [];
@@ -200,12 +220,20 @@ export function construirExplicacion(e: EntradasExplicacion): PasoDeCalculo[] {
     operacion: `${r2(e.semanas)} semanas ÷ 4.33`,
   });
 
+  const parciales = e.participacionParcial ?? [];
+  const lista = unirConY(parciales.map((p) => semanasEnTexto(p.semanas)));
   pasos.push({
     clave: "costo_mensual",
     etiqueta: "Lo que cuesta el equipo cada mes, con impuestos y cuotas",
     valor: r2(e.costoMensualEquipo),
     unidad: "pesos",
     operacion: `${e.personas} persona(s): sueldo + prestaciones de ley + IMSS + INFONAVIT + impuesto sobre nómina, según el tipo de contrato de cada una.`,
+    nota:
+      parciales.length === 0
+        ? undefined
+        : parciales.length === 1
+          ? `1 persona participa solo parte del proyecto: ${lista}. Este renglón es el mes con todo el equipo; a esa persona solo se le cuenta el tiempo que participa.`
+          : `${parciales.length} persona(s) participan solo parte del proyecto: ${lista}. Este renglón es el mes con todo el equipo; a esas personas solo se les cuenta el tiempo que participan.`,
   });
 
   const factorAumento = e.herramientas?.factorAumento ?? 1;
@@ -243,6 +271,15 @@ export function construirExplicacion(e: EntradasExplicacion): PasoDeCalculo[] {
   if (herramientasMes > 0) sumandosMes.push(r2(herramientasMes).toString());
   if (otrosMes > 0) sumandosMes.push(r2(otrosMes).toString());
   const mensual = sumandosMes.length > 1 ? `(${sumandosMes.join(" + ")})` : sumandosMes[0];
+  // Con personas que participan solo parte del proyecto, el equipo ya no es
+  // "un mes × los meses": se suma lo de cada una por sus meses, y lo demás
+  // (herramientas, otros costos) sigue yendo por los meses del proyecto.
+  const extrasMes = herramientasMes + otrosMes;
+  const base =
+    parciales.length > 0 && e.costoEquipoProyecto !== undefined
+      ? `${r2(e.costoEquipoProyecto)} del equipo (cada persona por los meses que participa)` +
+        (extrasMes > 0 ? ` + ${r2(extrasMes)} de herramientas y otros costos al mes × ${r3(e.meses)} meses` : "")
+      : `${mensual} × ${r3(e.meses)} meses`;
   pasos.push({
     clave: "costo_directo",
     etiqueta: "Costo del proyecto",
@@ -250,8 +287,8 @@ export function construirExplicacion(e: EntradasExplicacion): PasoDeCalculo[] {
     unidad: "pesos",
     operacion:
       e.liquidacionLFT > 0
-        ? `${mensual} × ${r3(e.meses)} meses + ${r2(e.liquidacionLFT)} de liquidación (el proyecto pasa de 6 meses)`
-        : `${mensual} × ${r3(e.meses)} meses`,
+        ? `${base} + ${r2(e.liquidacionLFT)} de liquidación (el proyecto pasa de 6 meses)`
+        : base,
   });
 
   pasos.push({

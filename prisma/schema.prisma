@@ -144,10 +144,14 @@ model TeamProfile {
   role                String // lider_tecnico|dev_senior|dev_junior|analista|tester|disenador|soporte|contador|administrativo
   level               String   @default("mid") // junior|mid|senior|lead
   monthlySalary       Decimal
+  payBasis            String? // mensual | diario (como captura el pago esta persona; el motor siempre lee monthlySalary)
+  dailyRate           Decimal? // pago por dia cuando payBasis = diario (monthlySalary = dailyRate x 30.4)
   hourlyCost          Decimal?
   availabilityPercent Int      @default(100)
   monthsAssigned      Decimal
-  contractType        String   @default("nomina") // asimilados|honorarios|nomina|resico_pf|freelance
+  weeksAssigned       Decimal? // semanas que participa en el proyecto; null = todo el proyecto
+  isOwner             Boolean  @default(false) // la persona que cotiza y cobra su propio tiempo
+  contractType        String   @default("nomina") // asimilados|honorarios|nomina|resico_pf|freelance|propio
   productivityFactor  Decimal  @default(1.0)
   turnoverRisk        Int      @default(2) // 1-5
   supervisionRequired Int      @default(2) // 1-5

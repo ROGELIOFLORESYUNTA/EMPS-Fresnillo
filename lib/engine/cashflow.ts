@@ -48,17 +48,28 @@ export function computeCashFlow(months: CashFlowInputMonth[]): CashFlowResult {
  * - Anticipo
  * - Pagos por entregable (proporcional a meses)
  * - Pago final
- * - Egresos mensuales constantes
+ * - Egresos mensuales constantes (la nomina y sus impuestos pueden ir mes a mes)
  */
 export interface SimpleCashFlowInput {
   totalContractAmount: number;
   anticipoPct: number;        // 0..1
   finalPaymentPct: number;    // 0..1 (resto se distribuye en pagos por entregable)
-  monthlyOutflowPayroll: number;
-  monthlyOutflowTaxes: number;
+  /**
+   * Un numero es el mismo egreso cada mes. Un arreglo trae el de cada mes (el
+   * mes 1 en la posicion 0), por ejemplo nominaPorMes cuando hay personas que
+   * participan solo parte del proyecto. Un mes sin dato en el arreglo vale 0.
+   */
+  monthlyOutflowPayroll: number | number[];
+  /** Igual que la nomina: los impuestos de la nomina siguen a la nomina mes a mes. */
+  monthlyOutflowTaxes: number | number[];
   monthlyOutflowTools: number;
   monthlyOutflowAdmin: number;
   durationMonths: number;
+}
+
+/** Egreso del mes m (1, 2, ...): el numero fijo, o el que toca en el arreglo. */
+function delMes(egreso: number | number[], m: number): number {
+  return Array.isArray(egreso) ? (egreso[m - 1] ?? 0) : egreso;
 }
 
 export function buildSimpleCashFlow(input: SimpleCashFlowInput): CashFlowResult {
@@ -77,8 +88,8 @@ export function buildSimpleCashFlow(input: SimpleCashFlowInput): CashFlowResult 
     months.push({
       monthNumber: m,
       income,
-      payrollOutflow: input.monthlyOutflowPayroll,
-      taxOutflow: input.monthlyOutflowTaxes,
+      payrollOutflow: delMes(input.monthlyOutflowPayroll, m),
+      taxOutflow: delMes(input.monthlyOutflowTaxes, m),
       toolsOutflow: input.monthlyOutflowTools,
       adminOutflow: input.monthlyOutflowAdmin,
     });

@@ -16,6 +16,14 @@
  *   - Todo lo que entra al cálculo queda en el snapshot, incluido el capital
  *     declarado, para que un recálculo reproduzca el mismo riesgo.
  *   - Cada estimación guarda su cadena de cálculo ("de dónde sale este número").
+ *
+ * Octubre de 2026 (equipo persona por persona):
+ *   - Cada persona cuesta por los meses que participa (semanas asignadas), no
+ *     "un mes del equipo × los meses del proyecto". Lo mismo vale para la
+ *     liquidación LFT y para la nómina de cada mes del flujo de efectivo.
+ *   - El contrato "propio" (el tiempo de quien cotiza) no paga IMSS ni impuesto
+ *     sobre nómina.
+ *   - El snapshot guarda el equipo y el lado.
  */
 import { Decimal } from "decimal.js";
 import { prisma } from "./db";
@@ -26,12 +34,17 @@ import {
   computeEffort,
   computeScenarios,
   computeCalendar,
-  computeProfileCost,
   computePricing,
   computeISR,
   buildSimpleCashFlow,
   computeRisk,
   computeLFTRisk,
+  costoDelEquipo,
+  costoMensualDelEquipo,
+  mesesDePersona,
+  nominaPorMes,
+  SEMANAS_POR_MES,
+  type PerfilDeEquipo,
   type DevelopmentMode,
   type Scenario,
   type ProjectInput,
@@ -95,7 +108,6 @@ interface EstimateOutput {
 
 const HORAS_SEMANA_POR_PERSONA = 40;
 const MIN_PROJECT_MONTHS = 0.5; // mínimo medio mes para cualquier proyecto
-const SEMANAS_POR_MES = 4.33;
 
 /** Niveles que captura la interfaz para "¿qué tan disponible está el cliente?". */
 const CLIENTE_AUSENTE_POR_NIVEL: Record<string, number> = {
@@ -262,21 +274,18 @@ export async function runEstimate(req: EstimateRequest): Promise<EstimateOutput>
     ? capacidadDelEquipo(project.team)
     : Number(req.weeklyTeamCapacityHours);
 
-  // Costo mensual del equipo. El tipo de contrato decide qué cargas aplican.
+  // Costo del equipo. El tipo de contrato decide qué cargas aplican y las
+  // semanas asignadas, cuántos meses cuenta cada persona.
   const useEstimated = req.costMode === "estimated";
-  const monthlyTeamCost = project.team.reduce((acc, p) => {
-    const cost = computeProfileCost(
-      {
-        monthlySalary: Number(p.monthlySalary),
-        riskClass: "I",
-        useEstimatedFactor: useEstimated,
-        estimatedFactor: 0.40,
-        contractType: p.contractType,
-      },
-      ctx.rates,
-    );
-    return acc + cost.total * Number(p.availabilityPercent) / 100;
-  }, 0);
+  const equipo: PerfilDeEquipo[] = project.team.map((p) => ({
+    monthlySalary: Number(p.monthlySalary),
+    contractType: p.contractType,
+    availabilityPercent: Number(p.availabilityPercent),
+    weeksAssigned: p.weeksAssigned === null ? null : Number(p.weeksAssigned),
+  }));
+  // Un mes con todo el equipo presente. El costo del proyecto sale de
+  // costoDelEquipo, que cuenta a cada persona solo por los meses que participa.
+  const monthlyTeamCost = costoMensualDelEquipo(equipo, ctx.rates, useEstimated);
 
   const cfa = req.cashFlowAssumptions;
 
@@ -317,6 +326,20 @@ export async function runEstimate(req: EstimateRequest): Promise<EstimateOutput>
     costMode: req.costMode ?? "detailed",
     cashFlowAssumptions: cfa,
     capitalDeclaredByProvider: capitalDeclarado,
+    // El equipo tal como estaba al estimar (sin nombres) y el lado del proyecto.
+    equipo: project.team.map((p) => ({
+      id: p.id,
+      role: p.role,
+      contractType: p.contractType,
+      monthlySalary: Number(p.monthlySalary),
+      payBasis: p.payBasis ?? null,
+      dailyRate: p.dailyRate === null ? null : Number(p.dailyRate),
+      weeksAssigned: p.weeksAssigned === null ? null : Number(p.weeksAssigned),
+      availabilityPercent: Number(p.availabilityPercent),
+      aiSkill: p.aiSkill,
+      isOwner: p.isOwner,
+    })),
+    lado: project.lado ?? null,
     riesgo: { ...riesgo, cambiosRegistrados: project._count.changes, claridadPromedio },
     herramientas,
     aiToolLevel: nivelHerramientas,
@@ -360,20 +383,23 @@ export async function runEstimate(req: EstimateRequest): Promise<EstimateOutput>
     const pisoPrototipo = 0.5 + 0.2 * project.modules.length;
     const weeksToPrototype = Math.max(calendar.weeksToPrototype, pisoPrototipo);
 
-    // Riesgo LFT — si el proyecto excede 6 meses con personal en nómina, hay riesgo de
-    // conversión a indeterminado y liquidación al despedir.
+    // Riesgo LFT: si una persona en nómina pasa de 6 meses en el proyecto, hay riesgo de
+    // conversión a indeterminado y liquidación al despedir. Se mide por persona: quien
+    // participa solo unas semanas cuenta con sus meses, no con los del proyecto.
     const lftRisk = computeLFTRisk({
-      team: project.team.map((p) => ({
-        monthlySalary: Number(p.monthlySalary),
+      team: equipo.map((p) => ({
+        monthlySalary: p.monthlySalary,
         contractType: p.contractType,
-        availabilityPercent: Number(p.availabilityPercent),
+        availabilityPercent: p.availabilityPercent,
+        monthsInProject: mesesDePersona(p, realMonthsOfMode),
       })),
       realMonthsOfProject: realMonthsOfMode,
       willTerminateAtEnd: true, // asumimos terminación al cierre como caso conservador
     });
 
-    // Costo = (equipo con cargas + herramientas de IA + otras herramientas +
-    // administración) por los meses que dura, más la liquidación si aplica.
+    // Costo = equipo con cargas (cada persona por los meses que participa) +
+    // (herramientas de IA + otras herramientas + administración) por los meses
+    // que dura el proyecto, más la liquidación si aplica.
     // Las horas de endurecimiento de bytecoding ya están dentro de las
     // semanas; no se vuelven a multiplicar aquí. indirectCost es la parte que
     // no es nómina, ya incluida en el costo total.
@@ -382,21 +408,24 @@ export async function runEstimate(req: EstimateRequest): Promise<EstimateOutput>
     const factorAumento = scen === "conservative" ? factorAumentoPlanes(ctx.aiToolAumentoAnual, realMonthsOfMode) : 1;
     const herramientasMesEscenario = herramientas.mensualMXN * factorAumento;
     const costoMensualIndirecto = herramientasMesEscenario + otrosHerramientasMensual + administracionMensual;
-    const baseCost = (monthlyTeamCost + costoMensualIndirecto) * realMonthsOfMode;
+    const costoEquipo = costoDelEquipo(equipo, ctx.rates, { realMonths: realMonthsOfMode, useEstimated });
+    const baseCost = costoEquipo + costoMensualIndirecto * realMonthsOfMode;
     const indirectCost = costoMensualIndirecto * realMonthsOfMode;
     const totalCost = baseCost + lftRisk.estimatedTerminationCost;
     const pricing = computePricing({ totalCost, targetMargin: req.targetMargin }, ctx.rates.IVA);
     const isr = computeISR(pricing.subtotal, totalCost * 0.85, totalCost * 0.05, ctx.rates.ISR);
 
-    // Cashflow basado en el calendario REAL del modo.
+    // Cashflow basado en el calendario REAL del modo. La nómina va mes a mes:
+    // quien sale a las 8 semanas ya no cobra en el mes 3.
     const cashflowMonthsThisMode = Math.max(1, Math.ceil(realMonthsOfMode));
+    const nominaMeses = nominaPorMes(equipo, ctx.rates, { realMonths: realMonthsOfMode, useEstimated });
     const cashflowResult = cfa
       ? buildSimpleCashFlow({
           totalContractAmount: pricing.total,
           anticipoPct: cfa.anticipoPct,
           finalPaymentPct: cfa.finalPaymentPct,
-          monthlyOutflowPayroll: monthlyTeamCost,
-          monthlyOutflowTaxes: monthlyTeamCost * 0.10,
+          monthlyOutflowPayroll: nominaMeses,
+          monthlyOutflowTaxes: nominaMeses.map((n) => n * 0.10),
           monthlyOutflowTools: herramientasMesEscenario + otrosHerramientasMensual,
           monthlyOutflowAdmin: administracionMensual,
           durationMonths: cashflowMonthsThisMode,
@@ -438,6 +467,10 @@ export async function runEstimate(req: EstimateRequest): Promise<EstimateOutput>
       meses: realMonthsOfMode,
       costoMensualEquipo: monthlyTeamCost,
       personas: project.team.length,
+      participacionParcial: equipo
+        .filter((p) => p.weeksAssigned != null && mesesDePersona(p, realMonthsOfMode) < realMonthsOfMode)
+        .map((p) => ({ semanas: p.weeksAssigned as number })),
+      costoEquipoProyecto: costoEquipo,
       liquidacionLFT: lftRisk.estimatedTerminationCost,
       pericia: {
         promedio: pericia.promedio,
@@ -541,13 +574,15 @@ export async function runEstimate(req: EstimateRequest): Promise<EstimateOutput>
     const probableEst = out.find((e) => e.scenario === "probable") ?? out[0];
     const probableTotal = probableEst?.total ?? 0;
     const probableWeeks = probableEst?.weeksTotal ?? 0;
-    const realMonths = Math.max(1, Math.ceil(Math.max(MIN_PROJECT_MONTHS, probableWeeks / SEMANAS_POR_MES)));
+    const mesesProbables = Math.max(MIN_PROJECT_MONTHS, probableWeeks / SEMANAS_POR_MES);
+    const realMonths = Math.max(1, Math.ceil(mesesProbables));
+    const nominaMeses = nominaPorMes(equipo, ctx.rates, { realMonths: mesesProbables, useEstimated });
     const finalCashflow = buildSimpleCashFlow({
       totalContractAmount: probableTotal,
       anticipoPct: cfa.anticipoPct,
       finalPaymentPct: cfa.finalPaymentPct,
-      monthlyOutflowPayroll: monthlyTeamCost,
-      monthlyOutflowTaxes: monthlyTeamCost * 0.10,
+      monthlyOutflowPayroll: nominaMeses,
+      monthlyOutflowTaxes: nominaMeses.map((n) => n * 0.10),
       monthlyOutflowTools: herramientas.mensualMXN + otrosHerramientasMensual,
       monthlyOutflowAdmin: administracionMensual,
       durationMonths: realMonths,

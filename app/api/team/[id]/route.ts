@@ -3,6 +3,8 @@ import { prisma } from "@/lib/db";
 import { teamProfileCreateSchema } from "@/lib/validators";
 import { getCurrentWorkspace, logWorkspaceActivity } from "@/lib/workspace";
 import { cargarProyectoConAcceso } from "@/lib/acceso-proyecto";
+import { conMensualDelPagoDiario } from "@/lib/engine/pago";
+import { avisoDeSalarioMinimo, conMesesDeLasSemanas, conPagoGuardado } from "@/lib/equipo-server";
 
 /**
  * El integrante solo se toca si existe y su proyecto se puede abrir (dueño y
@@ -19,8 +21,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   try {
     const { id } = await params;
     if (!(await integranteAccesible(id))) return NextResponse.json({ error: "Integrante no encontrado." }, { status: 404 });
-    const body = await req.json();
-    const data = teamProfileCreateSchema.partial().parse(body);
+    const body = await conPagoGuardado(id, await req.json());
+    // Pago por día: el mensual se calcula aquí (x 30.4). Semanas asignadas: también se guardan como meses.
+    const data = conMesesDeLasSemanas(teamProfileCreateSchema.partial().parse(conMensualDelPagoDiario(body)));
     const profile = await prisma.teamProfile.update({ where: { id }, data });
     // Registro para la cronología "qué se modificó después de decidir".
     const workspace = await getCurrentWorkspace();
@@ -31,7 +34,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         name: profile.name,
       });
     }
-    return NextResponse.json({ profile });
+    return NextResponse.json({ profile, avisoSalarioMinimo: await avisoDeSalarioMinimo(profile) });
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "error" }, { status: 400 });
   }

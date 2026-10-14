@@ -101,6 +101,7 @@ export const CONTRACT_LABELS: Record<string, string> = {
   honorarios: "Honorarios",
   resico_pf: "RESICO (persona física)",
   freelance: "Freelance",
+  propio: "Propio",
 };
 
 export const LEVEL_LABELS: Record<string, string> = {
@@ -142,4 +143,5 @@ export const CONTRACT_HELP: Record<string, string> = {
   honorarios: "Profesional independiente que factura sus servicios. Sin cargas patronales, pero sin subordinación (no le puedes fijar horario).",
   resico_pf: "Régimen Simplificado de Confianza: factura con tasas bajas de ISR. Sin cargas patronales para el proveedor.",
   freelance: "Colaborador externo por proyecto. Sin cargas patronales, pero mayor riesgo de rotación y de reclamo laboral si hay subordinación.",
+  propio: "Propio: lo que vale tu tiempo. Sin IMSS ni impuesto sobre nómina; tú eres quien cotiza.",
 };

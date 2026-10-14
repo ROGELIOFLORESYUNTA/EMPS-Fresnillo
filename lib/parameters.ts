@@ -12,6 +12,7 @@ import {
   type TablaHerramientas,
   type FactoresPericia,
 } from "./engine/herramientas";
+import { SALARIO_MINIMO_DIARIO_POR_OMISION } from "./engine/pago";
 
 const DEFAULT_YEAR = Number.parseInt(process.env.DEFAULT_FISCAL_YEAR ?? "2026", 10);
 const DEFAULT_COUNTRY = process.env.DEFAULT_COUNTRY ?? "Mexico";
@@ -217,6 +218,15 @@ export async function loadTipoCambio(
 ): Promise<number> {
   const rows = await loadAllForYear(year, workspaceId);
   return getNumOr(rows, "TIPO_CAMBIO_USD_MXN", TIPO_CAMBIO_POR_OMISION);
+}
+
+/** Salario mínimo general diario (SALARIO_MINIMO_GENERAL_DIARIO), para avisar cuando un pago queda abajo. Con respaldo si la base aún no lo trae. */
+export async function loadSalarioMinimoDiario(
+  year = DEFAULT_YEAR,
+  workspaceId: string | null = null,
+): Promise<number> {
+  const rows = await loadAllForYear(year, workspaceId);
+  return getNumOr(rows, "SALARIO_MINIMO_GENERAL_DIARIO", SALARIO_MINIMO_DIARIO_POR_OMISION);
 }
 
 export async function loadAllForEstimate(

@@ -319,3 +319,45 @@ export function computeChangeRangeByType(
     };
   });
 }
+
+// ============================================================
+// 7. Precio por tipo de cambio (costo con margen e IVA)
+// ============================================================
+
+export interface ChangePriceRow extends ChangeRangeRow {
+  /** Precio sin IVA: costo / (1 - margen). */
+  minPrecio: number;
+  maxPrecio: number;
+  /** Precio con IVA. */
+  minPrecioConIva: number;
+  maxPrecioConIva: number;
+}
+
+/**
+ * Lo que se le cobra al cliente por cada tipo de cambio: el costo de
+ * computeChangeRangeByType llevado a precio con la misma regla del proyecto
+ * (costo / (1 - margen)) y con IVA. La tabla de costos sola no lleva la
+ * utilidad, y se leía como si fuera lo que se cobra.
+ *
+ * El margen se acota a 0..0.99 (como en la captura de la estimación) y un IVA
+ * que no sea número se toma como 0, para que un dato raro no rompa el reporte.
+ */
+export function preciosDeCambioPorTipo(
+  rangos: ChangeRangeRow[],
+  margin: number,
+  ivaRate: number,
+): ChangePriceRow[] {
+  const m = Number.isFinite(margin) ? Math.min(0.99, Math.max(0, margin)) : 0;
+  const iva = Number.isFinite(ivaRate) ? Math.max(0, ivaRate) : 0;
+  return rangos.map((r) => {
+    const minPrecio = r.minCost / (1 - m);
+    const maxPrecio = r.maxCost / (1 - m);
+    return {
+      ...r,
+      minPrecio,
+      maxPrecio,
+      minPrecioConIva: minPrecio * (1 + iva),
+      maxPrecioConIva: maxPrecio * (1 + iva),
+    };
+  });
+}

@@ -11,9 +11,13 @@
  *   - 20 días de salario por cada año de antigüedad      [LFT Art. 50 fracc. II]
  *   - Prima de antigüedad: 12 días de salario por año    [LFT Art. 162]
  *
- * Si el equipo está bajo otro régimen (asimilados, honorarios, RESICO, freelance), NO
+ * Si el equipo está bajo otro régimen (asimilados, honorarios, RESICO, freelance, propio), NO
  * aplica la liquidación LFT — solo aplica para contratos "nomina" (relación laboral
  * subordinada). Por eso este cálculo se hace SOLO sobre los perfiles con contractType="nomina".
+ *
+ * El límite de 6 meses se mide por persona: quien participa solo parte del proyecto (semanas
+ * asignadas) cuenta con SUS meses, no con los del proyecto. Una persona en nómina que sale a las
+ * 8 semanas no genera liquidación aunque el proyecto dure 9 meses.
  */
 
 const LIMITE_CONTRATO_DETERMINADO_MESES = 6;
@@ -28,8 +32,13 @@ const DIAS_DE_SALARIO_POR_MES = 30;
 
 export interface ProfileForLFT {
   monthlySalary: number;
-  contractType: string;        // "nomina" | "asimilados" | "honorarios" | "resico_pf" | "freelance"
+  contractType: string;        // "nomina" | "asimilados" | "honorarios" | "resico_pf" | "freelance" | "propio"
   availabilityPercent: number; // 0-100
+  /**
+   * Meses que ESTA persona participa en el proyecto (mesesDePersona en equipo.ts).
+   * Sin dato participa todo el proyecto (realMonthsOfProject), como antes.
+   */
+  monthsInProject?: number;
 }
 
 export interface LFTRiskInput {
@@ -60,8 +69,12 @@ export function computeLFTRisk(input: LFTRiskInput): LFTRiskResult {
   const isAtRisk = monthsOverLimit > 0;
 
   const nominaProfiles = input.team.filter((p) => p.contractType === "nomina");
+  // Meses de cada persona: los suyos si vienen (semanas asignadas), si no todo el proyecto.
+  const mesesDe = (p: ProfileForLFT) => p.monthsInProject ?? input.realMonthsOfProject;
+  // La liquidación aplica solo a quien está en nómina Y pasa de 6 meses él mismo.
+  const exposedProfiles = nominaProfiles.filter((p) => mesesDe(p) > LIMITE_CONTRATO_DETERMINADO_MESES);
 
-  if (!isAtRisk || nominaProfiles.length === 0 || !input.willTerminateAtEnd) {
+  if (exposedProfiles.length === 0 || !input.willTerminateAtEnd) {
     return {
       isAtRisk: false,
       monthsOverLimit,
@@ -71,15 +84,16 @@ export function computeLFTRisk(input: LFTRiskInput): LFTRiskResult {
       recommendation: !isAtRisk
         ? "Proyecto bajo el límite de 6 meses. Sin riesgo de conversión a indeterminado."
         : nominaProfiles.length === 0
-          ? "Equipo bajo regímenes que no son nómina (asimilados/honorarios/freelance). Sin riesgo LFT."
-          : "Sin liquidación si el equipo continúa con la empresa después del proyecto.",
+          ? "Equipo bajo regímenes que no son nómina (asimilados/honorarios/freelance/propio). Sin riesgo LFT."
+          : exposedProfiles.length === 0
+            ? "Ninguna persona en nómina pasa de 6 meses en el proyecto. Sin riesgo de conversión a indeterminado."
+            : "Sin liquidación si el equipo continúa con la empresa después del proyecto.",
     };
   }
 
-  // Años de antigüedad estimados (proyecto + tiempo previo asumido = realMonths/12)
-  const yearsOfTenure = input.realMonthsOfProject / 12;
-
-  const perProfileBreakdown = nominaProfiles.map((p) => {
+  const perProfileBreakdown = exposedProfiles.map((p) => {
+    // Años de antigüedad estimados (proyecto + tiempo previo asumido = sus meses/12)
+    const yearsOfTenure = mesesDe(p) / 12;
     const dailySalary = (p.monthlySalary / DIAS_DE_SALARIO_POR_MES) * (p.availabilityPercent / 100);
 
     const indemnizacionConstitucional = dailySalary * INDEMNIZACION_DIAS_BASE;
@@ -115,12 +129,12 @@ export function computeLFTRisk(input: LFTRiskInput): LFTRiskResult {
   return {
     isAtRisk: true,
     monthsOverLimit,
-    affectedProfilesCount: nominaProfiles.length,
+    affectedProfilesCount: exposedProfiles.length,
     estimatedTerminationCost,
     perProfileBreakdown,
     recommendation:
       `El proyecto excede ${LIMITE_CONTRATO_DETERMINADO_MESES} meses (límite legal para contrato determinado). ` +
-      `${nominaProfiles.length} perfil(es) en nómina pueden demandar conversión a indeterminado. ` +
+      `${exposedProfiles.length} perfil(es) en nómina pueden demandar conversión a indeterminado. ` +
       `Si decides terminar contratos al cierre del proyecto, la liquidación estimada es ` +
       `${estimatedTerminationCost.toLocaleString("es-MX", { style: "currency", currency: "MXN" })}. ` +
       `Alternativas: contratar bajo asimilados/honorarios desde el inicio, o continuar la relación laboral con otros proyectos.`,

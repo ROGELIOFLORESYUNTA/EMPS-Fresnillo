@@ -178,7 +178,7 @@ export interface ProfileCostInput {
   seniorityYears?: number;          // antigüedad para el factor de integración; default 1 (recién contratado)
   useEstimatedFactor?: boolean;     // si true, usa factor agregado en lugar de detalle por ramo
   estimatedFactor?: number;         // default 0.40
-  /** nomina | asimilados | honorarios | resico_pf | freelance. Decide que cargas aplican. Default nomina. */
+  /** nomina | asimilados | honorarios | resico_pf | freelance | propio. Decide que cargas aplican. Default nomina. */
   contractType?: string;
 }
 
