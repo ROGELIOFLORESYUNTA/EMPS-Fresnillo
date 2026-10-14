@@ -13,6 +13,7 @@ import { api, apiPost, apiPut } from "@/lib/api-client";
 import { formatMXN } from "@/lib/utils";
 import { Plus, Check, X, Calculator, FileSearch } from "lucide-react";
 import { Breadcrumbs } from "@/components/breadcrumbs";
+import { AVISO_VEINTE_POR_CIENTO, REFERENCIA_LAASSP, type AcumuladoDeCambios } from "@/lib/cambios-acumulados";
 import {
   computeChangeCost,
   PHASE_LABELS,
@@ -34,6 +35,9 @@ interface ChangeRow {
   createdAt: string;
 }
 
+/** Lo acumulado que manda el servidor, con de dónde sale el precio pactado. */
+type Acumulado = AcumuladoDeCambios & { origen: "decision" | "probable" };
+
 const TIPO_LABELS: Record<string, string> = {
   correccion: "Corrección",
   garantia: "Garantía",
@@ -45,6 +49,7 @@ const TIPO_LABELS: Record<string, string> = {
 export default function ChangesPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: projectId } = use(params);
   const [changes, setChanges] = useState<ChangeRow[]>([]);
+  const [acumulado, setAcumulado] = useState<Acumulado | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
@@ -72,8 +77,9 @@ export default function ChangesPage({ params }: { params: Promise<{ id: string }
   }, [projectId]);
 
   async function refresh() {
-    const data = await api<{ changes: ChangeRow[] }>(`/api/projects/${projectId}/changes`);
+    const data = await api<{ changes: ChangeRow[]; acumulado?: Acumulado | null }>(`/api/projects/${projectId}/changes`);
     setChanges(data.changes);
+    setAcumulado(data.acumulado ?? null);
   }
 
   async function handleAdd(e: React.FormEvent) {
@@ -112,6 +118,31 @@ export default function ChangesPage({ params }: { params: Promise<{ id: string }
           <Plus className="w-4 h-4 mr-2" />{showForm ? "Cancelar" : "Registrar cambio"}
         </Button>
       </div>
+
+      {/* Regla del 20 %: hasta aquí son cambios; después es otro desarrollo. */}
+      {acumulado && acumulado.aceptados > 0 && (
+        <div
+          role={acumulado.excede ? "alert" : "status"}
+          className={`rounded-md border px-4 py-3 text-sm ${acumulado.excede ? "border-amber-300 bg-amber-50 text-amber-900" : "bg-muted/30"}`}
+        >
+          <p>
+            Cambios aceptados hasta hoy: <strong>{acumulado.aceptados}</strong>, por <strong>{formatMXN(acumulado.monto)}</strong> sin IVA. Son el{" "}
+            <strong>{acumulado.porcentaje.toLocaleString("es-MX", { maximumFractionDigits: 1 })} %</strong> del precio pactado (
+            {formatMXN(acumulado.precioPactado)} sin IVA). El tope es {acumulado.limitePct} %.
+          </p>
+          {acumulado.excede && (
+            <>
+              <p className="mt-1 font-semibold">{AVISO_VEINTE_POR_CIENTO}</p>
+              <p className="mt-0.5 text-xs">{REFERENCIA_LAASSP}</p>
+            </>
+          )}
+          <p className="mt-1 text-xs text-muted-foreground">
+            {acumulado.origen === "decision"
+              ? "El precio pactado es el de la opción que elegiste."
+              : "Todavía no eliges una opción: se usa el precio probable."}
+          </p>
+        </div>
+      )}
 
       {showForm && (
         <Card>

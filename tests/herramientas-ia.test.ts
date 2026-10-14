@@ -44,9 +44,9 @@ describe("asientos de herramienta", () => {
 describe("costo de herramientas por forma de hacerlo", () => {
   it("bytecoding: asientos × USD × (1 + sobreconsumo) × tipo de cambio, sin IVA", () => {
     const r = costoHerramientasPorModo({ mode: "bytecoding_prompts", asientos: 4, tipoCambio: 16.92 });
-    expect(r.usdPorAsiento).toBe(250);
+    expect(r.usdPorAsiento).toBe(230);
     expect(r.sobreconsumo).toBe(0.3);
-    expect(r.mensualMXN).toBeCloseTo(4 * 250 * 1.3 * 16.92, 2);
+    expect(r.mensualMXN).toBeCloseTo(4 * 230 * 1.3 * 16.92, 2);
   });
   it("a mano no cuesta herramientas", () => {
     expect(costoHerramientasPorModo({ mode: "traditional", asientos: 4 }).mensualMXN).toBe(0);
@@ -69,6 +69,47 @@ describe("costo de herramientas por forma de hacerlo", () => {
     }
     const factores = (seed as unknown as { ai_skill_factors: Record<string, number> }).ai_skill_factors;
     for (const nivel of ["1", "2", "3", "4", "5"]) expect(factores[nivel]).toBe(PERICIA_POR_OMISION[nivel]);
+  });
+});
+
+describe("precios de herramientas consultados el 13 de octubre de 2026", () => {
+  const tabla = (seed as unknown as { ai_tool_costs: { _consultado: string; por_modo: Record<string, { usd_por_persona_mes: number; niveles: { basico: number; tipico: number; maximo: number } }> } }).ai_tool_costs;
+
+  it("la tabla trae la fecha de consulta", () => {
+    expect(tabla._consultado).toBe("2026-10-13");
+  });
+
+  it("los tres niveles de cada forma de hacerlo, en USD por persona al mes", () => {
+    const niveles = (m: string) => {
+      const n = tabla.por_modo[m].niveles;
+      return [n.basico, n.tipico, n.maximo];
+    };
+    expect(niveles("traditional")).toEqual([0, 0, 0]);
+    expect(niveles("ai_assisted")).toEqual([10, 30, 100]);
+    expect(niveles("hybrid")).toEqual([40, 110, 200]);
+    expect(niveles("bytecoding_prompts")).toEqual([100, 230, 400]);
+    expect(niveles("low_code")).toEqual([20, 40, 60]);
+  });
+
+  it("el nivel típico es el precio de la canasta típica, en el seed y en el respaldo del motor", () => {
+    for (const modo of Object.keys(tabla.por_modo)) {
+      expect(tabla.por_modo[modo].niveles.tipico, modo).toBe(tabla.por_modo[modo].usd_por_persona_mes);
+      expect(HERRAMIENTAS_POR_OMISION.por_modo[modo].niveles?.tipico, modo).toBe(HERRAMIENTAS_POR_OMISION.por_modo[modo].usd_por_persona_mes);
+    }
+  });
+
+  it("de básico a máximo nunca baja", () => {
+    for (const modo of Object.keys(tabla.por_modo)) {
+      const n = tabla.por_modo[modo].niveles;
+      expect(n.basico, modo).toBeLessThanOrEqual(n.tipico);
+      expect(n.tipico, modo).toBeLessThanOrEqual(n.maximo);
+    }
+  });
+
+  it("el respaldo del motor trae los mismos niveles que el seed", () => {
+    for (const modo of Object.keys(tabla.por_modo)) {
+      expect(HERRAMIENTAS_POR_OMISION.por_modo[modo].niveles, modo).toEqual(tabla.por_modo[modo].niveles);
+    }
   });
 });
 
@@ -203,7 +244,7 @@ describe("niveles, plan propio y aumento de precios (la vida real)", () => {
   it("el nivel cambia el USD por asiento: básico, típico y máximo", () => {
     const fila = HERRAMIENTAS_POR_OMISION.por_modo.bytecoding_prompts;
     expect(usdDelNivel(fila, "basico")).toBe(100);
-    expect(usdDelNivel(fila, "tipico")).toBe(250);
+    expect(usdDelNivel(fila, "tipico")).toBe(230);
     expect(usdDelNivel(fila, "maximo")).toBe(400);
     const max = costoHerramientasPorModo({ mode: "bytecoding_prompts", asientos: 4, nivel: "maximo", tipoCambio: 16.92 });
     expect(max.mensualMXN).toBeCloseTo(4 * 400 * 1.3 * 16.92, 2);
@@ -216,8 +257,8 @@ describe("niveles, plan propio y aumento de precios (la vida real)", () => {
     expect(r.asientosAlNivel).toBe(1);
     expect(r.asientosConPlanPropio).toBe(2);
     expect(r.usdPlanesPropios).toBe(400);
-    // (1 × 250 + 400 + 0) × 1.3 × 16.92
-    expect(r.mensualMXN).toBeCloseTo((250 + 400) * 1.3 * 16.92, 2);
+    // (1 × 230 + 400 + 0) × 1.3 × 16.92
+    expect(r.mensualMXN).toBeCloseTo((230 + 400) * 1.3 * 16.92, 2);
   });
 
   it("a mano nadie cobra herramientas, aunque traiga plan propio", () => {

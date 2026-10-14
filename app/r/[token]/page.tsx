@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { DEVELOPMENT_MODES, SYSTEM_TYPE_LABELS, labelOf } from "@/lib/utils";
 import { recomendacionDelProyecto } from "@/lib/recomendacion-proyecto";
 import type { RecommendationRole } from "@/lib/engine/recommendation";
-import { rolDeLado } from "@/lib/lado";
+import { ladoDelProyecto, rolDeLado } from "@/lib/lado";
 import { getLado } from "@/lib/lado-server";
 import { COPIA } from "@/lib/lado-copy";
 import { VEREDICTO_ETIQUETA } from "@/lib/engine/aptitud";
@@ -17,15 +17,50 @@ import { TresRespuestas } from "@/components/tres-respuestas";
 import { ExplicacionDelNumero } from "@/components/explicacion-del-numero";
 import { TarjetasDeOpcion, PorQueImportaLaForma, type TarjetaDeOpcion } from "@/components/tarjetas-de-opcion";
 import { PreguntasDelPatron } from "@/components/preguntas-del-patron";
+import { VistaDeCotizacion } from "./vista-cotizacion";
 
-export const metadata: Metadata = { robots: { index: false, follow: false } };
+const SIN_BUSCADORES: Metadata = { robots: { index: false, follow: false } };
+
+/**
+ * Si el enlace es de un proyecto del desarrollador, la pestaña y la vista
+ * previa al pegarlo dicen "Cotización" (y no la portada del cotizador). Con
+ * cualquier otro enlace queda lo de siempre: sin buscadores.
+ */
+export async function generateMetadata({ params }: { params: Promise<{ token: string }> }): Promise<Metadata> {
+  const { token } = await params;
+  if (!token || token.length < 8) return SIN_BUSCADORES;
+  const p = await prisma.project.findUnique({
+    where: { shareToken: token },
+    select: { lado: true, cotizacion: { select: { numero: true, proveedorNombre: true } } },
+  });
+  if (!p || ladoDelProyecto(p.lado) !== "desarrollador") return SIN_BUSCADORES;
+  const titulo = p.cotizacion ? `Cotización ${p.cotizacion.numero}` : "Cotización";
+  const descripcion = p.cotizacion ? `${p.cotizacion.proveedorNombre} te comparte una cotización.` : "Cotización de un sistema de software.";
+  const copia = COPIA.desarrollador;
+  return {
+    ...SIN_BUSCADORES,
+    title: titulo,
+    description: descripcion,
+    openGraph: {
+      type: "website",
+      locale: "es_MX",
+      siteName: copia.marca,
+      title: titulo,
+      description: descripcion,
+      images: [{ url: copia.ogImage, width: 1200, height: 630, alt: copia.ogAlt }],
+    },
+    twitter: { card: "summary_large_image", title: titulo, description: descripcion, images: [copia.ogImage] },
+  };
+}
 
 const ESCENARIO: Record<string, string> = { optimistic: "optimista", probable: "probable", conservative: "conservador" };
 
 /**
  * Vista de solo lectura del resultado, para quien recibe el enlace sin tener
- * cuenta: las cuatro respuestas, las tres opciones, de dónde sale el número y
- * las preguntas del patrón. Mismas funciones que la pantalla del proyecto.
+ * cuenta. En un proyecto del Ayuntamiento: las cuatro respuestas, las tres
+ * opciones, de dónde sale el número y las preguntas del patrón, con las mismas
+ * funciones que la pantalla del proyecto. En un proyecto del desarrollador: solo
+ * la cotización (ver vista-cotizacion.tsx).
  */
 export default async function ResultadoCompartidoPage({
   params,
@@ -37,6 +72,13 @@ export default async function ResultadoCompartidoPage({
   const { token } = await params;
   const sp = await searchParams;
   if (!token || token.length < 8) notFound();
+
+  // Un proyecto del desarrollador se comparte como cotización: el cliente solo
+  // ve esa hoja, y ni siquiera se cargan el equipo ni los costos. Los
+  // proyectos del Ayuntamiento siguen como siempre.
+  const base = await prisma.project.findUnique({ where: { shareToken: token }, select: { id: true, lado: true } });
+  if (base && ladoDelProyecto(base.lado) === "desarrollador") return <VistaDeCotizacion projectId={base.id} />;
+
   const project = await prisma.project.findUnique({
     where: { shareToken: token },
     include: {

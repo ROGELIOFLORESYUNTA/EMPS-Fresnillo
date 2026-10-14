@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { teamProfileCreateSchema } from "@/lib/validators";
 import { cargarProyectoConAcceso } from "@/lib/acceso-proyecto";
 import { conMensualDelPagoDiario } from "@/lib/engine/pago";
-import { avisoDeSalarioMinimo, conMesesDeLasSemanas } from "@/lib/equipo-server";
+import { avisoDeSalarioMinimo, avisosDeSalarioMinimo, conMesesDeLasSemanas, soloUnDueno } from "@/lib/equipo-server";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -13,7 +13,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     where: { projectId: id },
     orderBy: { createdAt: "asc" },
   });
-  return NextResponse.json({ team });
+  // Los avisos de salario mínimo van aparte, por id, para que la pantalla los muestre junto a cada persona.
+  return NextResponse.json({ team, avisos: await avisosDeSalarioMinimo(team) });
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -27,6 +28,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const profile = await prisma.teamProfile.create({
       data: { ...data, projectId: id },
     });
+    // Solo una persona es "yo": si esta lo es, las demás dejan de serlo.
+    if (profile.isOwner) await soloUnDueno(id, profile.id);
     return NextResponse.json({ profile, avisoSalarioMinimo: await avisoDeSalarioMinimo(profile) }, { status: 201 });
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "error" }, { status: 400 });

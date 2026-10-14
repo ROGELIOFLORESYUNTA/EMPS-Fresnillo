@@ -32,9 +32,9 @@ export function formatWeeks(value: number): string {
 export const DEVELOPMENT_MODES = [
   { value: "traditional", label: "Tradicional", description: "Todo programado a mano, con revisión y pruebas. Sin herramientas de IA." },
   { value: "ai_assisted", label: "Asistido por herramientas generativas", description: "Una persona programa con ayuda de la IA y revisa todo. Herramientas: Copilot o Cursor más un asistente (unos 30 USD por persona al mes)." },
-  { value: "bytecoding_prompts", label: "Bytecoding (prompts)", description: "La IA genera casi todo el código con agentes; la persona da instrucciones, verifica y endurece. Herramientas: planes máximos y consumo de agentes (unos 250 USD por persona al mes). El ahorro depende de qué tanto sepa usarla el equipo." },
+  { value: "bytecoding_prompts", label: "Bytecoding (prompts)", description: "La IA genera casi todo el código con agentes; la persona da instrucciones, verifica y endurece. Herramientas: planes máximos y consumo de agentes (unos 230 USD por persona al mes). El ahorro depende de qué tanto sepa usarla el equipo." },
   { value: "low_code", label: "Low-code", description: "Plataformas de armado sin programar. Rápido para registros y formularios; cada usuario final paga licencia mientras use el sistema y hay dependencia de la plataforma." },
-  { value: "hybrid", label: "Híbrido", description: "Lo crítico a mano y lo repetitivo con IA. Herramientas: unos 100 USD por persona al mes." },
+  { value: "hybrid", label: "Híbrido", description: "Lo crítico a mano y lo repetitivo con IA. Herramientas: unos 110 USD por persona al mes." },
 ] as const;
 
 export const SCENARIOS = [

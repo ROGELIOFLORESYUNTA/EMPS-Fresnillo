@@ -17,14 +17,31 @@ interface HerramientasResp {
   pericia: { promedio: number; conDato: boolean };
   tipoCambio: number;
   aumentoAnual: number;
+  /** De cuándo son los precios de las herramientas de IA. */
+  preciosConsultados?: { fecha: string | null; fuente: string | null };
   porModo: Record<string, { mensualMXN: number; factor: number; aplica: boolean; mensualUsuariosFinalesMXN: number; usuariosFinales: number; usuariosFinalesSupuestos: boolean; niveles: Record<string, { usd: number; mensualMXN: number }>; asientosConPlanPropio: number }>;
 }
 
 const NIVELES = [
-  { v: "basico", t: "Básico", d: "Planes de entrada (Copilot Pro, Claude Max 5x)." },
-  { v: "tipico", t: "Típico", d: "Lo que usa la mayoría (Cursor Pro+, Claude Max 20x en bytecoding)." },
-  { v: "maximo", t: "Máximo", d: "Lo más alto por persona (Claude Max 20x más Cursor Ultra)." },
+  { v: "basico", t: "Básico", d: "Planes de entrada (Copilot Pro, Claude Max)." },
+  { v: "tipico", t: "Típico", d: "Lo que usa la mayoría (Claude Max con Copilot; Max 20x con Cursor en bytecoding)." },
+  { v: "maximo", t: "Máximo", d: "Lo más alto por persona (Claude Max 20x, Cursor y ChatGPT Pro)." },
 ] as const;
+
+/** "2026-10-13" a "13 de octubre de 2026"; null si no es una fecha. */
+function fechaDeConsulta(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const d = new Date(`${iso.slice(0, 10)}T12:00:00`);
+  return Number.isNaN(d.getTime()) ? null : d.toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" });
+}
+
+/** La frase que dice de cuándo son los precios de las herramientas, o null si la tabla no trae fecha. */
+function textoDePreciosConsultados(p: HerramientasResp["preciosConsultados"]): string | null {
+  const fecha = fechaDeConsulta(p?.fecha);
+  if (p?.fuente && fecha && p.fuente.toLowerCase().includes(fecha.toLowerCase())) return `${p.fuente}.`;
+  if (fecha) return `Precios de lista consultados el ${fecha}.`;
+  return p?.fuente ? `${p.fuente}.` : null;
+}
 import { Calculator, Lightbulb, AlertCircle } from "lucide-react";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 
@@ -227,6 +244,9 @@ export default function EstimatePage({ params }: { params: Promise<{ id: string 
                     );
                   })}
                 </ul>
+                {textoDePreciosConsultados(herramientas.preciosConsultados) && (
+                  <p className="text-muted-foreground">{textoDePreciosConsultados(herramientas.preciosConsultados)} Cambian varias veces al año.</p>
+                )}
                 <p className="text-muted-foreground">Se cobra por persona (asiento), no por equipo. Entran al costo y al precio con el mismo número, sin IVA porque es acreditable. El nivel se elige abajo en Ajustar detalles; la pericia y el plan propio de cada persona, en Equipo; los precios y el tipo de cambio, en Fuentes.</p>
               </div>
             )}
@@ -253,6 +273,9 @@ export default function EstimatePage({ params }: { params: Promise<{ id: string 
                 </button>
               ))}
             </div>
+            {herramientas && textoDePreciosConsultados(herramientas.preciosConsultados) && (
+              <p className="text-xs font-medium">{textoDePreciosConsultados(herramientas.preciosConsultados)}</p>
+            )}
             <p className="text-xs text-muted-foreground">USD por persona al mes. En la vida real cada quien trae su plan: si alguien ya paga el suyo, captúralo en Equipo y ese asiento cobra lo suyo. En el escenario conservador se suma {herramientas ? Math.round(herramientas.aumentoAnual * 100) : 15} % anual de aumento de planes, prorrateado.</p>
           </div>
         <Card className="border-0 shadow-none">

@@ -149,7 +149,7 @@ export default async function MetodologiaPage() {
         <CardContent className="text-sm space-y-2">
           <p>
             Las formas de hacerlo con IA no solo tardan menos: cuestan herramientas y rinden según quién las use. El motor cobra, por cada persona técnica del equipo,
-            la canasta típica de la forma de hacerlo (0 USD a mano, 30 con ayuda de IA, 100 híbrido, 250 casi todo con IA, 40 en plataforma de armado, más 20 por usuario final
+            la canasta típica de la forma de hacerlo (0 USD a mano, 30 con ayuda de IA, 110 híbrido, 230 casi todo con IA, 40 en plataforma de armado, más 20 por usuario final
             mientras se use el sistema), por (1 + sobreconsumo) y por el tipo de cambio del DOF. Sin IVA porque es acreditable. Ese monto entra al costo, al precio y al flujo con el mismo número.
           </p>
           <p>

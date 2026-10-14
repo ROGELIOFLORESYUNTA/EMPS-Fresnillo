@@ -56,11 +56,21 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     };
   }
 
+  // De cuándo son los precios: la fecha de consulta que trae la propia tabla y la fuente de
+  // su versión vigente. Si la persona editó la tabla en su espacio, la fuente es suya y no se cita.
+  const filaDePrecios = ctx.snapshot.find((r) => r.key === "AI_TOOL_COSTS");
+  const consultado = typeof ctx.aiToolCosts._consultado === "string" ? ctx.aiToolCosts._consultado : null;
+  const preciosConsultados = {
+    fecha: consultado,
+    fuente: filaDePrecios && !filaDePrecios.source.includes("override workspace") ? filaDePrecios.source : null,
+  };
+
   return NextResponse.json({
     asientos,
     pericia: { promedio: pericia.promedio, conDato: pericia.conDato },
     tipoCambio: ctx.tipoCambio,
     aumentoAnual: ctx.aiToolAumentoAnual,
+    preciosConsultados,
     porModo,
   });
 }

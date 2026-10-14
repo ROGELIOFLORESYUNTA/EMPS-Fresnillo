@@ -19,9 +19,16 @@ describe("reportes por lado (lib/reportes.ts)", () => {
     }
   });
 
-  it("la cotización para el cliente todavía no se puede abrir: sigue en preparación", () => {
-    expect(REPORTES.cotizacion.disponible).toBe(false);
-    expect(reportePermitido("cotizacion", "desarrollador", true)).toBe(false);
+  it("la cotización para el cliente la abre el desarrollador y no el Ayuntamiento", () => {
+    expect(REPORTES.cotizacion.disponible).toBe(true);
+    expect(reportePermitido("cotizacion", "desarrollador", false)).toBe(true);
+    expect(reportePermitido("cotizacion", "desarrollador", true)).toBe(true);
+    expect(reportePermitido("cotizacion", "ayuntamiento", false)).toBe(false);
+    expect(reportePermitido("cotizacion", "ayuntamiento", true)).toBe(false);
+  });
+
+  it("la descripción de la cotización dice que no lleva costos ni equipo", () => {
+    expect(REPORTES.cotizacion.descripcion).toContain("No lleva tus costos ni tu equipo");
   });
 
   it("un tipo inventado o con nombre de propiedad de objeto contesta que no", () => {
@@ -31,10 +38,10 @@ describe("reportes por lado (lib/reportes.ts)", () => {
     }
   });
 
-  it("el índice del desarrollador trae el de viabilidad y la cotización en preparación", () => {
+  it("el índice del desarrollador trae el de viabilidad y la cotización, los dos disponibles", () => {
     const indice = reportesDelIndice("desarrollador");
     expect(indice.map((r) => r.key)).toEqual(["provider", "cotizacion"]);
-    expect(indice.map((r) => r.disponible)).toEqual([true, false]);
+    expect(indice.map((r) => r.disponible)).toEqual([true, true]);
   });
 
   it("el índice del Ayuntamiento trae solo el suyo y ningún índice muestra el académico", () => {

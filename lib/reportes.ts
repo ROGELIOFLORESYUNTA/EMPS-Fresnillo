@@ -46,9 +46,10 @@ export const REPORTES: Record<string, DefinicionDeReporte> = {
   cotizacion: {
     title: "Cotización para tu cliente",
     audience: "Tu cliente",
-    descripcion: "La cotización lista para llevar a tu cliente: el precio, el tiempo y lo que incluye.",
+    descripcion:
+      "La hoja que le llevas a tu cliente: precio con IVA, tiempo, lo que incluye y lo que no, precio de los cambios, mantenimiento, forma de pago y condiciones por escrito. No lleva tus costos ni tu equipo.",
     lados: ["desarrollador"],
-    disponible: false,
+    disponible: true,
   },
   research: {
     title: "Reporte académico (validación de investigación)",

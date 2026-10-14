@@ -6,7 +6,7 @@ import { reportesDelIndice } from "@/lib/reportes";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FileText, Building2, Briefcase, Printer } from "lucide-react";
+import { FileText, Building2, Briefcase, Printer, Pencil } from "lucide-react";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 
 const ICONOS: Record<string, React.ReactNode> = {
@@ -51,15 +51,25 @@ export default async function ReportsHubPage({ params }: { params: Promise<{ id:
             <CardContent className="flex-1 flex flex-col">
               <p className="text-sm text-muted-foreground mb-4 flex-1">{r.descripcion}</p>
               {r.disponible ? (
-                <div className="flex gap-2">
-                  <Button asChild variant="outline" size="sm" className="flex-1">
-                    <Link href={`/projects/${id}/reports/${r.key}`}>Ver</Link>
-                  </Button>
-                  <Button asChild size="sm" className="flex-1">
-                    <Link href={`/projects/${id}/reports/${r.key}?print=1`}>
-                      <Printer className="w-3 h-3 mr-1" />Imprimir
-                    </Link>
-                  </Button>
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <Button asChild variant="outline" size="sm" className="flex-1">
+                      <Link href={`/projects/${id}/reports/${r.key}`}>Ver</Link>
+                    </Button>
+                    <Button asChild size="sm" className="flex-1">
+                      <Link href={`/projects/${id}/reports/${r.key}?print=1`}>
+                        <Printer className="w-3 h-3 mr-1" />Imprimir
+                      </Link>
+                    </Button>
+                  </div>
+                  {/* La cotización se arma y se edita antes de entregarla. */}
+                  {r.key === "cotizacion" && (
+                    <Button asChild variant="outline" size="sm" className="w-full">
+                      <Link href={`/projects/${id}/cotizacion`}>
+                        <Pencil className="w-3 h-3 mr-1" />Preparar o editar la cotización
+                      </Link>
+                    </Button>
+                  )}
                 </div>
               ) : (
                 <div>

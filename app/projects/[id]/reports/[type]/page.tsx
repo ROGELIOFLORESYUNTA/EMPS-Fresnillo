@@ -13,6 +13,7 @@ import { cargarProyectoConAcceso } from "@/lib/acceso-proyecto";
 import { isAdmin } from "@/lib/admin-auth";
 import { getLado } from "@/lib/lado-server";
 import { REPORTES, reportePermitido } from "@/lib/reportes";
+import { ReporteCotizacion } from "./reporte-cotizacion";
 import {
   computeProviderOpportunityCost,
   computeProviderViabilityRatio,
@@ -33,6 +34,10 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
   // Dueño y lado: 404 si el proyecto es de otro workspace o del otro lado.
   const acceso = await cargarProyectoConAcceso(id);
   if (!acceso.project) notFound();
+
+  // La cotización para el cliente es otro documento, sin nada del costo ni del
+  // equipo: no pasa por los cálculos del proveedor de más abajo.
+  if (type === "cotizacion") return <ReporteCotizacion project={acceso.project} />;
 
   const project = await prisma.project.findUnique({
     where: { id },

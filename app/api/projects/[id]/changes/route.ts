@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { changeRequestCreateSchema } from "@/lib/validators";
 import { getCurrentWorkspace, logWorkspaceActivity } from "@/lib/workspace";
 import { cargarProyectoConAcceso } from "@/lib/acceso-proyecto";
+import { acumuladoDeCambiosDelProyecto } from "@/lib/cotizacion-server";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -12,7 +13,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     where: { projectId: id },
     orderBy: { createdAt: "desc" },
   });
-  return NextResponse.json({ changes });
+  // Regla del 20 %: lo que suman los cambios aceptados contra el precio pactado.
+  return NextResponse.json({ changes, acumulado: await acumuladoDeCambiosDelProyecto(id) });
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

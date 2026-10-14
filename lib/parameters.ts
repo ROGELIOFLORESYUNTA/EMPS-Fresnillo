@@ -13,6 +13,7 @@ import {
   type FactoresPericia,
 } from "./engine/herramientas";
 import { SALARIO_MINIMO_DIARIO_POR_OMISION } from "./engine/pago";
+import { unaVersionPorClave } from "./versiones-parametro";
 
 const DEFAULT_YEAR = Number.parseInt(process.env.DEFAULT_FISCAL_YEAR ?? "2026", 10);
 const DEFAULT_COUNTRY = process.env.DEFAULT_COUNTRY ?? "Mexico";
@@ -33,13 +34,15 @@ async function loadAllForYear(
   year = DEFAULT_YEAR,
   workspaceId: string | null = null,
 ): Promise<LoadedParam[]> {
-  const rows = await prisma.parameter.findMany({
-    where: {
-      year,
-      country: DEFAULT_COUNTRY,
-      OR: [{ state: DEFAULT_STATE }, { state: null }],
-    },
-  });
+  const rows = unaVersionPorClave(
+    await prisma.parameter.findMany({
+      where: {
+        year,
+        country: DEFAULT_COUNTRY,
+        OR: [{ state: DEFAULT_STATE }, { state: null }],
+      },
+    }),
+  );
   const base: LoadedParam[] = rows.map((r) => ({
     key: r.key,
     value: r.value,

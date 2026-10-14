@@ -4,7 +4,7 @@ import { teamProfileCreateSchema } from "@/lib/validators";
 import { getCurrentWorkspace, logWorkspaceActivity } from "@/lib/workspace";
 import { cargarProyectoConAcceso } from "@/lib/acceso-proyecto";
 import { conMensualDelPagoDiario } from "@/lib/engine/pago";
-import { avisoDeSalarioMinimo, conMesesDeLasSemanas, conPagoGuardado } from "@/lib/equipo-server";
+import { avisoDeSalarioMinimo, conMesesDeLasSemanas, conPagoGuardado, soloUnDueno } from "@/lib/equipo-server";
 
 /**
  * El integrante solo se toca si existe y su proyecto se puede abrir (dueño y
@@ -25,6 +25,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     // Pago por día: el mensual se calcula aquí (x 30.4). Semanas asignadas: también se guardan como meses.
     const data = conMesesDeLasSemanas(teamProfileCreateSchema.partial().parse(conMensualDelPagoDiario(body)));
     const profile = await prisma.teamProfile.update({ where: { id }, data });
+    // Solo una persona es "yo": si esta lo es, las demás dejan de serlo.
+    if (profile.isOwner) await soloUnDueno(profile.projectId, profile.id);
     // Registro para la cronología "qué se modificó después de decidir".
     const workspace = await getCurrentWorkspace();
     if (workspace) {

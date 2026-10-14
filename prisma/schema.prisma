@@ -70,6 +70,7 @@ model Project {
   cashflow  CashFlowLine[]
   resources ProjectResourceCost[]
   decisions ProjectDecision[]
+  cotizacion Cotizacion?
   workspace Workspace?            @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
 
   @@index([status])
@@ -928,6 +929,51 @@ model ProjectDecision {
   @@index([projectId])
   @@index([projectId, supersededAt])
   @@index([workspaceId])
+}
+
+// ============================================================
+// COTIZACIÓN PARA EL CLIENTE (cara del desarrollador)
+// ============================================================
+// Lo que el desarrollador le entrega a su cliente: precio, tiempo, alcance,
+// lo que no incluye, mantenimiento, precio de los cambios y forma de pago, con
+// las condiciones que la ley pide por escrito. Una por proyecto.
+//
+// El cliente NUNCA ve nómina, costo, utilidad ni capital de trabajo: el
+// documento y el enlace compartido solo muestran lo que está aquí.
+//
+// numero: COT-AAAA-NNNN, consecutivo por año de quien cotiza (no es único en
+//   toda la base: dos desarrolladores distintos pueden tener su COT-2026-0001).
+// snapshotJson: las cifras congeladas al guardar (subtotal, IVA, total, semanas,
+//   piezas, precio de los cambios, mantenimiento y calendario de pagos), para que
+//   recalcular la estimación después no cambie una cotización ya entregada.
+// Los campos de texto largo van como String en SQLite; en MySQL llevan @db.Text.
+model Cotizacion {
+  id                   String   @id @default(cuid())
+  projectId            String   @unique
+  numero               String
+  fecha                DateTime @default(now())
+  vigenciaDias         Int      @default(15)
+  proveedorNombre      String
+  proveedorRfc         String?
+  proveedorContacto    String?
+  clienteNombre        String
+  mode                 String // traditional|ai_assisted|hybrid|bytecoding_prompts|low_code
+  scenario             String // optimistic|probable|conservative
+  estimateId           String? // la estimación de la que salen las cifras congeladas
+  exclusionesJson      String // JSON: arreglo de textos "Qué no incluye". // deploy: @db.Text
+  supuestosJson        String // JSON: arreglo de textos "Supuestos". // deploy: @db.Text
+  incluyeMantenimiento Boolean  @default(true)
+  mantenimientoMensual Decimal? // null = el sugerido (2 % del precio con IVA); con IVA incluido
+  anticipoPct          Int      @default(30)
+  finalPct             Int      @default(30)
+  notas                String? // deploy: @db.Text
+  snapshotJson         String // JSON: cifras congeladas al guardar. // deploy: @db.Text
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([numero])
 }
 
 // ============================================================
