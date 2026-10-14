@@ -1,14 +1,18 @@
 /**
- * Middleware Next.js — asegura que cada visitante tenga una cookie de workspace.
+ * Middleware Next.js: dos cosas, las dos sin base de datos (corre en Edge).
  *
- * FASE G.I: sin login. La cookie `emps_workspace_id` identifica al visitante
- * de forma anónima. Persiste 1 año. Si la persona limpia cookies, pierde su workspace
- * (advertir en /mi-workspace).
+ * 1. Decide el LADO por el host (ver lib/lado.ts) y lo manda al servidor en el
+ *    encabezado x-emps-lado. Se sobrescribe lo que traiga el cliente: nadie
+ *    puede elegir lado mandando el encabezado a mano.
+ * 2. Asegura que cada visitante tenga una cookie de workspace anónima
+ *    (`emps_workspace_id`, 1 año, sin login). El upsert en la tabla Workspace
+ *    lo hace lib/workspace.ts, no aquí, porque Prisma no corre en Edge.
  *
- * El upsert en la tabla Workspace lo hace lib/workspace.ts cuando se consulta
- * por primera vez, NO aquí, porque Prisma no es compatible con Edge runtime.
+ * La cookie es host-only: cada subdominio tiene su propio workspace, que es
+ * justo lo que se quiere (un lado no hereda la identidad del otro).
  */
 import { NextRequest, NextResponse } from "next/server";
+import { HEADER_LADO, ladoDesdeHost } from "@/lib/lado";
 
 const COOKIE_NAME = "emps_workspace_id";
 const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
@@ -19,17 +23,19 @@ function generateWorkspaceId(): string {
 }
 
 export function middleware(req: NextRequest) {
-  const existing = req.cookies.get(COOKIE_NAME);
-  if (existing) return NextResponse.next();
+  const lado = ladoDesdeHost(req.headers.get("host"));
+  const requestHeaders = new Headers(req.headers);
+  requestHeaders.set(HEADER_LADO, lado);
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
 
-  const response = NextResponse.next();
-  const id = generateWorkspaceId();
-  response.cookies.set(COOKIE_NAME, id, {
-    maxAge: ONE_YEAR_SECONDS,
-    httpOnly: false,        // false porque el cliente puede querer leerlo para mostrarlo en /mi-workspace
-    sameSite: "lax",
-    path: "/",
-  });
+  if (!req.cookies.get(COOKIE_NAME)) {
+    response.cookies.set(COOKIE_NAME, generateWorkspaceId(), {
+      maxAge: ONE_YEAR_SECONDS,
+      httpOnly: false,        // false porque el cliente puede querer leerlo para mostrarlo en /mi-workspace
+      sameSite: "lax",
+      path: "/",
+    });
+  }
   return response;
 }
 
