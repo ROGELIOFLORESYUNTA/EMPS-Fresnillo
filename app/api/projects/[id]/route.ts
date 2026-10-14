@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { projectUpdateSchema } from "@/lib/validators";
+import { cargarProyectoConAcceso } from "@/lib/acceso-proyecto";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const acceso = await cargarProyectoConAcceso(id);
+  if (!acceso.project) return NextResponse.json({ error: "no encontrado" }, { status: acceso.status });
   const project = await prisma.project.findUnique({
     where: { id },
     include: {
@@ -21,6 +24,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
+    const acceso = await cargarProyectoConAcceso(id);
+    if (!acceso.project) return NextResponse.json({ error: "no encontrado" }, { status: acceso.status });
     const body = await req.json();
     const data = projectUpdateSchema.parse(body);
     const project = await prisma.project.update({
@@ -38,6 +43,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const acceso = await cargarProyectoConAcceso(id);
+  if (!acceso.project) return NextResponse.json({ error: "no encontrado" }, { status: acceso.status });
   await prisma.project.delete({ where: { id } });
   return NextResponse.json({ ok: true });
 }

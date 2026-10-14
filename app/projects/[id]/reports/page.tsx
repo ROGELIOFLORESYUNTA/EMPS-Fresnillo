@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { prisma } from "@/lib/db";
+import { cargarProyectoConAcceso } from "@/lib/acceso-proyecto";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FileText, Building2, Briefcase, Printer } from "lucide-react";
@@ -8,10 +8,8 @@ import { Breadcrumbs } from "@/components/breadcrumbs";
 
 export default async function ReportsHubPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const project = await prisma.project.findUnique({
-    where: { id },
-    select: { id: true, name: true, status: true },
-  });
+  // Dueño y lado: 404 si el proyecto es de otro workspace o del otro lado.
+  const { project } = await cargarProyectoConAcceso(id);
   if (!project) notFound();
 
   const reports = [

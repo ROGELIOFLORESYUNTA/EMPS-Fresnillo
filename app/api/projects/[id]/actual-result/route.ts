@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { Decimal } from "decimal.js";
 import { z } from "zod";
+import { cargarProyectoConAcceso } from "@/lib/acceso-proyecto";
 
 const upsertSchema = z.object({
   estimateId: z.string().optional(),
@@ -22,6 +23,8 @@ const upsertSchema = z.object({
  */
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const acceso = await cargarProyectoConAcceso(id);
+  if (!acceso.project) return NextResponse.json({ error: "Proyecto no encontrado." }, { status: acceso.status });
   const result = await prisma.projectActualResult.findFirst({
     where: { projectId: id },
     orderBy: { createdAt: "desc" },
@@ -32,6 +35,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
+    const acceso = await cargarProyectoConAcceso(id);
+    if (!acceso.project) return NextResponse.json({ error: "Proyecto no encontrado." }, { status: acceso.status });
     const body = await req.json();
     const data = upsertSchema.parse(body);
 

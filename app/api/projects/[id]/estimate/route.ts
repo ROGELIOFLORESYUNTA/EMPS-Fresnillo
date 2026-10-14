@@ -2,10 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { estimateRequestSchema } from "@/lib/validators";
 import { runEstimate } from "@/lib/estimate-service";
 import { getCurrentWorkspace, logWorkspaceActivity } from "@/lib/workspace";
+import { cargarProyectoConAcceso } from "@/lib/acceso-proyecto";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
+    const acceso = await cargarProyectoConAcceso(id);
+    if (!acceso.project) return NextResponse.json({ error: "Proyecto no encontrado." }, { status: acceso.status });
     const body = await req.json();
     const data = estimateRequestSchema.parse(body);
     const workspace = await getCurrentWorkspace();

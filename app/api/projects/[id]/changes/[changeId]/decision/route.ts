@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { changeImpactDecisionSchema } from "@/lib/validators";
 import { getCurrentWorkspace, logWorkspaceActivity } from "@/lib/workspace";
+import { cargarProyectoConAcceso } from "@/lib/acceso-proyecto";
 
 const STATUS_TO_REQUEST_DECISION: Record<string, string> = {
   approved: "aceptado",
@@ -22,11 +23,14 @@ const STATUS_TO_REQUEST_DECISION: Record<string, string> = {
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string; changeId: string }> }) {
   try {
     const { id, changeId } = await params;
+    const acceso = await cargarProyectoConAcceso(id);
+    if (!acceso.project) return NextResponse.json({ error: "Proyecto no encontrado." }, { status: acceso.status });
     const body = await req.json();
     const data = changeImpactDecisionSchema.parse(body);
 
-    const assessment = await prisma.changeImpactAssessment.findUnique({
-      where: { changeRequestId: changeId },
+    // Se busca dentro de este proyecto: un cambio de otro proyecto no se toca.
+    const assessment = await prisma.changeImpactAssessment.findFirst({
+      where: { changeRequestId: changeId, projectId: id },
     });
     if (!assessment) {
       return NextResponse.json(

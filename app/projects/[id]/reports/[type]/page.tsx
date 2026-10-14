@@ -9,6 +9,7 @@ import { ChevronLeft, AlertTriangle, CheckCircle2, Clock, ShieldAlert, Cog, GitB
 import { PrintButton } from "@/components/print-button";
 import { recomendacionDelProyecto } from "@/lib/recomendacion-proyecto";
 import { loadChangeImpactParameters } from "@/lib/parameters";
+import { cargarProyectoConAcceso } from "@/lib/acceso-proyecto";
 import {
   computeProviderOpportunityCost,
   computeProviderViabilityRatio,
@@ -28,6 +29,10 @@ const REPORT_LABELS: Record<string, { title: string; audience: string }> = {
 export default async function ReportPage({ params }: { params: Promise<{ id: string; type: string }> }) {
   const { id, type } = await params;
   if (!REPORT_LABELS[type]) notFound();
+
+  // Dueño y lado: 404 si el proyecto es de otro workspace o del otro lado.
+  const acceso = await cargarProyectoConAcceso(id);
+  if (!acceso.project) notFound();
 
   const project = await prisma.project.findUnique({
     where: { id },

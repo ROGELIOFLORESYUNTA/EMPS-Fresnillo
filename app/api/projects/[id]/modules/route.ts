@@ -2,9 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { moduleCreateSchema } from "@/lib/validators";
 import { getCurrentWorkspace, logWorkspaceActivity } from "@/lib/workspace";
+import { cargarProyectoConAcceso } from "@/lib/acceso-proyecto";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const acceso = await cargarProyectoConAcceso(id);
+  if (!acceso.project) return NextResponse.json({ error: "Proyecto no encontrado." }, { status: acceso.status });
   const modules = await prisma.module.findMany({
     where: { projectId: id },
     include: { stories: true },
@@ -16,6 +19,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
+    const acceso = await cargarProyectoConAcceso(id);
+    if (!acceso.project) return NextResponse.json({ error: "Proyecto no encontrado." }, { status: acceso.status });
     const body = await req.json();
     const data = moduleCreateSchema.parse(body);
     const mod = await prisma.module.create({

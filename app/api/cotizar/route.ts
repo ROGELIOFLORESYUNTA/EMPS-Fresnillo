@@ -12,6 +12,8 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { runEstimate } from "@/lib/estimate-service";
 import { getCurrentWorkspace, logWorkspaceActivity } from "@/lib/workspace";
+import { rolDeLado } from "@/lib/lado";
+import { getLado } from "@/lib/lado-server";
 
 const NOTA_COTIZACION_RAPIDA = "Creado con Cotizar en un minuto.";
 
@@ -54,10 +56,13 @@ export async function POST(req: Request) {
   }
   const data = parsed.data;
 
-  // Si el visitante dijo de qué lado está y aún no tiene rol, se guarda: la
-  // recomendación depende de ello.
-  if (data.lado && !workspace.role) {
-    const role = data.lado === "proveedor" ? "proveedor" : "operador_municipal";
+  // Lado del host (desarrollador o ayuntamiento): queda en el proyecto.
+  const ladoDelHost = await getLado();
+
+  // Si aún no tiene rol, se guarda: la recomendación depende de ello. Vale lo
+  // que el visitante dijo de qué lado está; si no dijo nada, el lado del host.
+  if (!workspace.role) {
+    const role = data.lado === "proveedor" ? "proveedor" : data.lado === "ayuntamiento" ? "operador_municipal" : rolDeLado(ladoDelHost);
     await prisma.workspace.update({ where: { id: workspace.id }, data: { role } }).catch(() => {});
   }
 
@@ -80,6 +85,7 @@ export async function POST(req: Request) {
       notes: `${NOTA_COTIZACION_RAPIDA} Cada parte se tomó de tamaño mediano y con una pantalla; el equipo es un desarrollador con experiencia a sueldo de nómina (${SUELDO_TIPICO_MXN.toLocaleString("es-MX")} pesos al mes); la utilidad es ${UTILIDAD_TIPICA * 100} %. Afina módulos y equipo para que la cifra sea tuya.`,
       workspaceId: workspace.id,
       isTemplate: false,
+      lado: ladoDelHost,
       modules: {
         create: data.partes.map((name) => ({
           name,

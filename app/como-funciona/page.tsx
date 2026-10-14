@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
+import { getLado } from "@/lib/lado-server";
+import { filtroDeLado } from "@/lib/acceso-proyecto";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,9 +9,10 @@ import { ChevronRight, FileText, Users, Layers, Calculator, BarChart3, Wrench, A
 
 export default async function HowItWorksPage() {
   // Se busca por la marca de ejemplo público, no por el nombre: así el botón
-  // sigue funcionando aunque el proyecto de ejemplo cambie de título.
+  // sigue funcionando aunque el proyecto de ejemplo cambie de título. Solo el
+  // de su lado, porque cada lado abre únicamente sus plantillas.
   const demoProject = await prisma.project.findFirst({
-    where: { isTemplate: true },
+    where: { isTemplate: true, ...filtroDeLado(await getLado()) },
     select: { id: true, name: true },
   });
 

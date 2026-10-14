@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { Breadcrumbs } from "@/components/breadcrumbs";
+import { cargarProyectoConAcceso } from "@/lib/acceso-proyecto";
 import { ImpactWizardClient } from "./wizard-client";
 
 export default async function ChangeImpactPage({
@@ -9,12 +10,14 @@ export default async function ChangeImpactPage({
   params: Promise<{ id: string; changeId: string }>;
 }) {
   const { id, changeId } = await params;
-  const [project, change, assessment] = await Promise.all([
-    prisma.project.findUnique({ where: { id }, select: { id: true, name: true, client: true } }),
+  // Dueño y lado: 404 si el proyecto es de otro workspace o del otro lado.
+  const { project } = await cargarProyectoConAcceso(id);
+  if (!project) notFound();
+  const [change, assessment] = await Promise.all([
     prisma.changeRequest.findFirst({ where: { id: changeId, projectId: id } }),
     prisma.changeImpactAssessment.findUnique({ where: { changeRequestId: changeId } }),
   ]);
-  if (!project || !change) notFound();
+  if (!change) notFound();
 
   return (
     <div className="space-y-6">

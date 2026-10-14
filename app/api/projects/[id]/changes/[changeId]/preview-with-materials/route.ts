@@ -16,6 +16,7 @@ import { computeChangeImpact } from "@/lib/engine/change-impact";
 import { computeChangeWithMaterials } from "@/lib/engine/change-materials";
 import { loadChangeImpactParameters } from "@/lib/parameters";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { cargarProyectoConAcceso } from "@/lib/acceso-proyecto";
 
 const bodySchema = z.object({
   changeInput: changeImpactInputSchema,
@@ -37,6 +38,8 @@ export async function POST(
 
   try {
     const { id, changeId } = await params;
+    const acceso = await cargarProyectoConAcceso(id);
+    if (!acceso.project) return NextResponse.json({ error: "Proyecto no encontrado." }, { status: acceso.status });
     const body = await req.json();
     const { changeInput, resources } = bodySchema.parse(body);
 

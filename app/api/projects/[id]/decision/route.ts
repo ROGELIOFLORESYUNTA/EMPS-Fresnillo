@@ -8,26 +8,18 @@
  * GET   /api/projects/[id]/decision  -> lista (la activa = supersededAt null).
  *
  * Aislamiento: mismo criterio que la página del proyecto (404 si es de otro
- * workspace); las plantillas compartidas no aceptan decisiones.
+ * workspace o de otro lado, ver lib/acceso-proyecto.ts); las plantillas
+ * compartidas no aceptan decisiones.
  */
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { projectDecisionCreateSchema } from "@/lib/validators";
-import { getCurrentWorkspace, getCurrentWorkspaceId, logWorkspaceActivity } from "@/lib/workspace";
-
-async function loadProjectWithAccess(id: string) {
-  const project = await prisma.project.findUnique({ where: { id } });
-  if (!project) return { project: null, status: 404 as const };
-  if (!project.isTemplate && project.workspaceId) {
-    const myWorkspace = await getCurrentWorkspaceId();
-    if (project.workspaceId !== myWorkspace) return { project: null, status: 404 as const };
-  }
-  return { project, status: 200 as const };
-}
+import { getCurrentWorkspace, logWorkspaceActivity } from "@/lib/workspace";
+import { cargarProyectoConAcceso } from "@/lib/acceso-proyecto";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { project, status } = await loadProjectWithAccess(id);
+  const { project, status } = await cargarProyectoConAcceso(id);
   if (!project) return NextResponse.json({ error: "Proyecto no encontrado." }, { status });
   const decisions = await prisma.projectDecision.findMany({
     where: { projectId: id },
@@ -39,7 +31,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const { project, status } = await loadProjectWithAccess(id);
+    const { project, status } = await cargarProyectoConAcceso(id);
     if (!project) return NextResponse.json({ error: "Proyecto no encontrado." }, { status });
     if (project.isTemplate) {
       return NextResponse.json(

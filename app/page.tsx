@@ -6,15 +6,18 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowRight, FolderOpen, Plus, BookOpen, FileText, AlertCircle, User2, Eye, ShieldCheck, BookOpenCheck, Zap } from "lucide-react";
 import { formatMXN, STATUS_LABELS, labelOf } from "@/lib/utils";
 import { peekWorkspace } from "@/lib/workspace";
+import { getLado } from "@/lib/lado-server";
+import { filtroDeLado } from "@/lib/acceso-proyecto";
 
 export default async function HomePage() {
   // Lectura: no crear workspace solo por abrir el inicio. Un visitante nuevo
   // (sin fila todavía) llega como `null` y se trata como anónimo.
   const workspace = await peekWorkspace();
+  const lado = await getLado();
   // Un visitante nuevo arranca EN CERO: solo ve los proyectos que él mismo creó.
   // No se muestran plantillas ni proyectos sin dueño, para que el sistema no
-  // aparente tener trabajo previo que no es suyo.
-  const projectScope = { workspaceId: workspace?.id ?? "__sin_workspace__" };
+  // aparente tener trabajo previo que no es suyo. Y solo los de su lado.
+  const projectScope = { workspaceId: workspace?.id ?? "__sin_workspace__", ...filtroDeLado(lado) };
   const [projects, totalProjects, paramsCount, pendingChanges] = await Promise.all([
     prisma.project.findMany({
       where: projectScope,
@@ -34,9 +37,9 @@ export default async function HomePage() {
     prisma.changeRequest.count({ where: { decision: "pendiente", project: projectScope } }),
   ]);
 
-  // Proyecto de ejemplo que cualquiera puede abrir sin capturar nada.
+  // Proyecto de ejemplo que cualquiera puede abrir sin capturar nada (el de su lado).
   const ejemplo = await prisma.project.findFirst({
-    where: { isTemplate: true },
+    where: { isTemplate: true, ...filtroDeLado(lado) },
     select: { id: true, name: true },
   });
 

@@ -16,7 +16,8 @@ import { DecisionSection, type DecisionTimelineItem } from "@/components/decisio
 import { ElegirOpcionButton } from "@/components/elegir-opcion-button";
 import type { RecommendationRole } from "@/lib/engine/recommendation";
 import { recomendacionDelProyecto } from "@/lib/recomendacion-proyecto";
-import { getCurrentWorkspaceId, peekWorkspace } from "@/lib/workspace";
+import { peekWorkspace } from "@/lib/workspace";
+import { cargarProyectoConAcceso } from "@/lib/acceso-proyecto";
 import { TresRespuestas } from "@/components/tres-respuestas";
 import { CompartirEnlace } from "@/components/compartir-enlace";
 import { ExplicacionDelNumero } from "@/components/explicacion-del-numero";
@@ -38,6 +39,9 @@ export default async function ProjectDetailPage({
 }) {
   const { id } = await params;
   const sp = await searchParams;
+  // Dueño y lado: 404 si el proyecto es de otro workspace o del otro lado.
+  const acceso = await cargarProyectoConAcceso(id);
+  if (!acceso.project) notFound();
   const project = await prisma.project.findUnique({
     where: { id },
     include: {
@@ -49,12 +53,6 @@ export default async function ProjectDetailPage({
     },
   });
   if (!project) notFound();
-  // FASE G.I: aislamiento por workspace. Si el proyecto no es template y pertenece
-  // a otro workspace, devolver 404 para no exponer datos cruzados.
-  if (!project.isTemplate && project.workspaceId) {
-    const myWorkspace = await getCurrentWorkspaceId();
-    if (project.workspaceId !== myWorkspace) notFound();
-  }
   // Rol del visitante (para personalizar la recomendación). peekWorkspace NO
   // crea fila: solo navegar no ensucia la BD.
   const visitorWorkspace = await peekWorkspace();

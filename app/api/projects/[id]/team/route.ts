@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { teamProfileCreateSchema } from "@/lib/validators";
+import { cargarProyectoConAcceso } from "@/lib/acceso-proyecto";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const acceso = await cargarProyectoConAcceso(id);
+  if (!acceso.project) return NextResponse.json({ error: "Proyecto no encontrado." }, { status: acceso.status });
   const team = await prisma.teamProfile.findMany({
     where: { projectId: id },
     orderBy: { createdAt: "asc" },
@@ -14,6 +17,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
+    const acceso = await cargarProyectoConAcceso(id);
+    if (!acceso.project) return NextResponse.json({ error: "Proyecto no encontrado." }, { status: acceso.status });
     const body = await req.json();
     const data = teamProfileCreateSchema.parse(body);
     const profile = await prisma.teamProfile.create({

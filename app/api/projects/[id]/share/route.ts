@@ -2,22 +2,21 @@
  * Enlace compartible del resultado (/r/[token]), de solo lectura.
  *
  * POST crea el enlace (o devuelve el que ya existe); DELETE lo revoca. Solo
- * el dueño del proyecto (mismo workspace) puede hacerlo, y el ejemplo público
- * no se comparte por esta vía porque ya es público.
+ * el dueño del proyecto (mismo workspace y mismo lado, ver
+ * lib/acceso-proyecto.ts) puede hacerlo, y el ejemplo público no se comparte
+ * por esta vía porque ya es público.
  */
 import { randomBytes } from "crypto";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getCurrentWorkspaceId, logWorkspaceActivity } from "@/lib/workspace";
+import { logWorkspaceActivity } from "@/lib/workspace";
+import { cargarProyectoConAcceso } from "@/lib/acceso-proyecto";
 
 async function proyectoPropio(id: string) {
-  const project = await prisma.project.findUnique({
-    where: { id },
-    select: { id: true, workspaceId: true, isTemplate: true, shareToken: true },
-  });
+  // El helper ya exige mismo lado y mismo workspace; aquí además se descartan
+  // las plantillas y los proyectos sin dueño, que no se comparten.
+  const { project } = await cargarProyectoConAcceso(id);
   if (!project || project.isTemplate || !project.workspaceId) return null;
-  const workspaceId = await getCurrentWorkspaceId();
-  if (!workspaceId || project.workspaceId !== workspaceId) return null;
   return project;
 }
 

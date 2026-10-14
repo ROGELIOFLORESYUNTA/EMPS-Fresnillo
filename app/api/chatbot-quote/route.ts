@@ -188,6 +188,7 @@ export async function POST(req: NextRequest) {
         notes: contactBits.length ? contactBits.join(" | ") : null,
         workspaceId: workspace.id,
         isTemplate: false,
+        lado: "desarrollador",
         modules: {
           create: data.modules.map((m) => ({
             name: m.name,
