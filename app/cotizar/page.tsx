@@ -40,7 +40,6 @@ export default function CotizarPage() {
   const [presupuesto, setPresupuesto] = useState("");
   const [fechaLimite, setFechaLimite] = useState("");
   const [disponibilidad, setDisponibilidad] = useState<string>("media");
-  const [lado, setLado] = useState<"ayuntamiento" | "proveedor" | null>(null);
   const [experienciaIA, setExperienciaIA] = useState<number>(3);
   const [personas, setPersonas] = useState("");
   const [enviando, setEnviando] = useState(false);
@@ -76,7 +75,6 @@ export default function CotizarPage() {
         presupuesto: presupuesto ? Number(presupuesto) : null,
         fechaLimite: fechaLimite || null,
         disponibilidadCliente: disponibilidad,
-        lado,
         experienciaIA,
         personasQueLoUsan: personas ? Number(personas) : null,
         segundosEnLlenar: Math.round((Date.now() - inicio.current) / 1000),
@@ -195,19 +193,6 @@ export default function CotizarPage() {
               <Label htmlFor="personas">¿Cuántas personas lo van a usar? (opcional)</Label>
               <Input id="personas" type="number" min={1} value={personas} onChange={(e) => setPersonas(e.target.value)} placeholder="25" />
               <p className="text-xs text-muted-foreground">Si se hace con una plataforma de armado, cada persona paga licencia mientras lo use.</p>
-            </div>
-            <div className="sm:col-span-2 space-y-2">
-              <Label>¿De qué lado estás? (opcional; cambia qué opción se te recomienda)</Label>
-              <div className="grid sm:grid-cols-2 gap-2">
-                <button type="button" onClick={() => setLado(lado === "ayuntamiento" ? null : "ayuntamiento")} className={`rounded-md border p-3 text-left text-sm hover:bg-accent ${lado === "ayuntamiento" ? "border-primary ring-1 ring-primary" : ""}`}>
-                  <p className="font-medium">Soy del Ayuntamiento</p>
-                  <p className="text-xs text-muted-foreground">Cuido el presupuesto y que se termine a tiempo.</p>
-                </button>
-                <button type="button" onClick={() => setLado(lado === "proveedor" ? null : "proveedor")} className={`rounded-md border p-3 text-left text-sm hover:bg-accent ${lado === "proveedor" ? "border-primary ring-1 ring-primary" : ""}`}>
-                  <p className="font-medium">Soy proveedor</p>
-                  <p className="text-xs text-muted-foreground">Cuido mi utilidad y el dinero que adelanto.</p>
-                </button>
-              </div>
             </div>
           </CardContent>
         </Card>

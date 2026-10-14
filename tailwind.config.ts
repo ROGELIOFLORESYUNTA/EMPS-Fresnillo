@@ -44,6 +44,15 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        // Paleta de la cara del desarrollador (valores en app/globals.css)
+        lienzo: "rgb(var(--lienzo) / <alpha-value>)",
+        papel: "rgb(var(--papel) / <alpha-value>)",
+        tinta: {
+          DEFAULT: "rgb(var(--tinta) / <alpha-value>)",
+          suave: "rgb(var(--tinta-suave) / <alpha-value>)",
+        },
+        marino: "rgb(var(--marino) / <alpha-value>)",
+        accion: "rgb(var(--accion) / <alpha-value>)",
         // EMPS semantic colors for risk levels
         risk: {
           low: "hsl(142 71% 45%)",
@@ -59,6 +68,15 @@ const config: Config = {
       },
       fontFamily: {
         sans: ["var(--font-inter)", "system-ui", "sans-serif"],
+      },
+      // Escala de letra: cifra grande (56 px; 40 en celular), título de página
+      // (32), título de sección (20). El texto es de 16 y las notas de 12 solo
+      // para fuentes.
+      fontSize: {
+        cifra: ["3.5rem", { lineHeight: "1", letterSpacing: "-0.02em", fontWeight: "800" }],
+        "cifra-movil": ["2.5rem", { lineHeight: "1", letterSpacing: "-0.02em", fontWeight: "800" }],
+        titulo: ["2rem", { lineHeight: "1.15", letterSpacing: "-0.02em", fontWeight: "800" }],
+        seccion: ["1.25rem", { lineHeight: "1.3", fontWeight: "700" }],
       },
     },
   },

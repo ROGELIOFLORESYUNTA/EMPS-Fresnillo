@@ -18,7 +18,7 @@ import { ParameterManualSheet } from "@/components/parameter-manual-sheet";
 import { CATEGORIAS, FUENTE_POR_CATEGORIA, ORDEN_CATEGORIAS, categorizar, nombreLegible, fuenteLegible, valorLegible } from "@/lib/parameter-labels";
 
 export const metadata = {
-  title: "De dónde salen los números | EMPS Fresnillo",
+  title: "De dónde salen los números",
   description: "Los valores fiscales y laborales que usa el estimador, con su fundamento legal y su fuente oficial.",
 };
 

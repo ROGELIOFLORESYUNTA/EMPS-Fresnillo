@@ -6,6 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { DEVELOPMENT_MODES, SYSTEM_TYPE_LABELS, labelOf } from "@/lib/utils";
 import { recomendacionDelProyecto } from "@/lib/recomendacion-proyecto";
 import type { RecommendationRole } from "@/lib/engine/recommendation";
+import { rolDeLado } from "@/lib/lado";
+import { getLado } from "@/lib/lado-server";
+import { COPIA } from "@/lib/lado-copy";
 import { VEREDICTO_ETIQUETA } from "@/lib/engine/aptitud";
 import type { PasoDeCalculo } from "@/lib/engine/explicacion";
 import { computeOnTimeRisk, computeMunicipalQuebrarRisk, computeProviderViabilityRatio, computeMaintenanceMonthly, computeChangeRangeByType, factorHorasCambio } from "@/lib/engine/reports-insights";
@@ -45,11 +48,14 @@ export default async function ResultadoCompartidoPage({
   });
   if (!project) notFound();
 
-  const [workspace, decision] = await Promise.all([
-    project.workspaceId ? prisma.workspace.findUnique({ where: { id: project.workspaceId }, select: { role: true } }) : null,
-    prisma.projectDecision.findFirst({ where: { projectId: project.id, supersededAt: null }, orderBy: { createdAt: "desc" } }),
-  ]);
-  const role = (workspace?.role ?? null) as RecommendationRole;
+  const decision = await prisma.projectDecision.findFirst({
+    where: { projectId: project.id, supersededAt: null },
+    orderBy: { createdAt: "desc" },
+  });
+  // El rol para la recomendación lo implica el lado del host, igual que en la
+  // pantalla del proyecto (ya no se pregunta ni se lee del dueño).
+  const lado = await getLado();
+  const role: RecommendationRole = rolDeLado(lado);
 
   const vistos = new Set<string>();
   const latest = project.estimates.filter((e) => {
@@ -137,7 +143,7 @@ export default async function ResultadoCompartidoPage({
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <div className="rounded-md border bg-muted/40 px-4 py-2 text-xs text-muted-foreground">
-        Vista compartida de solo lectura. Quien la compartió puede quitar el enlace cuando quiera. Generada por EMPS Fresnillo el {new Date().toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" })}.
+        Vista compartida de solo lectura. Quien la compartió puede quitar el enlace cuando quiera. Generada por {COPIA[lado].marca} el {new Date().toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" })}.
       </div>
 
       <div>

@@ -18,6 +18,8 @@ import type { RecommendationRole } from "@/lib/engine/recommendation";
 import { recomendacionDelProyecto } from "@/lib/recomendacion-proyecto";
 import { peekWorkspace } from "@/lib/workspace";
 import { cargarProyectoConAcceso } from "@/lib/acceso-proyecto";
+import { ladoDelProyecto, rolDeLado } from "@/lib/lado";
+import { getLado } from "@/lib/lado-server";
 import { TresRespuestas } from "@/components/tres-respuestas";
 import { CompartirEnlace } from "@/components/compartir-enlace";
 import { ExplicacionDelNumero } from "@/components/explicacion-del-numero";
@@ -53,10 +55,12 @@ export default async function ProjectDetailPage({
     },
   });
   if (!project) notFound();
-  // Rol del visitante (para personalizar la recomendación). peekWorkspace NO
+  // Workspace del visitante (para sus ajustes de parámetros). peekWorkspace NO
   // crea fila: solo navegar no ensucia la BD.
   const visitorWorkspace = await peekWorkspace();
-  const visitorRole = (visitorWorkspace?.role ?? null) as RecommendationRole;
+  // Rol para personalizar la recomendación: lo implica el lado del host, ya no
+  // se pregunta (desarrollador es proveedor; ayuntamiento, operador municipal).
+  const visitorRole: RecommendationRole = rolDeLado(await getLado());
 
   // Tomar último (mode, scenario) único - soporta múltiples versiones por modo.
   // Orden lógico: modos de más lento a más rápido, escenarios optimista->probable->conservador.
@@ -362,7 +366,7 @@ export default async function ProjectDetailPage({
         <div className="rounded-lg border border-amber-300 bg-amber-50/70 px-4 py-3">
           <p className="font-semibold text-amber-950">Esto es un ejemplo, para que veas cómo funciona</p>
           <p className="text-sm text-amber-900 mt-0.5">
-            Es un proyecto municipal ya capturado, con cifras calculadas de verdad. Recórrelo completo: los
+            {ladoDelProyecto(project.lado) === "ayuntamiento" ? "Es un proyecto municipal ya capturado" : "Es un proyecto ya capturado"}, con cifras calculadas de verdad. Recórrelo completo: los
             módulos, el equipo, la comparación de opciones, el flujo de efectivo y los reportes. No es tuyo y no
             aparece en tus proyectos.{" "}
             <Link href="/projects/new" className="underline font-medium hover:text-amber-950">
@@ -558,22 +562,6 @@ export default async function ProjectDetailPage({
         </Card>
       )}
 
-      {/* Banner de perspectiva. Esta pantalla muestra TODO desde el lado del proveedor.
-          Para ver el proyecto redactado para otra audiencia (cliente o investigador)
-          el sistema genera reportes separados. */}
-      <div className="flex flex-wrap items-center gap-3 rounded-lg border border-blue-200 bg-blue-50/60 p-3 text-sm">
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-white text-xs font-bold">P</div>
-        <div className="flex-1 min-w-[260px]">
-          <p className="font-medium text-blue-900">Estás viendo este proyecto como <strong>Proveedor de software</strong></p>
-          <p className="text-xs text-blue-800">
-            Las cifras hablan desde tu lado: lo que cobras, lo que pagas y el dinero que tienes que adelantar antes de que el cliente ({project.client}) te liquide. Los reportes redactan los mismos números para las otras audiencias.
-          </p>
-        </div>
-        <Button asChild size="sm" variant="outline">
-          <Link href={`/projects/${id}/reports/municipal`}>Ver versión para Ayuntamiento</Link>
-        </Button>
-      </div>
-
       {/* Checklist de progreso */}
       <Card>
         <details open={pasosCompletos < pasos.length}>
@@ -699,14 +687,14 @@ export default async function ProjectDetailPage({
           <SummaryCard
             label="Precio cotizado al cliente"
             value={formatMXN(Number(selectedTotal))}
-            hint={`Modo ${modeLabels[selectedMode] ?? selectedMode} · escenario ${scenarioLabels[selectedScenario] ?? selectedScenario} · v${latestVersion}. Cambia arriba para ver otros modos.`}
+            hint={`Forma de hacerlo: ${modeLabels[selectedMode] ?? selectedMode} · escenario ${scenarioLabels[selectedScenario] ?? selectedScenario} · v${latestVersion}. Cambia arriba para ver otras formas de hacerlo.`}
             info={{
               title: "¿De dónde sale este precio?",
               body: (
                 <>
                   <strong>Costo del proyecto</strong> durante los meses reales de la forma de hacerlo elegida: el equipo con sus cargas (sueldo + IMSS + INFONAVIT + ISN/UAZ + prestaciones LFT), las herramientas de IA de esa forma de hacerlo, otras herramientas y administración. Si el proyecto pasa de 6 meses con personal en nómina, suma indemnización LFT por terminación de contrato.
                   <br /><br />
-                  Sobre ese costo se aplica el margen objetivo y el IVA 16%. Cambia el modo arriba: el precio sube o baja porque cada modo tarda distinto.
+                  Sobre ese costo se aplica el margen objetivo y el IVA 16%. Cambia la forma de hacerlo arriba: el precio sube o baja porque cada forma tarda distinto.
                   <br /><br />
                   Fuente: motor de cálculo, parámetros 2026 (DOF, CONASAMI, IMSS, SEFIN Zacatecas).
                 </>
@@ -1134,8 +1122,8 @@ export default async function ProjectDetailPage({
           <summary className="cursor-pointer list-none"><CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <Activity className="w-4 h-4" />Flujo de efectivo · {modeLabels[selectedMode] ?? selectedMode} · escenario {scenarioLabels[selectedScenario] ?? selectedScenario}
-              <InfoTip title="¿Por qué este modo y escenario?">
-                <p>Este flujo está calculado sobre la última estimación con modo <strong>{modeLabels[selectedMode] ?? selectedMode}</strong> y escenario <strong>{scenarioLabels[selectedScenario] ?? selectedScenario}</strong>.</p>
+              <InfoTip title="¿Por qué esta forma de hacerlo y este escenario?">
+                <p>Este flujo está calculado sobre la última estimación con la forma de hacerlo <strong>{modeLabels[selectedMode] ?? selectedMode}</strong> y escenario <strong>{scenarioLabels[selectedScenario] ?? selectedScenario}</strong>.</p>
                 <p>El default es <strong>híbrido + probable</strong> porque es la línea base realista: combina capacidades humanas con asistencia generativa, sin asumir productividades extremas que pueden no cumplirse.</p>
                 <p>Si cambias el selector arriba, los precios de las tarjetas se ajustan, pero <strong>esta tabla y el bache se mantienen</strong> hasta que recalcules el proyecto en esa otra configuración.</p>
               </InfoTip>
@@ -1146,13 +1134,13 @@ export default async function ProjectDetailPage({
               <span className="block mt-1">
                 <strong className="text-foreground">Estructura de pagos de este proyecto:</strong> {totalPayments} cobros en total: 1 anticipo al arrancar, {intermediatePayments} {intermediatePayments === 1 ? "pago parcial intermedio" : "pagos parciales intermedios"} y 1 pago final al cerrar. Distribuidos en <strong>{cashflowMonths} meses</strong>.
                 <InfoTip title="¿Por qué está en meses y no en semanas? ¿Por qué pagos parciales mensuales?">
-                  <p>El flujo de efectivo se modela en MESES porque los ciclos de nómina, impuestos (IMSS, ISN), facturación y rentas administrativas son mensuales. Las {selectedWeeks ? `${selectedWeeks.toFixed(1)} semanas` : "semanas"} de calendario del modo se convierten a meses dividiendo entre 4.33.</p>
+                  <p>El flujo de efectivo se modela en MESES porque los ciclos de nómina, impuestos (IMSS, ISN), facturación y rentas administrativas son mensuales. Las {selectedWeeks ? `${selectedWeeks.toFixed(1)} semanas` : "semanas"} de calendario de la forma de hacerlo se convierten a meses dividiendo entre 4.33.</p>
                   <p>Los <strong>pagos parciales</strong> entre el anticipo y el pago final se asumen <strong>mensuales</strong> por defecto del modelo. Esto refleja la práctica común en contratos municipales (estimación mensual contra avance, art. 54 LOPSRM). Si tu contrato real es a 3 pagos totales (anticipo + 1 intermedio + finiquito) o anticipo + finiquito, eso se configura en el wizard de estimación con los porcentajes.</p>
                 </InfoTip>
               </span>
               {cashflowVsEstimateMismatch && selectedMonthsFromWeeks !== null && (
                 <span className="block mt-2 p-2 rounded border border-amber-300 bg-amber-50 text-amber-900 text-xs">
-                  <strong>El flujo de efectivo no coincide con la duración de este modo:</strong> el modo {modeLabels[selectedMode]} tarda ~{selectedMonthsFromWeeks.toFixed(1)} meses según la estimación, pero esta tabla está calculada para {cashflowMonths} meses. El cashflow se generó una sola vez con la duración del wizard. Para sincronizarlo, recalcula el proyecto eligiendo este modo.
+                  <strong>El flujo de efectivo no coincide con la duración de esta forma de hacerlo:</strong> la forma de hacerlo {modeLabels[selectedMode]} tarda ~{selectedMonthsFromWeeks.toFixed(1)} meses según la estimación, pero esta tabla está calculada para {cashflowMonths} meses. El cashflow se generó una sola vez con la duración del wizard. Para sincronizarlo, recalcula el proyecto eligiendo esta forma de hacerlo.
                 </span>
               )}
               <br />

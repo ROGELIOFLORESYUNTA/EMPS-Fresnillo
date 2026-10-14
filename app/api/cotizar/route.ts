@@ -27,7 +27,6 @@ const bodySchema = z.object({
   presupuesto: z.number().min(0).max(1_000_000_000).nullable().optional(),
   fechaLimite: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
   disponibilidadCliente: z.enum(["alta", "media", "baja"]).nullable().optional(),
-  lado: z.enum(["ayuntamiento", "proveedor"]).nullable().optional(),
   /** Pericia con la IA de quien lo va a hacer: 1 nunca, 3 a veces, 4 todos los días. */
   experienciaIA: z.number().int().min(1).max(5).nullable().optional(),
   personasQueLoUsan: z.number().int().min(1).max(100000).nullable().optional(),
@@ -59,15 +58,14 @@ export async function POST(req: Request) {
   // Lado del host (desarrollador o ayuntamiento): queda en el proyecto.
   const ladoDelHost = await getLado();
 
-  // Si aún no tiene rol, se guarda: la recomendación depende de ello. Vale lo
-  // que el visitante dijo de qué lado está; si no dijo nada, el lado del host.
+  // Si aún no tiene rol, se guarda el que implica su lado: la recomendación
+  // depende de ello. Ya no se pregunta de qué lado está; lo decide el host.
   if (!workspace.role) {
-    const role = data.lado === "proveedor" ? "proveedor" : data.lado === "ayuntamiento" ? "operador_municipal" : rolDeLado(ladoDelHost);
-    await prisma.workspace.update({ where: { id: workspace.id }, data: { role } }).catch(() => {});
+    await prisma.workspace.update({ where: { id: workspace.id }, data: { role: rolDeLado(ladoDelHost) } }).catch(() => {});
   }
 
   const nombre = data.queSistema.length > 70 ? `${data.queSistema.slice(0, 67).trimEnd()}...` : data.queSistema;
-  const esProveedor = data.lado === "proveedor";
+  const esProveedor = ladoDelHost === "desarrollador";
 
   const project = await prisma.project.create({
     data: {
@@ -131,7 +129,7 @@ export async function POST(req: Request) {
     conPresupuesto: data.presupuesto != null,
     conFecha: !!data.fechaLimite,
     disponibilidadCliente: data.disponibilidadCliente ?? null,
-    lado: data.lado ?? null,
+    lado: ladoDelHost,
     experienciaIA: data.experienciaIA ?? null,
     personasQueLoUsan: data.personasQueLoUsan ?? null,
     segundosEnLlenar: data.segundosEnLlenar ?? null,

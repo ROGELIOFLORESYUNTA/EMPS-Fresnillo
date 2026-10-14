@@ -10,6 +10,9 @@ import { PrintButton } from "@/components/print-button";
 import { recomendacionDelProyecto } from "@/lib/recomendacion-proyecto";
 import { loadChangeImpactParameters } from "@/lib/parameters";
 import { cargarProyectoConAcceso } from "@/lib/acceso-proyecto";
+import { isAdmin } from "@/lib/admin-auth";
+import { getLado } from "@/lib/lado-server";
+import { REPORTES, reportePermitido } from "@/lib/reportes";
 import {
   computeProviderOpportunityCost,
   computeProviderViabilityRatio,
@@ -20,15 +23,12 @@ import {
   factorHorasCambio,
 } from "@/lib/engine/reports-insights";
 
-const REPORT_LABELS: Record<string, { title: string; audience: string }> = {
-  municipal: { title: "Reporte para Ayuntamiento", audience: "Ayuntamiento de Fresnillo, Zacatecas" },
-  provider: { title: "Reporte de viabilidad para proveedor", audience: "Proveedor de software" },
-  research: { title: "Reporte académico (validación de investigación)", audience: "Universidad Autónoma de Zacatecas" },
-};
-
 export default async function ReportPage({ params }: { params: Promise<{ id: string; type: string }> }) {
   const { id, type } = await params;
-  if (!REPORT_LABELS[type]) notFound();
+  // Cada cara ofrece sus reportes (lib/reportes.ts): el del Ayuntamiento no
+  // existe del lado del desarrollador, ni el del proveedor del lado del
+  // Ayuntamiento, y el académico solo con sesión de investigador.
+  if (!reportePermitido(type, await getLado(), await isAdmin())) notFound();
 
   // Dueño y lado: 404 si el proyecto es de otro workspace o del otro lado.
   const acceso = await cargarProyectoConAcceso(id);
@@ -66,7 +66,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
   // Rastro de la decision: el reporte dice que se eligio, cuando y por quien.
   const decisionActiva = await prisma.projectDecision.findFirst({ where: { projectId: id, supersededAt: null }, orderBy: { createdAt: "desc" } });
   const modeLabels = Object.fromEntries(DEVELOPMENT_MODES.map((m) => [m.value, m.label]));
-  const meta = REPORT_LABELS[type];
+  const meta = REPORTES[type];
 
   // ===== Derivaciones G.H (insights para reportes) =====
   const now = new Date();
@@ -214,9 +214,9 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
                       Opción recomendada para presupuestar: <strong>{modeLabels[municipalRecommendation.best.mode] ?? municipalRecommendation.best.mode}</strong> en escenario <strong>{labelOf(SCENARIO_LABELS, municipalRecommendation.best.scenario)}</strong> ({formatMXN(municipalRecommendation.bestOption.total)}). {municipalRecommendation.reasons[1] ?? municipalRecommendation.reasons[0]}
                     </p>
                   ) : null}
-                  <p className="text-muted-foreground">Riesgo agregado: <Badge className={RISK_LEVELS[probable.riskLevel as keyof typeof RISK_LEVELS]?.bg}>{RISK_LEVELS[probable.riskLevel as keyof typeof RISK_LEVELS]?.label ?? probable.riskLevel}</Badge>
+                  <div className="text-muted-foreground">Riesgo agregado: <Badge className={RISK_LEVELS[probable.riskLevel as keyof typeof RISK_LEVELS]?.bg}>{RISK_LEVELS[probable.riskLevel as keyof typeof RISK_LEVELS]?.label ?? probable.riskLevel}</Badge>
                     <span className="text-xs"> (combina complejidad técnica, claridad de requisitos, riesgo fiscal-laboral, flujo de efectivo y probabilidad de cambios)</span>
-                  </p>
+                  </div>
                 </>
               ) : (
                 <p className="text-muted-foreground">No hay estimaciones registradas. Generar estimación antes de imprimir el reporte.</p>
@@ -291,18 +291,18 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
             </Card>
           )}
 
-          {/* G3 - ¿Qué método va a usar? */}
+          {/* G3 - ¿Con qué forma de hacerlo va a trabajar? */}
           {probable && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
                   <Cog className="w-4 h-4 text-blue-600" />
-                  ¿Qué método va a usar el proveedor?
+                  ¿Con qué forma de hacerlo va a trabajar el proveedor?
                 </CardTitle>
               </CardHeader>
               <CardContent className="text-sm space-y-2">
-                <p>El proveedor cotizó con el modo <strong>{modeLabels[probable.mode] ?? probable.mode}</strong>.</p>
-                <p className="text-muted-foreground">{MODE_CLIENT_EXPLANATION[probable.mode] ?? "Modo no documentado en lenguaje cliente."}</p>
+                <p>El proveedor cotizó con la forma de hacerlo <strong>{modeLabels[probable.mode] ?? probable.mode}</strong>.</p>
+                <p className="text-muted-foreground">{MODE_CLIENT_EXPLANATION[probable.mode] ?? "Forma de hacerlo sin explicación en lenguaje llano."}</p>
                 {(() => {
                   try {
                     const snap = JSON.parse(probable.inputsSnapshot) as { herramientas?: { asientos: number; nivel?: string; asientosConPlanPropio?: number; mensualMXN: number; usuariosFinales: number; usdPorUsuarioFinal: number; mensualUsuariosFinalesMXN: number; usuariosFinalesSupuestos: boolean }; pericia?: { promedio: number; factor: number; aplica: boolean } };
@@ -800,10 +800,10 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
           </Card>
 
           <Card>
-            <CardHeader><CardTitle className="text-base">Escenarios comparados (5 modos × 3 escenarios)</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-base">Escenarios comparados (5 formas de hacerlo × 3 escenarios)</CardTitle></CardHeader>
             <CardContent className="p-0">
               <Table>
-                <TableHeader><TableRow><TableHead>Modo</TableHead><TableHead>Escenario</TableHead><TableHead className="text-right">Horas</TableHead><TableHead className="text-right">Sem. total</TableHead><TableHead className="text-right">Sem. prototipo</TableHead><TableHead className="text-right">Total</TableHead></TableRow></TableHeader>
+                <TableHeader><TableRow><TableHead>Forma de hacerlo</TableHead><TableHead>Escenario</TableHead><TableHead className="text-right">Horas</TableHead><TableHead className="text-right">Sem. total</TableHead><TableHead className="text-right">Sem. prototipo</TableHead><TableHead className="text-right">Total</TableHead></TableRow></TableHeader>
                 <TableBody>
                   {latest.map((e) => {
                     const totalHours = Number(e.codingHours) + Number(e.reviewHours) + Number(e.testingHours) + Number(e.documentationHours) + Number(e.deploymentHours) + Number(e.trainingHours) + Number(e.supportHours) + Number(e.hardeningHours) + Number(e.analysisHours) + Number(e.designHours);
@@ -824,7 +824,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
           </Card>
 
           <Card>
-            <CardHeader><CardTitle className="text-base">Diferencias entre modos</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-base">Diferencias entre formas de hacerlo</CardTitle></CardHeader>
             <CardContent className="text-sm space-y-2">
               <p>Para evidenciar la hipótesis del addendum 25, el sistema separa por fases (no aplica un solo multiplicador). Esto permite visualizar que <strong>bytecoding suma 1.10× horas-persona</strong> pero entrega prototipo <strong>3.5× más rápido</strong> que tradicional.</p>
               <p className="text-muted-foreground">Hipótesis ajustada: la estimación temprana mejora cuando se integran requerimientos, cambios, modo de desarrollo, equipo, obligaciones fiscales-laborales, flujo de efectivo y mantenimiento en una misma base de datos y un mismo cálculo.</p>
@@ -859,7 +859,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
                     <TableRow>
                       <TableHead>Tipo</TableHead>
                       <TableHead>Fase</TableHead>
-                      <TableHead>Modo</TableHead>
+                      <TableHead>Forma de hacerlo</TableHead>
                       <TableHead className="text-right">Puntos</TableHead>
                       <TableHead className="text-right">F.clar.</TableHead>
                       <TableHead className="text-right">F.fase</TableHead>
@@ -907,7 +907,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
       )}
 
       {/* Mini glosario imprimible: los términos de este reporte, en una línea cada uno */}
-      {(type === "municipal" || type === "proveedor") && (
+      {(type === "municipal" || type === "provider") && (
         <Card className="bg-muted/20">
           <CardHeader><CardTitle className="text-sm">Términos usados en este reporte</CardTitle></CardHeader>
           <CardContent className="text-xs text-muted-foreground grid sm:grid-cols-2 gap-x-6 gap-y-1">

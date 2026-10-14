@@ -32,13 +32,13 @@ export async function GET() {
  * POST: asigna automáticamente el workspaceId del cookie al proyecto nuevo.
  *
  * Puede venir un bloque `identity` cuando la persona todavía no se ha
- * identificado: es lo que el formulario de alta le pide antes de dejarlo
- * continuar (nombre y desde qué lado va a usar el sistema; el correo es
- * opcional). La obligatoriedad vive en el formulario, no aquí, porque este
- * endpoint también lo usan las pruebas y las integraciones externas.
+ * identificado: es lo que el formulario de alta le ofrece (nombre y correo,
+ * los dos opcionales; un nombre vacío cuenta como no dado). El lado ya no se
+ * pregunta: lo decide el host. Este endpoint también lo usan las pruebas y las
+ * integraciones externas, por eso sigue aceptando un `role` explícito.
  *
  * El proyecto queda marcado con el lado del host. Si la persona todavía no
- * tiene rol (ni lo eligió en el alta), se le pone el que implica su lado.
+ * tiene rol, se le pone el que implica su lado.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -58,14 +58,14 @@ export async function POST(req: NextRequest) {
 
     const identity = body?.identity;
     if (identity && typeof identity === "object") {
-      const displayName =
-        typeof identity.displayName === "string" ? normalizarNombre(identity.displayName) : undefined;
+      const nombreCrudo = typeof identity.displayName === "string" ? identity.displayName.trim() : "";
+      const displayName = nombreCrudo ? normalizarNombre(nombreCrudo) : undefined;
       if (displayName === false) {
-        return NextResponse.json({ error: "Escribe tu nombre para saber de quién es este proyecto." }, { status: 400 });
+        return NextResponse.json({ error: "Ese nombre es muy corto. Escribe al menos dos letras o déjalo vacío." }, { status: 400 });
       }
       const role = typeof identity.role === "string" ? identity.role.trim() : undefined;
       if (role !== undefined && role !== "" && !ROLES_VALIDOS.has(role)) {
-        return NextResponse.json({ error: "Elige desde qué lado vas a usar el sistema." }, { status: 400 });
+        return NextResponse.json({ error: "Ese rol no es válido." }, { status: 400 });
       }
       const correo =
         typeof identity.contactEmail === "string" ? normalizarCorreo(identity.contactEmail) : undefined;
