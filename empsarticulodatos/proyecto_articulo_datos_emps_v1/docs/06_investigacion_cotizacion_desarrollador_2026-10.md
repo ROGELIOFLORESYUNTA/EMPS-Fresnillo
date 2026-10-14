@@ -60,13 +60,14 @@ La directora tiene razón en la premisa y conviene aceptarla: AI Index 2026, el 
 8. Leyes en Fuentes. Código Civil Federal (2613, 2615, 2626, 2627), LFDA (30, 31, 83, 83 bis, 103), LFPC (59, 62), Código de Comercio (78, 80, 83, 93, 362) y LAASSP (74, 75), cada una con su enlace a la Cámara de Diputados.
 9. Piloto. Las cuatro preguntas se quedan (30 segundos); los sesgos de contestar por internet se declaran y se compensan con las medidas sin preguntar (tiempo, abandono, decisión). SUS en español queda como opción para una segunda ola.
 
-## 5. Hipótesis propuestas para el artículo
+## 5. Hipótesis del artículo (numeración final en main.tex)
 
-- H1 (se mantiene). El juicio del experto ordena pero no dimensiona: JOSSE, SEERA y, en México, 2 de 9 estimaciones de proveedor dentro del rango (Valdés-Souto, 2019).
-- H2 (nueva). Con pocos proyectos (43 o menos), un modelo paramétrico calibrado localmente iguala o supera al aprendizaje automático. Se prueba con los conjuntos públicos de la sección 6, validación cruzada repetida y curvas de aprendizaje con 4, 8, 16 y 32 proyectos.
-- H3 (se mantiene, reescrita). Las variables que se conocen al inicio le ganan al promedio.
-- H4 (nueva, para el piloto). La cifra del sistema queda más cerca de lo que el desarrollador termina cobrando que su propia cifra inicial. Se mide con cifra esperada contra cifra calculada, credibilidad y, cuando haya cierres, el costo real.
-- H5 (nueva, para el sistema). El tiempo a la primera cifra con el sistema es menor que el de una cotización experta (0.5 a 3 horas, Pérez Bonilla, 2017). Ya se mide en segundos.
+- H1 (se mantiene). El juicio del experto ordena pero no dimensiona, en esfuerzo y ahora también en duración: JOSSE, SEERA y, en México, 2 de 9 estimaciones de proveedor dentro del rango (Valdés-Souto, 2019).
+- H2 (se mantiene, reescrita). Detectar cambios por palabras en el texto no funciona; por eso se capturan estructurados.
+- H3 (se mantiene). Las variables que se conocen al inicio le ganan al promedio.
+- H4 (nueva). Con pocos proyectos (43 o menos), un modelo paramétrico simple calibrado localmente iguala o supera al aprendizaje automático. Se prueba con los conjuntos públicos de la sección 6, validación cruzada repetida y curvas de aprendizaje con 4, 8, 16 y 32 proyectos.
+- H5 (nueva, para el piloto). La cifra del sistema queda más cerca de lo que el desarrollador termina cobrando que su propia cifra inicial. Se mide con cifra esperada contra cifra calculada, credibilidad y, cuando haya cierres, el costo real.
+- H6 (nueva, para el sistema). El tiempo a la primera cifra con el sistema es menor que el de una cotización experta (0.5 a 3 horas, Pérez Bonilla, 2017). Ya se mide en segundos.
 
 ## 6. Datos que se pueden descargar y correr
 
