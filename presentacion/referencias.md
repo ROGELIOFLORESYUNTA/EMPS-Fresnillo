@@ -24,6 +24,17 @@ Consultadas el 18 de septiembre de 2026 salvo donde se indica otra fecha.
 20. Code for America. Government AI Landscape Assessment, segunda edición. 1 de mayo de 2026.
 21. BID Lab y Red de Innovación Local. GovTech Connect. 2026.
 22. Páginas de precios consultadas el 9 de septiembre de 2026: GitHub Copilot, Cursor, Anthropic Claude, Microsoft Power Apps, Google Gemini Code Assist. Banxico, tipo de cambio FIX.
-23. Flores Rodríguez, R. Artículo: Estimación temprana de esfuerzo, tiempo y costo en proyectos de software para gobiernos municipales. Análisis cuantitativo preliminar con datasets públicos. Septiembre de 2026.
-24. Flores Rodríguez, R. Actividad 1, Radiografía de mi tesis. Seminario de Tesis, UAZ. Agosto de 2026.
-25. Leyes y fuentes oficiales: LIVA, LISR, LSS, LFT, LINFONAVIT; DOF, CONASAMI, IMSS; Secretaría de Finanzas de Zacatecas (impuesto sobre nómina 2026).
+23. Aguilar, J., Sánchez, M. y Fernández-y-Fernández, C. (2014). The Size of Software Projects Developed by Mexican Companies. arXiv 1408.1068.
+24. Gómez Cardozo, D. M. (2022). Diagnóstico de la estimación de esfuerzo en métodos ágiles para desarrollo de software en Colombia. Tesis, Universidad Nacional de Colombia.
+25. OIT (Cravo, T.) (2025). Encuesta sobre trabajadores en plataformas digitales basadas en la web. Nuevos datos para América Latina y el Caribe.
+26. Valdés-Souto, F. (2019). Validation of Supplier Estimates Using COSMIC Method. IWSM-Mensura, CEUR-WS vol. 2476. Y Valdés-Souto, F. y Valeriano-Assem, J. (2024). Merging Distinct Sources Databases to Improve Software Estimation Models. COSMIC.
+27. Menzies, T., Yang, Y., Mathew, G., Boehm, B. y Hihn, J. (2017). Negative results for software effort estimation. Empirical Software Engineering. arXiv 1609.05563.
+28. Tawosi, V., Moussa, R. y Sarro, F. (2023). Agile Effort Estimation: Have We Solved the Problem Yet? IEEE TSE. arXiv 2201.05401.
+29. Abedu, S. (2021). Machine Learning Algorithms on Small-Sized Datasets in Software Effort Estimation. Tesis, University of Ghana.
+30. Shepperd, M. y MacDonell, S. (2012). Evaluating prediction systems in software project estimation. Information and Software Technology. arXiv 2101.05426.
+31. Project Management Institute (2024). Pulse of the Profession 2024.
+32. Código Civil Federal (art. 2627), Ley Federal del Derecho de Autor (arts. 30 y 83), Ley Federal de Protección al Consumidor (art. 59), Código de Comercio (arts. 83 y 362) y LAASSP (art. 74). Cámara de Diputados, textos vigentes 2025 y 2026.
+33. Datasets públicos de esfuerzo (PROMISE): Desharnais, China, Kitchenham, Maxwell, COCOMO81, NASA93 y Albrecht, con procedencia y hash en el repositorio del artículo.
+34. Flores Rodríguez, R. Artículo: Cotización temprana de proyectos de software para desarrolladores independientes y microempresas en México: esfuerzo, tiempo, costo y control de cambios. Octubre de 2026.
+35. Flores Rodríguez, R. Actividad 1, Radiografía de mi tesis. Seminario de Tesis, UAZ. Agosto de 2026.
+36. Leyes y fuentes oficiales: LIVA, LISR, LSS, LFT, LINFONAVIT; DOF, CONASAMI, IMSS; Secretaría de Finanzas de Zacatecas (impuesto sobre nómina 2026).
