@@ -50,6 +50,8 @@ model Project {
   estimatedBudget         Decimal?
   clientAvailabilityLevel String? // alta | media | baja: que tan disponible esta el cliente para dudas (entra al riesgo)
   shareToken              String?   @unique // enlace de solo lectura /r/[token]; null = no compartido
+  lado                    String?   // desarrollador | ayuntamiento (lib/lado.ts); null = anterior a la separacion, se trata como ayuntamiento
+  shareIncludeBreakdown   Boolean   @default(false) // el enlace compartido muestra tambien el desglose interno (nomina, costo, utilidad)
   expectedUsers           Int? // cuantas personas van a usar el sistema (licencias por usuario final en low-code)
   targetDate              DateTime?
   priority                String    @default("media") // baja|media|alta|critica
