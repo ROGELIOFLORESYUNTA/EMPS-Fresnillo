@@ -75,15 +75,21 @@ function delMes(egreso: number | number[], m: number): number {
 export function buildSimpleCashFlow(input: SimpleCashFlowInput): CashFlowResult {
   const remaining = 1 - input.anticipoPct - input.finalPaymentPct;
   if (remaining < 0) throw new Error("anticipoPct + finalPaymentPct no puede exceder 1.0");
-  const intermediateMonths = Math.max(1, input.durationMonths - 1);
-  const intermediatePerMonth = (input.totalContractAmount * remaining) / intermediateMonths;
+  // Los pagos parciales caen en los meses 2 a D-1. Si el proyecto dura uno o
+  // dos meses no hay meses intermedios y lo restante se cobra con el pago final:
+  // asi la suma de cobros siempre es el monto del contrato (antes se perdia
+  // un tramo porque se dividia entre D-1 meses y solo se repartia en D-2).
+  const D = input.durationMonths;
+  const intermediateMonths = Math.max(0, D - 2);
+  const intermediatePerMonth = intermediateMonths > 0 ? (input.totalContractAmount * remaining) / intermediateMonths : 0;
+  const restanteAlFinal = intermediateMonths > 0 ? 0 : input.totalContractAmount * remaining;
 
   const months: CashFlowInputMonth[] = [];
-  for (let m = 1; m <= input.durationMonths; m++) {
+  for (let m = 1; m <= D; m++) {
     let income = 0;
     if (m === 1) income += input.totalContractAmount * input.anticipoPct;
-    if (m > 1 && m < input.durationMonths) income += intermediatePerMonth;
-    if (m === input.durationMonths) income += input.totalContractAmount * input.finalPaymentPct;
+    if (m > 1 && m < D) income += intermediatePerMonth;
+    if (m === D) income += input.totalContractAmount * input.finalPaymentPct + restanteAlFinal;
 
     months.push({
       monthNumber: m,

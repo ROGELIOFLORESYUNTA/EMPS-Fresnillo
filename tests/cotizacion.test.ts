@@ -139,7 +139,7 @@ describe("calendario de pagos", () => {
     expect(Math.abs(pagos[pagos.length - 1].monto - flujo.months[meses - 1].income)).toBeLessThanOrEqual(0.011);
   });
 
-  it("el flujo de efectivo deja sin cobrar una parte; el calendario de la cotización no", () => {
+  it("el flujo de efectivo y el calendario de la cotización cobran el contrato completo", () => {
     const flujo = buildSimpleCashFlow({
       totalContractAmount: TOTAL,
       anticipoPct: 0.3,
@@ -151,7 +151,7 @@ describe("calendario de pagos", () => {
       durationMonths: 6,
     });
     const cobradoPorElFlujo = flujo.months.reduce((a, m) => a + m.income, 0);
-    expect(cobradoPorElFlujo).toBeLessThan(TOTAL - 1);
+    expect(cobradoPorElFlujo).toBeCloseTo(TOTAL, 2);
     expect(sumaDePagos(calendarioDePagos({ total: TOTAL, anticipoPct: 30, finalPct: 30, meses: 6 }))).toBe(TOTAL);
   });
 
