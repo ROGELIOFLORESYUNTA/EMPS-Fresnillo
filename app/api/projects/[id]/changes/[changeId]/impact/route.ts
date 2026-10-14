@@ -13,6 +13,7 @@
  *     baselineBeforeVersion/After, sourceParameterKeysJson, lastParameterReviewAt.
  */
 import { NextRequest, NextResponse } from "next/server";
+import { cargaNominaDelProyecto } from "@/lib/equipo-server";
 import { Decimal } from "decimal.js";
 import { prisma } from "@/lib/db";
 import { changeImpactInputSchema } from "@/lib/validators";
@@ -40,7 +41,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const engineParams = await loadChangeImpactParameters(2026, "Zacatecas");
 
     const result = computeChangeImpact(
-      { ...input, projectId: id, changeRequestId: changeId },
+      { ...input, projectId: id, changeRequestId: changeId, cargaNomina: await cargaNominaDelProyecto(id) },
       engineParams,
     );
 

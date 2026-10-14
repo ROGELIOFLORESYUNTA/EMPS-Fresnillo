@@ -9,6 +9,7 @@
  * antes de aplicar decisión.
  */
 import { NextRequest, NextResponse } from "next/server";
+import { cargaNominaDelProyecto } from "@/lib/equipo-server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { changeImpactInputSchema, resourceCostSchema } from "@/lib/validators";
@@ -45,7 +46,7 @@ export async function POST(
 
     const engineParams = await loadChangeImpactParameters(2026, "Zacatecas");
     const changeResult = computeChangeImpact(
-      { ...changeInput, projectId: id, changeRequestId: changeId },
+      { ...changeInput, projectId: id, changeRequestId: changeId, cargaNomina: await cargaNominaDelProyecto(id) },
       engineParams,
     );
 
