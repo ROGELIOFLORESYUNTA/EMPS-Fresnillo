@@ -1,0 +1,26 @@
+\begin{table}[t]
+\centering
+\caption{Exactitud estandarizada (SA promedio de 100 sorteos) con $n$ proyectos de entrenamiento, en el formato log-lineal/bosque aleatorio. La prueba usa todos los dem\'as proyectos; la celda queda vac\'{\i}a cuando $n$ no es menor que la mitad de los $N$ proyectos del dataset.}
+\label{tab:curva}
+\scriptsize
+\setlength{\tabcolsep}{2.5pt}
+\resizebox{\ifdim\width>\columnwidth\columnwidth\else\width\fi}{!}{%
+\begin{tabular}{lrcccc}
+\toprule
+Dataset & $N$ & $n=4$ & $n=8$ & $n=16$ & $n=32$ \\
+\midrule
+Albrecht & 24 & 0.29/0.31 & 0.66/0.49 &  &  \\
+Maxwell & 62 & \ensuremath{-}0.51/0.23 & 0.46/0.35 & 0.53/0.42 &  \\
+COCOMO81 & 63 & \ensuremath{-}2.67/0.29 & 0.30/0.33 & 0.50/0.46 &  \\
+Desharnais & 81 & \ensuremath{-}0.34/0.27 & 0.40/0.38 & 0.49/0.42 & 0.51/0.45 \\
+NASA93 & 93 & \ensuremath{-}0.10/0.25 & 0.43/0.38 & 0.50/0.46 & 0.56/0.56 \\
+Kitchenham & 145 & \ensuremath{-}6.02/0.26 & 0.42/0.33 & 0.46/0.37 & 0.50/0.43 \\
+China & 499 & \ensuremath{-}62.35/0.26 & 0.28/0.34 & 0.45/0.40 & 0.50/0.44 \\
+\midrule
+Mediana & & \ensuremath{-}0.51/0.26 & 0.42/0.35 & 0.49/0.42 & 0.50/0.45 \\
+\bottomrule
+\end{tabular}%
+}
+\par\smallskip
+{\scriptsize\raggedright Con $n=4$ el promedio del log-lineal lo arrastran pocos sorteos en que la recta de cuatro puntos da pendientes extremas; en el sorteo t\'{\i}pico (la mediana de los 100) el log-lineal iguala o supera al bosque en 7 de 7 datasets.\par}
+\end{table}
